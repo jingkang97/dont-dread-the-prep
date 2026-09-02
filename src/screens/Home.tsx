@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 import { format, formatDistanceStrict, isAfter, isBefore } from 'date-fns'
-import { ArrowRight, MessageCircle, PhoneCall, Sparkles } from 'lucide-react'
+import { ArrowRight, Droplets, Sparkles, Utensils } from 'lucide-react'
 import { HOSPITALS } from '../data/hospitals'
 import { Card, PrimaryButton, SectionLabel } from '../components/ui'
 import { cn } from '../lib/cn'
 import { useLang } from '../i18n/LanguageContext'
 import type { PrepSession, Screen } from '../lib/session'
-import { buildTimeline } from '../lib/timeline'
+import { buildTimeline, resolveEventText } from '../lib/timeline'
 
 export function Home({
   session,
@@ -68,7 +68,7 @@ export function Home({
                   {started ? t('home.upNext') : t('home.firstStep')}
                 </p>
                 <p className="font-display mt-0.5 text-[20px] leading-tight tracking-tight text-ink">
-                  {next.title}
+                  {resolveEventText(next, t).title}
                 </p>
                 <p className="mt-1 text-[13px] text-muted">{format(next.at, 'EEE d MMM, h:mm a')}</p>
                 <p className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-teal-deep">
@@ -111,7 +111,7 @@ export function Home({
 
       <Card className="mt-4 overflow-hidden">
         <Tile
-          icon={<MessageCircle size={18} />}
+          icon={<Utensils size={18} />}
           iconClass="bg-[#e8f8ff] text-[#007aff]"
           title={t('home.foodTitle')}
           body={t('home.foodBody')}
@@ -119,7 +119,7 @@ export function Home({
         />
         <div className="ml-[68px] h-px bg-line" />
         <Tile
-          icon={<PhoneCall size={18} />}
+          icon={<Droplets size={18} />}
           iconClass="bg-ask-bg text-ask"
           title={t('home.stoolTitle')}
           body={t('home.stoolBody')}

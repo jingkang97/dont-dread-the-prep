@@ -1,12 +1,18 @@
 import { HOSPITALS, type Hospital, type HospitalId, type Slot } from '../data/hospitals'
+import type { StringKey } from '../i18n/strings'
 
 export type EventKind = 'diet' | 'med' | 'dose' | 'meal' | 'fast' | 'arrive' | 'check' | 'gap'
 
 export type TimelineEvent = {
   id: string
   at: Date
-  title: string
-  detail: string
+  titleKey: StringKey
+  titleVars?: Record<string, string>
+  detailKey?: StringKey
+  detailVars?: Record<string, string>
+  fluidKey?: StringKey
+  /** Hospital source line — stays in English. */
+  citedDetail?: string
   kind: EventKind
   source: string
   tentative?: boolean
@@ -19,6 +25,19 @@ export type SessionInput = {
   reportingTime: string
 }
 
+type Translate = (key: StringKey, vars?: Record<string, string>) => string
+
+export function resolveEventText(event: TimelineEvent, t: Translate) {
+  const detailVars = {
+    ...event.detailVars,
+    ...(event.fluidKey ? { fluid: t(event.fluidKey) } : {}),
+  }
+  return {
+    title: t(event.titleKey, event.titleVars),
+    detail: event.citedDetail ?? (event.detailKey ? t(event.detailKey, detailVars) : ''),
+  }
+}
+
 function atDate(dateStr: string, dayOffset: number, hm: string) {
   const [y, m, d] = dateStr.split('-').map(Number)
   const [hh, mm] = hm.split(':').map(Number)
@@ -29,8 +48,8 @@ function subHours(date: Date, hours: number) {
   return new Date(date.getTime() - hours * 60 * 60 * 1000)
 }
 
-function mixPicoprep(n: number, fluid: string) {
-  return `Mix packet ${n} with 150ml warm water until dissolved, then ${fluid}. Stay near a toilet — bowel motions usually start within a few hours.`
+function stoolActionKey(id: HospitalId): StringKey {
+  return `hosp.${id}.stoolAction` as StringKey
 }
 
 export function defaultReporting(slot: Slot) {
@@ -46,18 +65,16 @@ export function buildTimeline(input: SessionInput): TimelineEvent[] {
     events.push({
       id: 'med-7',
       at: atDate(input.date, -7, '09:00'),
-      title: 'If prescribed — iron, Plavix, anti-diarrhoeals',
-      detail:
-        'TTSH brochure: stop these 7 days before. This is TTSH’s sheet, not SGH’s 5-day annex. Follow the list your counsellor wrote. If you are on these drugs and unsure, ask your care team.',
+      titleKey: 'ev.med7',
+      detailKey: 'ev.med7Body',
       kind: 'med',
       source: 'TTSH brochure March 2026',
     })
     events.push({
       id: 'med-sglt2',
       at: atDate(input.date, -2, '09:00'),
-      title: 'If prescribed — SGLT2 inhibitors',
-      detail:
-        'TTSH: stop empagliflozin / dapagliflozin 2 days before. Still confirm against your own list.',
+      titleKey: 'ev.sglt2',
+      detailKey: 'ev.sglt2Body',
       kind: 'med',
       source: 'TTSH brochure March 2026',
     })
@@ -67,18 +84,16 @@ export function buildTimeline(input: SessionInput): TimelineEvent[] {
     events.push({
       id: 'med-5',
       at: atDate(input.date, -5, '09:00'),
-      title: 'If your annex says so — blood thinners',
-      detail:
-        'The SGH/NCCS stop dates for aspirin, clopidogrel, warfarin and anticoagulants live on a handwritten annex, not the yellow form. Typical annex: 5 days for clopidogrel. TTSH uses 7 days for Plavix — that is variation, not an error. Follow your annex.',
+      titleKey: 'ev.med5',
+      detailKey: 'ev.med5Body',
       kind: 'med',
       source: 'SGH/NCCS handwritten medication annex · F1 / F3',
     })
     events.push({
       id: 'med-sglt2-gap',
       at: atDate(input.date, -2, '09:00'),
-      title: 'SGLT2 inhibitors — ask your care team',
-      detail:
-        'TTSH stops these 2 days before. The SGH yellow form is silent. Silent is a gap, not permission to continue or to stop.',
+      titleKey: 'ev.sglt2Gap',
+      detailKey: 'ev.sglt2GapBody',
       kind: 'gap',
       source: 'F2 · SGH yellow form (silent)',
     })
@@ -87,8 +102,10 @@ export function buildTimeline(input: SessionInput): TimelineEvent[] {
   events.push({
     id: 'diet-start',
     at: atDate(input.date, -hospital.dietDays, '00:00'),
-    title: `Low-residue diet starts (${hospital.dietDays} days before)`,
-    detail: `${hospital.short} prescribes a ${hospital.dietDays}-day low-residue diet. This tool follows your hospital, not the 1-day guideline for low-risk patients. Allowed examples: white rice, white bread, plain noodles, lean protein, tofu, eggs. Not: fruit, vegetables, dairy, wholegrains, fried food, red meat.`,
+    titleKey: 'ev.dietStart',
+    titleVars: { days: String(hospital.dietDays) },
+    detailKey: 'ev.dietStartBody',
+    detailVars: { hospital: hospital.short, days: String(hospital.dietDays) },
     kind: 'diet',
     source: `${hospital.short} prep sheet · diet duration`,
   })
@@ -98,11 +115,9 @@ export function buildTimeline(input: SessionInput): TimelineEvent[] {
   events.push({
     id: 'fast',
     at: subHours(report, hospital.fluidStopHours),
-    title: `Stop all fluids (${hospital.fluidStopHours}h before reporting)`,
-    detail:
-      hospital.protocol === 'skh'
-        ? 'SKH: no more water/fluids 4 hours before your reporting time.'
-        : 'SGH/NCCS: clear fluids (max 200ml) up to 2 hours before the procedure. Then stop.',
+    titleKey: 'ev.stopFluids',
+    titleVars: { hours: String(hospital.fluidStopHours) },
+    detailKey: hospital.protocol === 'skh' ? 'ev.stopFluidsSkh' : 'ev.stopFluidsSgh',
     kind: 'fast',
     source:
       hospital.protocol === 'skh'
@@ -113,8 +128,10 @@ export function buildTimeline(input: SessionInput): TimelineEvent[] {
   events.push({
     id: 'arrive',
     at: report,
-    title: `Report to ${hospital.short} endoscopy`,
-    detail: `Reporting time ${input.reportingTime}. Bring your prep form. If stool is still stages 1–4 on the guide, report 2 hours early and call first.`,
+    titleKey: 'ev.report',
+    titleVars: { hospital: hospital.short },
+    detailKey: 'ev.reportBody',
+    detailVars: { time: input.reportingTime },
     kind: 'arrive',
     source: 'Appointment details you entered',
   })
@@ -134,8 +151,8 @@ function pushPrepEvents(
   events.push({
     id: 'last-meal-eve',
     at: atDate(input.date, -1, eveDinnerTime),
-    title: 'Last meal on the eve of scope',
-    detail: hospital.lastMeal,
+    titleKey: 'ev.lastMeal',
+    citedDetail: hospital.lastMeal,
     kind: 'meal',
     source: hospital.lastMealNote,
   })
@@ -144,16 +161,22 @@ function pushPrepEvents(
     events.push({
       id: 'p1',
       at: atDate(input.date, -1, '18:00'),
-      title: 'Picoprep packet 1',
-      detail: mixPicoprep(1, '1 litre of clear fluid'),
+      titleKey: 'ev.packet',
+      titleVars: { n: '1' },
+      detailKey: 'ev.mix',
+      detailVars: { n: '1' },
+      fluidKey: 'ev.fluid1L',
       kind: 'dose',
       source: 'SGH/NCCS yellow form — mix 1 packet with 150ml water, follow with 1L clear fluid',
     })
     events.push({
       id: 'p2',
       at: atDate(input.date, -1, '21:00'),
-      title: 'Picoprep packet 2',
-      detail: mixPicoprep(2, '1 litre of clear fluid'),
+      titleKey: 'ev.packet',
+      titleVars: { n: '2' },
+      detailKey: 'ev.mix',
+      detailVars: { n: '2' },
+      fluidKey: 'ev.fluid1L',
       kind: 'dose',
       source: 'SGH/NCCS yellow form — packets 1 and 2 on the eve of scope (times are handwritten blanks)',
     })
@@ -162,25 +185,30 @@ function pushPrepEvents(
       events.push({
         id: 'p3',
         at: atDate(input.date, 0, '04:30'),
-        title: 'Picoprep packet 3 (before 6am)',
-        detail: mixPicoprep(3, '1 litre of clear fluid'),
+        titleKey: 'ev.packetBefore6',
+        titleVars: { n: '3' },
+        detailKey: 'ev.mix',
+        detailVars: { n: '3' },
+        fluidKey: 'ev.fluid1L',
         kind: 'dose',
         source: 'SGH/NCCS yellow form — packets 3 and 4 on the morning of scope, before 6am',
       })
       events.push({
         id: 'p4',
         at: atDate(input.date, 0, '05:30'),
-        title: 'Picoprep packet 4 (before 6am)',
-        detail: mixPicoprep(4, '1 litre of clear fluid'),
+        titleKey: 'ev.packetBefore6',
+        titleVars: { n: '4' },
+        detailKey: 'ev.mix',
+        detailVars: { n: '4' },
+        fluidKey: 'ev.fluid1L',
         kind: 'dose',
         source: 'SGH/NCCS yellow form — packets 3 and 4 before 6am',
       })
       events.push({
         id: 'breakfast-am',
         at: atDate(input.date, 0, '06:00'),
-        title: 'Morning meds + tiny breakfast, then stop food',
-        detail:
-          'Continue usual medications at 6am with a small amount of water. Breakfast only: 2 plain white bread (no kaya/butter/jam) OR 2 plain biscuits. No food after breakfast. Oral meds allowed up to 2 hours before the procedure.',
+        titleKey: 'ev.breakfastAm',
+        detailKey: 'ev.breakfastAmBody',
         kind: 'meal',
         source: 'SGH/NCCS yellow form — day of scope, morning',
       })
@@ -188,9 +216,8 @@ function pushPrepEvents(
       events.push({
         id: 'breakfast-pm',
         at: atDate(input.date, 0, '07:00'),
-        title: 'Breakfast only — then no food',
-        detail:
-          'SGH form: 2 plain white bread or 2 plain biscuits. The printed form does not clearly spell out afternoon-slot breakfast. Confirm against the handwritten times on your yellow form.',
+        titleKey: 'ev.breakfastPm',
+        detailKey: 'ev.breakfastPmBody',
         kind: 'meal',
         source: 'SGH/NCCS yellow form — day of; F10 afternoon gap',
         tentative: true,
@@ -198,9 +225,9 @@ function pushPrepEvents(
       events.push({
         id: 'p3-pm',
         at: atDate(input.date, 0, '08:00'),
-        title: 'Picoprep packet 3 — confirm handwritten time',
-        detail:
-          'The SGH yellow form does not print afternoon packet times (F10). Suggested split-dose placement only: take this morning so the last dose can finish 2–5 hours before your procedure. Use the time written on your form if it differs.',
+        titleKey: 'ev.packetHand',
+        titleVars: { n: '3' },
+        detailKey: 'ev.p3pmBody',
         kind: 'gap',
         source: 'F10 · ESGE/USMSTF split-dose window (not printed on SGH form)',
         tentative: true,
@@ -209,9 +236,9 @@ function pushPrepEvents(
       events.push({
         id: 'p4-pm',
         at: p4,
-        title: 'Picoprep packet 4 — confirm handwritten time',
-        detail:
-          'Suggested: start about 5 hours before reporting, finish at least 2 hours before. This is guideline timing, not an SGH printed instruction. Prefer the blanks on your yellow form.',
+        titleKey: 'ev.packetHand',
+        titleVars: { n: '4' },
+        detailKey: 'ev.p4pmBody',
         kind: 'gap',
         source: 'F10 · last-dose 2–5h window (ESGE / KSGE) — not on SGH form',
         tentative: true,
@@ -224,18 +251,18 @@ function pushPrepEvents(
       events.push({
         id: 'skh-p1',
         at: atDate(input.date, -1, '18:00'),
-        title: 'Picoprep packet 1',
-        detail:
-          'No more food after 6pm. Dissolve 1st packet in 150ml water. Then 3 large cups (250ml each) of clear liquid spread over 1 hour 30 minutes.',
+        titleKey: 'ev.packet',
+        titleVars: { n: '1' },
+        detailKey: 'ev.skhP1',
         kind: 'dose',
         source: 'SKH bowel preparation generator — Picoprep, morning session',
       })
       events.push({
         id: 'skh-p2',
         at: atDate(input.date, -1, '22:30'),
-        title: 'Picoprep packet 2',
-        detail:
-          'Dissolve 2nd packet in 150ml water. Then 3 large cups of clear liquid spread over 1 hour.',
+        titleKey: 'ev.packet',
+        titleVars: { n: '2' },
+        detailKey: 'ev.skhP2',
         kind: 'dose',
         source: 'SKH bowel preparation generator — Picoprep, morning session',
       })
@@ -243,9 +270,9 @@ function pushPrepEvents(
       events.push({
         id: 'skh-p1-pm',
         at: atDate(input.date, 0, '06:00'),
-        title: 'Picoprep packet 1 (afternoon session)',
-        detail:
-          'Dissolve 1st packet in 150ml water, then 3 large cups (250ml) over 1 hour 30 minutes. Afternoon packet times are taken from SKH’s AM/PM generator pattern — confirm on the SKH website if your SMS differs.',
+        titleKey: 'ev.packetPm',
+        titleVars: { n: '1' },
+        detailKey: 'ev.skhP1Pm',
         kind: 'dose',
         source: 'SKH bowel preparation generator — afternoon session pattern',
         tentative: true,
@@ -253,9 +280,9 @@ function pushPrepEvents(
       events.push({
         id: 'skh-p2-pm',
         at: atDate(input.date, 0, '10:30'),
-        title: 'Picoprep packet 2 (afternoon session)',
-        detail:
-          'Dissolve 2nd packet in 150ml water, then 3 large cups over 1 hour. No more fluids 4 hours before reporting.',
+        titleKey: 'ev.packetPm',
+        titleVars: { n: '2' },
+        detailKey: 'ev.skhP2Pm',
         kind: 'dose',
         source: 'SKH bowel preparation generator — afternoon session pattern',
         tentative: true,
@@ -268,17 +295,16 @@ function pushPrepEvents(
       events.push({
         id: 'ttsh-p1',
         at: atDate(input.date, -1, '18:00'),
-        title: 'Picoprep — evening dose',
-        detail:
-          'Follow the 8am–2pm Picoprep PDF you were given. Mix as instructed and drink the clear fluids listed there. This microsite does not replace the slot-specific TTSH PDF.',
+        titleKey: 'ev.ttshEve',
+        detailKey: 'ev.ttshEveBody',
         kind: 'dose',
         source: 'TTSH Picoprep 8AM–2PM PDF (slot-specific)',
       })
       events.push({
         id: 'ttsh-p2',
         at: atDate(input.date, 0, '05:00'),
-        title: 'Picoprep — morning dose',
-        detail: 'Take the morning dose on the TTSH AM PDF. Finish fluids per that sheet.',
+        titleKey: 'ev.ttshAm',
+        detailKey: 'ev.ttshAmBody',
         kind: 'dose',
         source: 'TTSH Picoprep 8AM–2PM PDF',
       })
@@ -286,16 +312,16 @@ function pushPrepEvents(
       events.push({
         id: 'ttsh-p1-pm',
         at: atDate(input.date, 0, '06:00'),
-        title: 'Picoprep — first dose (PM slot)',
-        detail: 'Use the 2pm–5pm Picoprep PDF. TTSH issues a separate sheet per slot — follow that over this summary.',
+        titleKey: 'ev.ttshPm1',
+        detailKey: 'ev.ttshPm1Body',
         kind: 'dose',
         source: 'TTSH Picoprep 2PM–5PM PDF',
       })
       events.push({
         id: 'ttsh-p2-pm',
         at: subHours(report, 5),
-        title: 'Picoprep — second dose (PM slot)',
-        detail: 'Second dose on the PM PDF, timed to your reporting slot.',
+        titleKey: 'ev.ttshPm2',
+        detailKey: 'ev.ttshPm2Body',
         kind: 'dose',
         source: 'TTSH Picoprep 2PM–5PM PDF',
         tentative: true,
@@ -307,9 +333,8 @@ function pushPrepEvents(
     events.push({
       id: 'cgh-peg-eve',
       at: atDate(input.date, -1, '18:00'),
-      title: 'PEG-ES — evening portion',
-      detail:
-        'CGH uses PEG-ES colonic lavage plus simeticone, not Picoprep. Follow the volumes and times on your CGH brochure. This card is a placeholder so the day structure is visible.',
+      titleKey: 'ev.cghPegEve',
+      detailKey: 'ev.cghPegEveBody',
       kind: 'dose',
       source: 'CGH brochure June 2026 — PEG-ES + simeticone',
       tentative: true,
@@ -317,17 +342,16 @@ function pushPrepEvents(
     events.push({
       id: 'cgh-bfast',
       at: atDate(input.date, 0, '06:00'),
-      title: 'Light breakfast, then stop 6 hours before',
-      detail:
-        'CGH: 1 slice bread or 2 biscuits or a small bowl of plain pasta. BP medications at 6am. No diabetic medication. Stop eating 6 hours before the procedure.',
+      titleKey: 'ev.cghBfast',
+      detailKey: 'ev.cghBfastBody',
       kind: 'meal',
       source: 'CGH brochure June 2026',
     })
     events.push({
       id: 'cgh-peg-am',
       at: atDate(input.date, 0, '06:30'),
-      title: 'PEG-ES — morning portion',
-      detail: 'Complete the morning PEG as your CGH brochure specifies.',
+      titleKey: 'ev.cghPegAm',
+      detailKey: 'ev.cghPegAmBody',
       kind: 'dose',
       source: 'CGH brochure June 2026',
       tentative: true,
@@ -337,8 +361,8 @@ function pushPrepEvents(
   events.push({
     id: 'stool-check',
     at: subHours(report, 3),
-    title: 'Check your stool against the colour scale',
-    detail: hospital.stoolAction,
+    titleKey: 'ev.stoolCheck',
+    detailKey: stoolActionKey(hospital.id),
     kind: 'check',
     source:
       hospital.stoolScale === 'ttsh-6'

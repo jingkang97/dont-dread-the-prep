@@ -21,7 +21,9 @@ export function StoolGuide({
     <div className="px-5 pb-10 pt-6">
       <SectionLabel>{t('stool.kicker')}</SectionLabel>
       <h1 className="font-display mt-1 text-[28px] leading-tight text-navy">{t('stool.title')}</h1>
-      <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">{hospital.stoolAction}</p>
+      <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
+        {t(`hosp.${hospital.id}.stoolAction` as StringKey)}
+      </p>
 
       <div className="mt-5 grid gap-2">
         {STOOL_STAGES.map((stage) => (
@@ -57,15 +59,19 @@ export function StoolGuide({
       <div className="mt-5">
         <SectionLabel>{t('stool.contactFor', { hospital: hospital.short })}</SectionLabel>
       </div>
-      <p className="mt-1 text-[12px] leading-relaxed text-muted">{hospital.formGap}</p>
+      <p className="mt-1 text-[12px] leading-relaxed text-muted">{t(`hosp.${hospital.id}.formGap` as StringKey)}</p>
 
       <div className="mt-3 grid gap-2.5">
-        {hospital.contacts.map((c) => (
+        {hospital.contacts.map((c, i) => (
           <Card key={c.phone} className="p-4">
-            <p className="text-[12px] font-semibold tracking-wide text-muted">{c.label}</p>
+            <p className="text-[12px] font-semibold tracking-wide text-muted">
+              {t(`hosp.${hospital.id}.c${i}.label` as StringKey)}
+            </p>
             <p className="font-display mt-0.5 text-[28px] text-navy">{formatPhone(c.phone)}</p>
-            <p className="text-[12px] text-ink-soft">{c.hours}</p>
-            <p className="mt-2 text-[12px] leading-relaxed text-muted">{c.note}</p>
+            <p className="text-[12px] text-ink-soft">{t(`hosp.${hospital.id}.c${i}.hours` as StringKey)}</p>
+            <p className="mt-2 text-[12px] leading-relaxed text-muted">
+              {t(`hosp.${hospital.id}.c${i}.note` as StringKey)}
+            </p>
             <a href={telHref(c.phone)}>
               <PrimaryButton className="mt-3">
                 <span className="inline-flex items-center gap-2">

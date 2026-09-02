@@ -1,4 +1,4 @@
-import { CalendarClock, ClipboardList, MessageCircle, Phone } from 'lucide-react'
+import { CalendarClock, ClipboardList, Droplets, Utensils } from 'lucide-react'
 import { useLang } from '../i18n/LanguageContext'
 import type { StringKey } from '../i18n/strings'
 import type { Screen } from '../lib/session'
@@ -7,8 +7,8 @@ import { cn } from '../lib/cn'
 const ITEMS: { id: Screen; labelKey: StringKey; icon: typeof CalendarClock }[] = [
   { id: 'home', labelKey: 'nav.home', icon: ClipboardList },
   { id: 'timeline', labelKey: 'nav.timeline', icon: CalendarClock },
-  { id: 'food', labelKey: 'nav.food', icon: MessageCircle },
-  { id: 'stool', labelKey: 'nav.stool', icon: Phone },
+  { id: 'food', labelKey: 'nav.food', icon: Utensils },
+  { id: 'stool', labelKey: 'nav.stool', icon: Droplets },
 ]
 
 export function BottomNav({
@@ -31,7 +31,7 @@ export function BottomNav({
               type="button"
               onClick={() => onChange(item.id)}
               className={cn(
-                'flex h-12 w-full flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-medium leading-none',
+                'flex h-12 w-full flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-medium leading-none transition-colors duration-200',
                 active ? 'text-teal-deep' : 'text-muted',
               )}
             >

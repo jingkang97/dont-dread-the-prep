@@ -1,4 +1,5 @@
 import { HOSPITALS, type HospitalId } from './hospitals'
+import type { StringKey } from '../i18n/strings'
 
 export type Verdict = 'yes' | 'no' | 'ask'
 export type RuleId =
@@ -782,18 +783,22 @@ export const MED_PATTERNS: { test: RegExp; id: string; name: string; rules: Rule
 
 export type ChatAnswer = {
   verdict: Verdict
-  title: string
-  body: string
   source: string
   rules: RuleId[]
   matched: string
-  split?: { title: string; verdict: Verdict; body: string }[]
+  titleKey?: StringKey
+  bodyKey?: StringKey
+  bodyVars?: Record<string, string>
+  title?: string
+  body?: string
+  hospital?: string
+  split?: { titleKey: StringKey; verdict: Verdict; bodyKey: StringKey }[]
 }
 
 const DEFLECT: ChatAnswer = {
   verdict: 'ask',
-  title: 'Ask your care team',
-  body: 'That sits outside the signed food ruleset. This assistant only classifies foods and a few named medication flags against your hospital’s sheet. It will not invent an answer.',
+  titleKey: 'food.deflectTitle',
+  bodyKey: 'food.deflectBody',
   source: 'Doc 03 standing safety rule — never improvise a classification',
   rules: ['SCOPE'],
   matched: 'out of scope',
@@ -818,14 +823,14 @@ function looksLikeFoodQuestion(q: string) {
 export function classify(raw: string, hospitalId: HospitalId): ChatAnswer {
   const q = norm(raw)
   if (!q) {
-    return { ...DEFLECT, body: 'Type a food or drink — for example, “can I have prata?”' }
+    return { ...DEFLECT, bodyKey: 'food.empty' }
   }
 
   if (/\b(pain|vomit|blood|faint|emergency|chest|allergic)\b/.test(q)) {
     return {
       verdict: 'ask',
-      title: 'This is not an emergency line',
-      body: 'If you feel unwell, call your hospital’s number from the Stool + contact tab, or 995. This site cannot triage symptoms.',
+      titleKey: 'food.symptomTitle',
+      bodyKey: 'food.symptomBody',
       source: 'Safety deflection — outside the ruleset',
       rules: ['SCOPE'],
       matched: 'symptom',
@@ -839,6 +844,7 @@ export function classify(raw: string, hospitalId: HospitalId): ChatAnswer {
         verdict: override?.verdict ?? 'ask',
         title: med.name,
         body: override?.why ?? med.why,
+        hospital: HOSPITALS[hospitalId].short,
         source: override?.source ?? med.source,
         rules: med.rules,
         matched: med.name,
@@ -849,15 +855,15 @@ export function classify(raw: string, hospitalId: HospitalId): ChatAnswer {
   if (/\bchicken rice\b/.test(q) && !/cucumber/.test(q)) {
     return {
       verdict: 'ask',
-      title: 'Chicken rice — split, not a single yes/no',
-      body: 'The white rice can be allowed. The cucumber garnish is not. Chilli and oily rice are not named. Ask for plain white rice and steamed chicken, no cucumber.',
+      titleKey: 'food.chickenTitle',
+      bodyKey: 'food.chickenBody',
       source: 'Doc 03 sample list — chicken rice (rice) vs chicken rice (cucumber garnish)',
       rules: ['R1', 'R3', 'R5'],
       matched: 'chicken rice',
       split: [
-        { title: 'The rice', verdict: 'yes', body: 'White rice is a refined starch (R1).' },
-        { title: 'Cucumber garnish', verdict: 'no', body: 'Vegetables are excluded (R3).' },
-        { title: 'Chilli / oily rice', verdict: 'ask', body: 'Not named on the sheet.' },
+        { titleKey: 'food.splitRice', verdict: 'yes', bodyKey: 'food.splitRiceBody' },
+        { titleKey: 'food.splitCucumber', verdict: 'no', bodyKey: 'food.splitCucumberBody' },
+        { titleKey: 'food.splitChilli', verdict: 'ask', bodyKey: 'food.splitChilliBody' },
       ],
     }
   }
@@ -877,8 +883,9 @@ export function classify(raw: string, hospitalId: HospitalId): ChatAnswer {
     if (!looksLikeFoodQuestion(q)) return DEFLECT
     return {
       ...DEFLECT,
-      title: 'Not in the ruleset',
-      body: `“${raw.trim()}” is not a named line on your hospital sheet, and no approved rule classifies it. Ask your care team — this is recorded as a gap, not a guess.`,
+      titleKey: 'food.gapTitle',
+      bodyKey: 'food.gapBody',
+      bodyVars: { q: raw.trim() },
       matched: raw.trim(),
     }
   }
@@ -892,7 +899,8 @@ export function classify(raw: string, hospitalId: HospitalId): ChatAnswer {
   return {
     verdict,
     title: best.entry.name,
-    body: `${body} Answering for ${hospital.short} only.`,
+    body,
+    hospital: hospital.short,
     source,
     rules: best.entry.rules,
     matched: best.alias,

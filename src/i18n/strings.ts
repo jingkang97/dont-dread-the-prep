@@ -1,3 +1,5 @@
+import { CLINICAL_EN, CLINICAL_MS, CLINICAL_TA, CLINICAL_ZH } from './clinical'
+
 export const LANGS = [
   { id: 'en', native: 'English', short: 'EN' },
   { id: 'zh', native: '中文', short: '中文' },
@@ -8,6 +10,7 @@ export const LANGS = [
 export type Lang = (typeof LANGS)[number]['id']
 
 const EN = {
+  ...CLINICAL_EN,
   'draft.banner':
     'Draft prototype — not medical advice. Food answers use an unapproved ruleset (Doc 03). Always follow your own hospital’s form.',
   'nav.home': 'Home',
@@ -28,7 +31,7 @@ const EN = {
   'on.step1': 'Which hospital?',
   'on.step2': 'When is it?',
   'on.step3': 'Confirm',
-  'on.scanCta': 'Photograph the yellow form (demo)',
+  'on.scanCta': 'Scan yellow form',
   'on.scanNote': 'Stretch feature for the pitch. Manual entry is the reliable path.',
   'on.date': 'Appointment date',
   'on.session': 'Session',
@@ -49,11 +52,15 @@ const EN = {
   'on.confirmNote':
     'Timeline follows {hospital} only. We will not mix in another hospital’s milk, juice, or last-meal rules.',
   'on.generate': 'Generate my timeline',
+  'on.generating': 'Building your timeline…',
+  'on.generatingHint': 'Following {hospital} only. This takes a moment.',
   'on.scanLabel': 'Demo · reading the yellow form',
   'on.scanning': 'Looking for handwritten date, reporting time, and AM/PM…',
   'on.scanDone':
     'Pulled from the form. Check these against your paper copy — scanning is a demo, not the MVP path.',
   'on.startOver': 'Start over',
+  'on.scanAgain': 'Scan again',
+  'on.cancel': 'Cancel',
   'on.useDetails': 'Use these details',
   'on.formTitle': 'Dietary advice & Picoprep',
   'on.name': 'First name',
@@ -72,7 +79,7 @@ const EN = {
     'Type a food. Every answer is Yes, No, or Ask your care team — with the line we used.',
   'home.stoolTitle': 'Stool scale + who to call',
   'home.stoolBody': 'Six-point colour check and the number for your hospital.',
-  'home.waTitle': 'Get WhatsApp nudges',
+  'home.waTitle': 'Get WhatsApp reminders',
   'home.waOn': 'WhatsApp reminders on',
   'home.waBody': 'T−72h, T−24h, T−6h. WhatsApp only reminds — it does not answer food questions.',
   'home.waCta': 'Set reminders',
@@ -96,7 +103,9 @@ const EN = {
   'tl.calendar': 'Calendar',
   'tl.noEvents': 'Nothing scheduled this day.',
   'tl.today': 'Today',
+  'tl.selected': 'Selected',
   'tl.scopeDay': 'Colonoscopy',
+  'tl.hasSteps': 'Prep due',
   'kind.diet': 'Diet',
   'kind.med': 'Medicine',
   'kind.dose': 'Picoprep',
@@ -145,7 +154,7 @@ const EN = {
   'stool.s6n': 'Clear yellow',
   'stool.s6l': 'Yellow, light, watery, no particles',
   'wa.kicker': 'Reminder pipe only',
-  'wa.title': 'WhatsApp nudges',
+  'wa.title': 'WhatsApp reminders',
   'wa.lead':
     'WhatsApp does not answer food questions. Each alert links back here to session {id}.',
   'wa.times': 'Your alert times',
@@ -180,10 +189,12 @@ const EN = {
   'app.saveDate': 'Save date',
   'app.dateTitle': 'Change date',
   'app.stayingAt': 'Still {hospital}',
+  'app.regenerating': 'Rebuilding your timeline…',
+  'app.regeneratingHint': 'Following {hospital} only. New date, new countdown.',
   'pitch.kicker': 'HackitRx 2026 · OAS × LSS',
   'pitch.title': 'Don’t dread the prep.',
   'pitch.lead':
-    'A no-install microsite that sits on the SGH/NCCS yellow form. Timeline, grounded food lookup, stool guide — WhatsApp only for the nudge.',
+    'A no-install microsite that sits on the SGH/NCCS yellow form. Timeline, grounded food lookup, stool guide — WhatsApp only for reminders.',
   'pitch.1t': 'Yellow form + QR',
   'pitch.1d': 'The paper stays. The phone becomes the working copy.',
   'pitch.2t': 'One hospital at a time',
@@ -210,6 +221,7 @@ const EN = {
 export type StringKey = keyof typeof EN
 
 const ZH: Record<StringKey, string> = {
+  ...CLINICAL_ZH,
   'draft.banner':
     '试用原型 — 不是医疗建议。食物答案来自尚未经营养师审核的规则（Doc 03）。请以您医院的表格为准。',
   'nav.home': '主页',
@@ -229,7 +241,7 @@ const ZH: Record<StringKey, string> = {
   'on.step1': '哪一家医院？',
   'on.step2': '什么时候？',
   'on.step3': '确认',
-  'on.scanCta': '拍摄黄色表格（演示）',
+  'on.scanCta': '扫描黄表',
   'on.scanNote': '演示功能。可靠做法仍是手动输入。',
   'on.date': '检查日期',
   'on.session': '时段',
@@ -249,10 +261,14 @@ const ZH: Record<StringKey, string> = {
   'on.reportBy': '报到时间',
   'on.confirmNote': '时间表只按 {hospital}。不会套用其他医院的牛奶、果汁或最后一餐规则。',
   'on.generate': '生成我的时间表',
+  'on.generating': '正在生成时间表…',
+  'on.generatingHint': '只跟 {hospital}。稍等片刻。',
   'on.scanLabel': '演示 · 正在读取黄色表格',
   'on.scanning': '正在寻找手写日期、报到时间和上/下午…',
   'on.scanDone': '已从表单读取。请与纸本核对 — 扫描只是演示，不是主要路径。',
   'on.startOver': '重新开始',
+  'on.scanAgain': '再扫描一次',
+  'on.cancel': '取消',
   'on.useDetails': '使用这些资料',
   'on.formTitle': '饮食建议与 Picoprep',
   'on.name': '名字',
@@ -292,7 +308,9 @@ const ZH: Record<StringKey, string> = {
   'tl.calendar': '日历',
   'tl.noEvents': '这天没有安排。',
   'tl.today': '今天',
+  'tl.selected': '已选',
   'tl.scopeDay': '检查当天',
+  'tl.hasSteps': '有准备',
   'kind.diet': '饮食',
   'kind.med': '药物',
   'kind.dose': 'Picoprep',
@@ -374,6 +392,8 @@ const ZH: Record<StringKey, string> = {
   'app.saveDate': '保存日期',
   'app.dateTitle': '更改日期',
   'app.stayingAt': '仍是 {hospital}',
+  'app.regenerating': '正在更新时间表…',
+  'app.regeneratingHint': '仍只跟 {hospital}。新日期，新倒计时。',
   'pitch.kicker': 'HackitRx 2026 · OAS × LSS',
   'pitch.title': '肠道准备，不必害怕。',
   'pitch.lead':
@@ -402,6 +422,7 @@ const ZH: Record<StringKey, string> = {
 }
 
 const MS: Record<StringKey, string> = {
+  ...CLINICAL_MS,
   'draft.banner':
     'Prototaip draf — bukan nasihat perubatan. Jawapan makanan guna ruleset yang belum diluluskan (Doc 03). Ikut borang hospital anda.',
   'nav.home': 'Utama',
@@ -422,7 +443,7 @@ const MS: Record<StringKey, string> = {
   'on.step1': 'Hospital mana?',
   'on.step2': 'Bila?',
   'on.step3': 'Sahkan',
-  'on.scanCta': 'Ambil gambar borang kuning (demo)',
+  'on.scanCta': 'Imbas borang kuning',
   'on.scanNote': 'Ciri demo untuk pitch. Cara dipercayai ialah masukkan sendiri.',
   'on.date': 'Tarikh temujanji',
   'on.session': 'Sesi',
@@ -443,11 +464,15 @@ const MS: Record<StringKey, string> = {
   'on.confirmNote':
     'Jadual ikut {hospital} sahaja. Kami tidak campur peraturan susu, jus atau hidangan terakhir hospital lain.',
   'on.generate': 'Jana jadual saya',
+  'on.generating': 'Membina jadual anda…',
+  'on.generatingHint': 'Ikut {hospital} sahaja. Sebentar.',
   'on.scanLabel': 'Demo · membaca borang kuning',
   'on.scanning': 'Mencari tarikh tulisan tangan, masa daftar dan AM/PM…',
   'on.scanDone':
     'Diambil dari borang. Semak dengan salinan kertas — imbasan ialah demo, bukan laluan MVP.',
   'on.startOver': 'Mula semula',
+  'on.scanAgain': 'Imbas semula',
+  'on.cancel': 'Batal',
   'on.useDetails': 'Guna butiran ini',
   'on.formTitle': 'Nasihat pemakanan & Picoprep',
   'on.name': 'Nama pertama',
@@ -490,7 +515,9 @@ const MS: Record<StringKey, string> = {
   'tl.calendar': 'Kalendar',
   'tl.noEvents': 'Tiada jadual pada hari ini.',
   'tl.today': 'Hari ini',
+  'tl.selected': 'Dipilih',
   'tl.scopeDay': 'Hari prosedur',
+  'tl.hasSteps': 'Ada persediaan',
   'kind.diet': 'Diet',
   'kind.med': 'Ubat',
   'kind.dose': 'Picoprep',
@@ -574,6 +601,8 @@ const MS: Record<StringKey, string> = {
   'app.saveDate': 'Simpan tarikh',
   'app.dateTitle': 'Tukar tarikh',
   'app.stayingAt': 'Masih {hospital}',
+  'app.regenerating': 'Membina semula jadual anda…',
+  'app.regeneratingHint': 'Ikut {hospital} sahaja. Tarikh baharu, undur masa baharu.',
   'pitch.kicker': 'HackitRx 2026 · OAS × LSS',
   'pitch.title': 'Jangan gentar persediaan.',
   'pitch.lead':
@@ -602,6 +631,7 @@ const MS: Record<StringKey, string> = {
 }
 
 const TA: Record<StringKey, string> = {
+  ...CLINICAL_TA,
   'draft.banner':
     'வரைவு முன்மாதிரி — மருத்துவ ஆலோசனை அல்ல. உணவு பதில்கள் அங்கீகரிக்கப்படாத விதிகளிலிருந்து (Doc 03). உங்கள் மருத்துவமனை படிவத்தையே பின்பற்றுங்கள்.',
   'nav.home': 'முகப்பு',
@@ -622,7 +652,7 @@ const TA: Record<StringKey, string> = {
   'on.step1': 'எந்த மருத்துவமனை?',
   'on.step2': 'எப்போது?',
   'on.step3': 'உறுதிசெய்க',
-  'on.scanCta': 'மஞ்சள் படிவத்தை படம் எடுங்கள் (செயல்விளக்கம்)',
+  'on.scanCta': 'மஞ்சள் படிவத்தை ஸ்கேன் செய்',
   'on.scanNote': 'விளக்கத்திற்கான கூடுதல் அம்சம். நம்பகமான வழி கைமுறை உள்ளீடு.',
   'on.date': 'சந்திப்பு தேதி',
   'on.session': 'அமர்வு',
@@ -643,11 +673,15 @@ const TA: Record<StringKey, string> = {
   'on.confirmNote':
     'கால அட்டவணை {hospital} மட்டுமே. பிற மருத்துவமனையின் பால், பழச்சாறு அல்லது கடைசி உணவு விதிகளை கலக்கமாட்டோம்.',
   'on.generate': 'என் கால அட்டவணையை உருவாக்கு',
+  'on.generating': 'கால அட்டவணையை உருவாக்குகிறோம்…',
+  'on.generatingHint': '{hospital} மட்டும். சிறிது நேரம்.',
   'on.scanLabel': 'செயல்விளக்கம் · மஞ்சள் படிவத்தைப் படிக்கிறது',
   'on.scanning': 'கைஎழுத்து தேதி, வருகை நேரம், காலை/பிற்பகல் தேடுகிறது…',
   'on.scanDone':
     'படிவத்திலிருந்து எடுக்கப்பட்டது. காகித நகலுடன் சரிபாருங்கள் — ஸ்கேன் ஒரு செயல்விளக்கம், முக்கிய வழி அல்ல.',
   'on.startOver': 'மீண்டும் தொடங்கு',
+  'on.scanAgain': 'மீண்டும் ஸ்கேன் செய்',
+  'on.cancel': 'ரத்துசெய்',
   'on.useDetails': 'இந்த விவரங்களைப் பயன்படுத்து',
   'on.formTitle': 'உணவு அறிவுரை & Picoprep',
   'on.name': 'முதல் பெயர்',
@@ -690,7 +724,9 @@ const TA: Record<StringKey, string> = {
   'tl.calendar': 'நாட்காட்டி',
   'tl.noEvents': 'இந்த நாளில் எதுவும் இல்லை.',
   'tl.today': 'இன்று',
+  'tl.selected': 'தேர்ந்தெடுத்தது',
   'tl.scopeDay': 'பரிசோதனை நாள்',
+  'tl.hasSteps': 'தயாரிப்பு உண்டு',
   'kind.diet': 'உணவுமுறை',
   'kind.med': 'மருந்து',
   'kind.dose': 'Picoprep',
@@ -774,6 +810,8 @@ const TA: Record<StringKey, string> = {
   'app.saveDate': 'தேதியைச் சேமி',
   'app.dateTitle': 'தேதி மாற்று',
   'app.stayingAt': 'இன்னும் {hospital}',
+  'app.regenerating': 'கால அட்டவணையை மீண்டும் உருவாக்குகிறோம்…',
+  'app.regeneratingHint': '{hospital} மட்டும். புதிய தேதி, புதிய கவுண்டவுன்.',
   'pitch.kicker': 'HackitRx 2026 · OAS × LSS',
   'pitch.title': 'தயாரிப்பை அஞ்சாதீர்கள்.',
   'pitch.lead':

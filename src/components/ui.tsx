@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
-import { RULES, type RuleId, type Verdict } from '../data/foods'
+import { type RuleId, type Verdict } from '../data/foods'
 import { useLang } from '../i18n/LanguageContext'
+import type { StringKey } from '../i18n/strings'
 import { cn } from '../lib/cn'
 
 export function DraftBanner() {
@@ -41,7 +42,7 @@ export function SourceLine({ text, rules }: { text: string; rules?: RuleId[] }) 
       <p className="mt-0.5">{text}</p>
       {rules && rules.length > 0 && (
         <p className="mt-1.5 text-[11px] text-muted">
-          {rules.map((r) => `${r} · ${RULES[r].title}`).join(' · ')}
+          {rules.map((r) => `${r} · ${t(`rule.${r}` as StringKey)}`).join(' · ')}
         </p>
       )}
       <p className="mt-1.5 text-[11px] text-muted">{t('source.original')}</p>
@@ -116,4 +117,17 @@ export function GhostButton({
 
 export function SectionLabel({ children }: { children: ReactNode }) {
   return <p className="text-[13px] font-semibold text-muted">{children}</p>
+}
+
+export function GeneratingPane({ title, hint }: { title: string; hint: string }) {
+  return (
+    <div className="flex flex-col items-center px-4 pt-16 text-center">
+      <span
+        className="h-9 w-9 animate-spin rounded-full border-[3px] border-teal/25 border-t-teal"
+        aria-hidden
+      />
+      <p className="font-display mt-5 text-[22px] tracking-tight text-ink">{title}</p>
+      <p className="mt-2 max-w-[16rem] text-[14px] leading-relaxed text-ink-soft">{hint}</p>
+    </div>
+  )
 }

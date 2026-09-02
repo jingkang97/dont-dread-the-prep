@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import { format } from 'date-fns'
 import { DraftBanner } from './components/ui'
 import { LanguageBar } from './components/LanguageBar'
@@ -21,6 +22,7 @@ import { HOSPITALS } from './data/hospitals'
 import { SessionBar } from './components/SessionBar'
 import { PitchRail } from './components/PitchRail'
 import { AppointmentChooser, ChangeDatePanel, StartOverSheet } from './components/AppointmentEdit'
+import { easeOut } from './lib/motion'
 
 export default function App() {
   const [session, setSession] = useState<PrepSession | null>(null)
@@ -42,13 +44,23 @@ export default function App() {
   const hospital = session ? HOSPITALS[session.hospitalId] : null
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="h-svh xl:grid xl:grid-cols-[minmax(0,1fr)_430px]">
       <PitchRail session={session} />
 
       <div className="relative mx-auto flex h-svh min-h-0 w-full max-w-[430px] flex-col overflow-hidden bg-paper xl:h-full xl:border-x xl:border-black/5">
         <DraftBanner />
         <LanguageBar />
+        <AnimatePresence mode="wait" initial={false}>
         {!session || screen === 'onboarding' ? (
+          <motion.div
+            key="onboarding"
+            className="flex min-h-0 flex-1 flex-col overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: easeOut }}
+          >
           <Onboarding
             onComplete={(d) => {
               const next = createSession(d)
@@ -56,10 +68,27 @@ export default function App() {
               setScreen('home')
             }}
           />
+          </motion.div>
         ) : (
-          <>
+          <motion.div
+            key="session"
+            className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: easeOut }}
+          >
             <SessionBar session={session} onChange={() => setEdit('choose')} />
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+            <div className="relative min-h-0 flex-1">
+              <AnimatePresence initial={false}>
+                <motion.div
+                  key={screen}
+                  className="absolute inset-0 overflow-y-auto overscroll-y-contain"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.16, ease: easeOut }}
+                >
               {screen === 'home' && <Home session={session} onOpen={setScreen} />}
               {screen === 'timeline' && <Timeline session={session} />}
               {screen === 'food' && <FoodChat session={session} />}
@@ -67,8 +96,11 @@ export default function App() {
                 <StoolGuide session={session} onReminders={() => setScreen('reminders')} />
               )}
               {screen === 'reminders' && <Reminders session={session} onSession={setSession} />}
+                </motion.div>
+              </AnimatePresence>
             </div>
             <BottomNav screen={screen} onChange={setScreen} />
+            <AnimatePresence>
             {edit === 'choose' && hospital && (
               <AppointmentChooser
                 hospitalShort={hospital.short}
@@ -100,9 +132,12 @@ export default function App() {
                 }}
               />
             )}
-          </>
+            </AnimatePresence>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
     </div>
+    </MotionConfig>
   )
 }

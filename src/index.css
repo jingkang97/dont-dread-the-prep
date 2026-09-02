@@ -94,7 +94,7 @@ textarea {
   --rdp-accent-color: #00c7be;
   --rdp-accent-background-color: #e6faf7;
   --rdp-today-color: #0a9b94;
-  --rdp-day-height: 44px;
+  --rdp-day-height: 50px;
   --rdp-day-width: auto;
   --rdp-day_button-height: 34px;
   --rdp-day_button-width: 34px;
@@ -141,13 +141,16 @@ textarea {
   box-shadow: none;
 }
 
-.pp-cal .rdp-today:not(.pp-procedure) .rdp-day_button {
+.pp-cal .rdp-today:not(.rdp-selected):not(.pp-procedure) .rdp-day_button {
   color: #0a9b94;
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px #00c7be;
 }
 
 .pp-cal .rdp-today.rdp-selected:not(.pp-procedure) .rdp-day_button {
   background: #00c7be;
   color: #fff;
+  box-shadow: none;
 }
 
 .pp-cal .pp-procedure .rdp-day_button {
@@ -158,9 +161,11 @@ textarea {
 .pp-cal .rdp-day {
   position: relative;
   width: 14.2857%;
-  height: 44px;
+  height: 50px;
   padding: 0;
+  padding-bottom: 10px;
   vertical-align: top;
+  overflow: visible;
 }
 
 .pp-cal .rdp-day_button {
@@ -175,15 +180,11 @@ textarea {
   content: "";
   position: absolute;
   left: 50%;
-  bottom: 3px;
+  bottom: 4px;
   width: 5px;
   height: 5px;
-  margin-left: -2.5px;
+  transform: translateX(-50%);
   border-radius: 99px;
   background: #00c7be;
-}
-
-.pp-cal .pp-has-event.rdp-selected::after,
-.pp-cal .pp-has-event.pp-procedure::after {
-  background: #fff;
+  pointer-events: none;
 }

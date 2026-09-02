@@ -1,12 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
+import { motion } from 'motion/react'
 import { Send } from 'lucide-react'
 import { classify, SUGGESTIONS, type ChatAnswer } from '../data/foods'
 import { HOSPITALS } from '../data/hospitals'
 import { Card, SectionLabel, SourceLine, VerdictPill } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
+import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
+import { fadeY } from '../lib/motion'
 
-type Msg = { id: string; role: 'user' | 'bot'; text?: string; answer?: ChatAnswer }
+type Msg = {
+  id: string
+  role: 'user' | 'bot'
+  text?: string
+  labelKey?: StringKey
+  answer?: ChatAnswer
+}
 
 export function FoodChat({ session }: { session: PrepSession }) {
   const { t, lang } = useLang()
@@ -28,13 +37,13 @@ export function FoodChat({ session }: { session: PrepSession }) {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, lang])
 
-  function ask(shown: string, query = shown) {
+  function ask(shown: string, query = shown, labelKey?: StringKey) {
     const text = shown.trim()
     if (!text) return
     const answer = classify(query.trim(), session.hospitalId)
     setMessages((m) => [
       ...m,
-      { id: crypto.randomUUID(), role: 'user', text },
+      { id: crypto.randomUUID(), role: 'user', text, labelKey },
       { id: crypto.randomUUID(), role: 'bot', answer },
     ])
     setInput('')
@@ -52,13 +61,17 @@ export function FoodChat({ session }: { session: PrepSession }) {
         <BotCard answer={intro} />
         {messages.map((msg) =>
           msg.role === 'user' ? (
-            <div key={msg.id} className="flex justify-end">
+            <motion.div key={msg.id} className="flex justify-end" {...fadeY}>
               <div className="max-w-[85%] rounded-2xl rounded-br-md bg-navy px-3.5 py-2.5 text-[14px] text-white">
-                {msg.text}
+                {msg.labelKey ? t(msg.labelKey) : msg.text}
               </div>
-            </div>
+            </motion.div>
           ) : (
-            msg.answer && <BotCard key={msg.id} answer={msg.answer} />
+            msg.answer && (
+              <motion.div key={msg.id} {...fadeY}>
+                <BotCard answer={msg.answer} />
+              </motion.div>
+            )
           ),
         )}
         <div ref={endRef} />
@@ -70,7 +83,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
             <button
               key={s.label}
               type="button"
-              onClick={() => ask(t(s.label), s.query)}
+              onClick={() => ask(t(s.label), s.query, s.label)}
               className="shrink-0 rounded-full border border-line bg-paper px-3 py-1.5 text-[12px] font-medium text-navy"
             >
               {t(s.label)}
@@ -104,20 +117,29 @@ export function FoodChat({ session }: { session: PrepSession }) {
 }
 
 function BotCard({ answer }: { answer: ChatAnswer }) {
+  const { t } = useLang()
+  const title = answer.titleKey ? t(answer.titleKey, answer.bodyVars) : answer.title
+  const body = [
+    answer.bodyKey ? t(answer.bodyKey, answer.bodyVars) : answer.body,
+    answer.hospital ? t('food.forHospital', { hospital: answer.hospital }) : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
     <Card className="p-3.5">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[16px] font-semibold text-ink">{answer.title}</p>
+        <p className="text-[16px] font-semibold text-ink">{title}</p>
         <VerdictPill verdict={answer.verdict} />
       </div>
-      <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">{answer.body}</p>
+      <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">{body}</p>
       {answer.split && (
         <div className="mt-3 grid gap-2">
           {answer.split.map((part) => (
-            <div key={part.title} className="flex items-start justify-between gap-2 rounded-xl bg-paper px-3 py-2">
+            <div key={part.titleKey} className="flex items-start justify-between gap-2 rounded-xl bg-paper px-3 py-2">
               <div>
-                <p className="text-[13px] font-semibold text-ink">{part.title}</p>
-                <p className="text-[12px] text-muted">{part.body}</p>
+                <p className="text-[13px] font-semibold text-ink">{t(part.titleKey)}</p>
+                <p className="text-[12px] text-muted">{t(part.bodyKey)}</p>
               </div>
               <VerdictPill verdict={part.verdict} compact />
             </div>

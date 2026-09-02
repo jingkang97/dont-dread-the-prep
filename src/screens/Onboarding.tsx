@@ -1,13 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { format } from 'date-fns'
 import { Camera, ChevronRight, Hospital } from 'lucide-react'
 import { HOSPITAL_LIST, type HospitalId, type Slot } from '../data/hospitals'
 import { DateSlotPicker } from '../components/DateSlotPicker'
-import { Card, GhostButton, PrimaryButton, SectionLabel } from '../components/ui'
+import { Card, GeneratingPane, GhostButton, PrimaryButton, SectionLabel } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
 import type { StringKey } from '../i18n/strings'
 import { cn } from '../lib/cn'
 import { defaultReporting } from '../lib/timeline'
+import { easeOut } from '../lib/motion'
 import yellowForm from '../assets/sgh-yellow-form.jpg'
 
 type Draft = {
@@ -60,12 +62,15 @@ export function Onboarding({
 
   const hospital = HOSPITAL_LIST.find((h) => h.id === draft.hospitalId)
   const canFinish = Boolean(draft.hospitalId && draft.date && draft.slot)
+  const [busy, setBusy] = useState(false)
   const demoDate = useMemo(() => plusDays(4), [])
+  const scanTimer = useRef<number | null>(null)
 
   function runScan() {
+    if (scanTimer.current) window.clearTimeout(scanTimer.current)
     setStep('scan')
     setScanPhase('live')
-    window.setTimeout(() => {
+    scanTimer.current = window.setTimeout(() => {
       setDraft({
         hospitalId: 'sgh',
         date: demoDate,
@@ -74,18 +79,55 @@ export function Onboarding({
         firstName: '',
       })
       setScanPhase('done')
+      scanTimer.current = null
     }, 2200)
   }
 
+  function leaveScan() {
+    if (scanTimer.current) window.clearTimeout(scanTimer.current)
+    scanTimer.current = null
+    setScanPhase('live')
+    setStep(1)
+  }
+
+  function generate() {
+    if (!canFinish || !draft.hospitalId || !draft.slot || busy) return
+    setBusy(true)
+    window.setTimeout(() => {
+      onComplete({
+        hospitalId: draft.hospitalId!,
+        date: draft.date,
+        slot: draft.slot!,
+        reportingTime: draft.reportingTime,
+        firstName: draft.firstName,
+      })
+    }, 1200)
+  }
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
-      <header className="px-5 pt-8 pb-4">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <header className="shrink-0 px-5 pb-4 pt-8">
         <p className="text-[13px] font-semibold text-teal-deep">{t('on.kicker')}</p>
         <h1 className="font-display mt-1 text-[34px] leading-[1.1] tracking-tight text-ink">{t('on.title')}</h1>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">{t('on.lead')}</p>
       </header>
 
-      <div className="flex-1 px-5 pb-8">
+      <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 pb-8">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={busy ? 'build' : String(step)}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.28, ease: easeOut }}
+          >
+            {busy ? (
+              <GeneratingPane
+                title={t('on.generating')}
+                hint={t('on.generatingHint', { hospital: hospital?.short ?? '' })}
+              />
+            ) : (
+              <>
         {step === 1 && (
           <div>
             <SectionLabel>{t('on.step1')}</SectionLabel>
@@ -186,18 +228,7 @@ export function Onboarding({
               {t('on.confirmNote', { hospital: hospital.short })}
             </p>
             <div className="mt-5 grid gap-2">
-              <PrimaryButton
-                disabled={!canFinish}
-                onClick={() =>
-                  onComplete({
-                    hospitalId: draft.hospitalId!,
-                    date: draft.date,
-                    slot: draft.slot!,
-                    reportingTime: draft.reportingTime,
-                    firstName: draft.firstName,
-                  })
-                }
-              >
+              <PrimaryButton disabled={!canFinish || busy} onClick={generate}>
                 {t('on.generate')}
               </PrimaryButton>
               <GhostButton onClick={() => setStep(2)}>{t('on.back')}</GhostButton>
@@ -224,25 +255,39 @@ export function Onboarding({
                 </div>
               )}
               {scanPhase === 'done' && (
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-4 pt-10">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25, ease: easeOut }}
+                  className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-4 pt-10"
+                >
                   <p className="text-[12px] font-semibold text-teal">SGH / NCCS</p>
                   <p className="text-[15px] font-semibold text-white">
                     {t('on.scopeDate')} {demoDate} · {t('on.morning')} 08:00
                   </p>
-                </div>
+                </motion.div>
               )}
             </div>
             <p className="mt-3 text-[13px] text-ink-soft">
               {scanPhase === 'live' ? t('on.scanning') : t('on.scanDone')}
             </p>
-            {scanPhase === 'done' && (
+            {scanPhase === 'live' ? (
+              <div className="mt-4">
+                <GhostButton onClick={leaveScan}>{t('on.cancel')}</GhostButton>
+              </div>
+            ) : (
               <div className="mt-4 grid gap-2">
                 <PrimaryButton onClick={() => setStep(3)}>{t('on.useDetails')}</PrimaryButton>
-                <GhostButton onClick={() => setStep(1)}>{t('on.startOver')}</GhostButton>
+                <GhostButton onClick={runScan}>{t('on.scanAgain')}</GhostButton>
+                <GhostButton onClick={leaveScan}>{t('on.back')}</GhostButton>
               </div>
             )}
           </div>
         )}
+              </>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   )
