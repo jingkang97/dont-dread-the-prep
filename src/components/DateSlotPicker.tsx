@@ -3,6 +3,7 @@ import { MonthCalendar } from './MonthCalendar'
 import { Card } from './ui'
 import { useLang } from '../i18n/LanguageContext'
 import { cn } from '../lib/cn'
+import { DATE_LOCALES } from '../lib/dateLocale'
 import { defaultReporting } from '../lib/timeline'
 import type { Slot } from '../data/hospitals'
 
@@ -30,14 +31,14 @@ export function DateSlotPicker({
   reportingTime: string
   onChange: (next: { date?: string; slot?: Slot; reportingTime?: string }) => void
 }) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const selected = parseYmd(date)
   const times = slot === 'pm' ? PM_TIMES : AM_TIMES
 
   return (
     <div>
       <p className="text-[13px] font-semibold text-navy">{t('on.date')}</p>
-      <p className="font-display mt-1 text-[22px] tracking-tight text-ink">{format(selected, 'EEE d MMM yyyy')}</p>
+      <p className="font-display mt-1 text-[22px] tracking-tight text-ink">{format(selected, 'EEE d MMM yyyy', { locale: DATE_LOCALES[lang] })}</p>
       <Card className="mt-3 px-1 py-2">
         <MonthCalendar
           selected={selected}

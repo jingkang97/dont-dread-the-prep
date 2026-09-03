@@ -23,8 +23,11 @@ import { SessionBar } from './components/SessionBar'
 import { PitchRail } from './components/PitchRail'
 import { AppointmentChooser, ChangeDatePanel, StartOverSheet } from './components/AppointmentEdit'
 import { easeOut } from './lib/motion'
+import { DATE_LOCALES } from './lib/dateLocale'
+import { useLang } from './i18n/LanguageContext'
 
 export default function App() {
+  const { lang } = useLang()
   const [session, setSession] = useState<PrepSession | null>(null)
   const [screen, setScreen] = useState<Screen>('onboarding')
   const [ready, setReady] = useState(false)
@@ -105,7 +108,9 @@ export default function App() {
               <AppointmentChooser
                 hospitalShort={hospital.short}
                 slot={session.slot}
-                when={format(new Date(`${session.date}T${session.reportingTime}:00`), 'd MMM, h:mm a')}
+                when={format(new Date(`${session.date}T${session.reportingTime}:00`), 'd MMM, h:mm a', {
+                  locale: DATE_LOCALES[lang],
+                })}
                 onChangeDate={() => setEdit('date')}
                 onStartOver={() => setEdit('restart')}
                 onKeep={() => setEdit('off')}
@@ -118,6 +123,7 @@ export default function App() {
                 onSave={(next) => {
                   setSession(updateAppointment(session, next))
                   setEdit('off')
+                  setScreen('home')
                 }}
               />
             )}

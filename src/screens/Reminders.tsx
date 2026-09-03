@@ -1,12 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { format, isAfter } from 'date-fns'
+import { Check } from 'lucide-react'
+import { motion } from 'motion/react'
 import { HOSPITALS } from '../data/hospitals'
 import { Card, GhostButton, PrimaryButton, SectionLabel } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
+import { cn } from '../lib/cn'
+import { DATE_LOCALES } from '../lib/dateLocale'
 import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
 import { markWaOptIn, waJoinHref } from '../lib/session'
 import { remindersFor } from '../lib/timeline'
+import { easeOut } from '../lib/motion'
 
 const WA_COPY: Record<string, { label: StringKey; blurb: StringKey }> = {
   t72: { label: 'wa.t72', blurb: 'wa.t72b' },
@@ -21,12 +26,41 @@ export function Reminders({
   session: PrepSession
   onSession: (s: PrepSession) => void
 }) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const hospital = HOSPITALS[session.hospitalId]
   const [joinCode, setJoinCode] = useState('sandbox')
+  const [copied, setCopied] = useState(false)
+  const copyTimer = useRef<number | undefined>(undefined)
   const report = new Date(`${session.date}T${session.reportingTime}:00`)
   const items = remindersFor(report)
   const href = waJoinHref(session.id, joinCode)
+
+  useEffect(() => () => window.clearTimeout(copyTimer.current), [])
+
+  function legacyCopy(text: string) {
+    const box = document.createElement('textarea')
+    box.value = text
+    box.setAttribute('readonly', '')
+    box.style.position = 'fixed'
+    box.style.opacity = '0'
+    document.body.appendChild(box)
+    box.select()
+    document.execCommand('copy')
+    document.body.removeChild(box)
+  }
+
+  function copyId() {
+    try {
+      const write = navigator.clipboard?.writeText(session.id)
+      if (write) write.catch(() => legacyCopy(session.id))
+      else legacyCopy(session.id)
+    } catch {
+      legacyCopy(session.id)
+    }
+    setCopied(true)
+    window.clearTimeout(copyTimer.current)
+    copyTimer.current = window.setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="px-5 pb-10 pt-6">
@@ -44,7 +78,9 @@ export function Reminders({
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[14px] font-semibold text-ink">{t(WA_COPY[item.key].label)}</span>
                 <span className="text-[12px] text-muted">
-                  {isAfter(item.at, new Date()) ? format(item.at, 'd MMM, h:mm a') : t('wa.passed')}
+                  {isAfter(item.at, new Date())
+                    ? format(item.at, 'd MMM, h:mm a', { locale: DATE_LOCALES[lang] })
+                    : t('wa.passed')}
                 </span>
               </div>
               <p className="text-[12px] text-ink-soft">{t(WA_COPY[item.key].blurb)}</p>
@@ -83,8 +119,20 @@ export function Reminders({
         <p className="mt-3 text-center text-[13px] font-semibold text-yes">{t('wa.optin', { id: session.id })}</p>
       )}
 
-      <GhostButton className="mt-4" onClick={() => navigator.clipboard.writeText(session.id)}>
-        {t('wa.copy', { id: session.id })}
+      <GhostButton className={cn('mt-4', copied && 'bg-yes-bg text-yes')} onClick={copyId}>
+        <span role="status" className="flex items-center justify-center gap-1.5">
+          {copied && (
+            <motion.span
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.18, ease: easeOut }}
+              className="flex"
+            >
+              <Check size={17} />
+            </motion.span>
+          )}
+          {t(copied ? 'wa.copied' : 'wa.copy', { id: session.id })}
+        </span>
       </GhostButton>
     </div>
   )

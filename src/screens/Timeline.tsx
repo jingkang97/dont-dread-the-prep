@@ -1,16 +1,15 @@
 import { useMemo, useState } from 'react'
+import { motion } from 'motion/react'
 import { format, isAfter, isBefore, isSameDay, isToday, startOfDay, startOfMonth } from 'date-fns'
-import { enGB, ms, ta, zhCN } from 'date-fns/locale'
 import { HOSPITALS } from '../data/hospitals'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { Card, SectionLabel } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
 import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
-import { buildTimeline, resolveEventText, type EventKind, type TimelineEvent } from '../lib/timeline'
+import { buildTimeline, fromNowDays, resolveEventText, type EventKind, type TimelineEvent } from '../lib/timeline'
 import { cn } from '../lib/cn'
-
-const DATE_LOCALES = { en: enGB, zh: zhCN, ms, ta } as const
+import { DATE_LOCALES } from '../lib/dateLocale'
 
 const KIND_TONE: Record<EventKind, string> = {
   diet: 'bg-teal/15 text-teal-deep',
@@ -96,17 +95,35 @@ export function Timeline({ session }: { session: PrepSession }) {
           {days.map((group) => (
             <section key={group.day.toISOString()} className="mt-1">
               <DayHeader day={group.day} />
-              <ol className="relative ml-2 border-l border-line pl-5">
+              <ol
+                className={cn(
+                  'relative ml-2 border-l pl-5 pt-2',
+                  isToday(group.day) ? 'border-teal/40' : 'border-line',
+                )}
+              >
                 {group.events.map((event) => (
                   <li key={event.id} className="relative pb-4 last:pb-1">
+                    {event.id === nextId && (
+                      <motion.span
+                        className="pointer-events-none absolute -left-[31px] top-[2px] h-[22px] w-[22px] rounded-full bg-teal"
+                        animate={{ scale: [0.85, 1.2, 1.5], opacity: [0, 0.3, 0] }}
+                        transition={{
+                          duration: 2.2,
+                          times: [0, 0.4, 1],
+                          repeat: Infinity,
+                          repeatDelay: 0.6,
+                          ease: 'easeOut',
+                        }}
+                      />
+                    )}
                     <span
                       className={cn(
                         'absolute -left-[27px] top-1.5 h-3.5 w-3.5 rounded-full border-2 border-paper-2',
                         isBefore(event.at, now) ? 'bg-muted' : event.tentative ? 'bg-ask' : 'bg-teal',
                       )}
                     />
-                    <EventStamp event={event} nextId={nextId} />
-                    <EventCard event={event} />
+                    <EventStamp event={event} nextId={nextId} now={now} />
+                    <EventCard event={event} isNext={event.id === nextId} isPast={isBefore(event.at, now)} />
                   </li>
                 ))}
               </ol>
@@ -121,6 +138,7 @@ export function Timeline({ session }: { session: PrepSession }) {
               onSelect={setPicked}
               eventDays={eventDays}
               procedureDay={procedureDay}
+              disabledAfter={procedureDay}
               startMonth={startMonth}
               endMonth={endMonth}
             />
@@ -160,8 +178,8 @@ export function Timeline({ session }: { session: PrepSession }) {
               <div className="grid gap-3">
                 {dayEvents.map((event) => (
                   <div key={event.id}>
-                    <EventStamp event={event} nextId={nextId} />
-                    <EventCard event={event} />
+                    <EventStamp event={event} nextId={nextId} now={now} />
+                    <EventCard event={event} isNext={event.id === nextId} isPast={isBefore(event.at, now)} />
                   </div>
                 ))}
               </div>
@@ -175,34 +193,57 @@ export function Timeline({ session }: { session: PrepSession }) {
 
 function DayHeader({ day, sticky = true }: { day: Date; sticky?: boolean }) {
   const { t, lang } = useLang()
+  const today = isToday(day)
   return (
     <h2
       className={cn(
-        'bg-paper py-2 font-display text-[20px] tracking-tight text-ink',
+        'flex items-center gap-2 bg-paper py-2 font-display text-[20px] tracking-tight',
+        today ? 'text-teal-deep' : 'text-ink',
         sticky && 'sticky top-0 z-10 -mx-5 px-5',
       )}
     >
-      {isToday(day) ? `${t('tl.today')} · ` : ''}
+      {today && (
+        <span className="rounded-full bg-teal px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+          {t('tl.today')}
+        </span>
+      )}
       {format(day, 'EEE d MMM', { locale: DATE_LOCALES[lang] })}
     </h2>
   )
 }
 
-function EventStamp({ event, nextId }: { event: TimelineEvent; nextId?: string }) {
+function EventStamp({ event, nextId, now }: { event: TimelineEvent; nextId?: string; now: Date }) {
   const { t } = useLang()
+  const when = event.id === nextId ? fromNowDays(event.at, now, t) : ''
   return (
     <p className="text-[13px] font-semibold text-navy">
       {format(event.at, 'h:mm a')}
       {event.id === nextId ? ` · ${t('tl.next')}` : ''}
+      {when ? ` · ${when}` : ''}
     </p>
   )
 }
 
-function EventCard({ event }: { event: TimelineEvent }) {
+function EventCard({
+  event,
+  isNext,
+  isPast,
+}: {
+  event: TimelineEvent
+  isNext?: boolean
+  isPast?: boolean
+}) {
   const { t } = useLang()
   const { title, detail } = resolveEventText(event, t)
   return (
-    <Card className={cn('mt-1.5 p-3.5', event.tentative && 'border-ask/30')}>
+    <Card
+      className={cn(
+        'mt-1.5 p-3.5 transition',
+        event.tentative && 'border-ask/30',
+        isNext && 'ring-1 ring-teal/45 shadow-[0_2px_10px_rgba(0,199,190,0.14)]',
+        isPast && !isNext && 'opacity-65',
+      )}
+    >
       <div className="flex items-center gap-2">
         <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide', KIND_TONE[event.kind])}>
           {t(KIND_KEY[event.kind])}

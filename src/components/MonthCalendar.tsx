@@ -10,6 +10,7 @@ export function MonthCalendar({
   onSelect,
   eventDays,
   procedureDay,
+  disabledAfter,
   startMonth,
   endMonth,
   className,
@@ -18,6 +19,8 @@ export function MonthCalendar({
   onSelect: (day: Date) => void
   eventDays?: Date[]
   procedureDay?: Date
+  /** Days after this one are dimmed and unselectable — nothing is scheduled past the scope. */
+  disabledAfter?: Date
   startMonth?: Date
   endMonth?: Date
   className?: string
@@ -46,6 +49,7 @@ export function MonthCalendar({
         startMonth={startMonth}
         endMonth={endMonth}
         defaultMonth={selected}
+        disabled={disabledAfter ? { after: disabledAfter } : undefined}
         modifiers={{
           hasEvent: eventDays,
           procedure: procedureDay,

@@ -1,3 +1,4 @@
+import { differenceInCalendarDays, startOfDay } from 'date-fns'
 import { HOSPITALS, type Hospital, type HospitalId, type Slot } from '../data/hospitals'
 import type { StringKey } from '../i18n/strings'
 
@@ -36,6 +37,14 @@ export function resolveEventText(event: TimelineEvent, t: Translate) {
     title: t(event.titleKey, event.titleVars),
     detail: event.citedDetail ?? (event.detailKey ? t(event.detailKey, detailVars) : ''),
   }
+}
+
+export function fromNowDays(at: Date, now: Date, t: Translate) {
+  const n = differenceInCalendarDays(startOfDay(at), startOfDay(now))
+  if (n < 0) return ''
+  if (n === 0) return t('tl.fromNowToday')
+  if (n === 1) return t('tl.fromNowTomorrow')
+  return t('tl.fromNowDays', { n: String(n) })
 }
 
 function atDate(dateStr: string, dayOffset: number, hm: string) {

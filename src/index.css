@@ -176,6 +176,14 @@ textarea {
   line-height: 1;
 }
 
+.pp-cal .rdp-disabled {
+  opacity: 0.3;
+}
+
+.pp-cal .rdp-disabled .rdp-day_button {
+  cursor: default;
+}
+
 .pp-cal .pp-has-event::after {
   content: "";
   position: absolute;

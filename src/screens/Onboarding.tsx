@@ -6,8 +6,9 @@ import { HOSPITAL_LIST, type HospitalId, type Slot } from '../data/hospitals'
 import { DateSlotPicker } from '../components/DateSlotPicker'
 import { Card, GeneratingPane, GhostButton, PrimaryButton, SectionLabel } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
-import type { StringKey } from '../i18n/strings'
+import type { Lang, StringKey } from '../i18n/strings'
 import { cn } from '../lib/cn'
+import { DATE_LOCALES } from '../lib/dateLocale'
 import { defaultReporting } from '../lib/timeline'
 import { easeOut } from '../lib/motion'
 import yellowForm from '../assets/sgh-yellow-form.jpg'
@@ -25,9 +26,9 @@ function prettyTime(hm: string) {
   return format(new Date(2000, 0, 1, h, m), 'h:mm a')
 }
 
-function prettyDate(ymd: string) {
+function prettyDate(ymd: string, lang: Lang) {
   const [y, m, d] = ymd.split('-').map(Number)
-  return format(new Date(y, m - 1, d), 'EEE d MMM yyyy')
+  return format(new Date(y, m - 1, d), 'EEE d MMM yyyy', { locale: DATE_LOCALES[lang] })
 }
 
 function plusDays(n: number) {
@@ -49,7 +50,7 @@ export function Onboarding({
     firstName: string
   }) => void
 }) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const [step, setStep] = useState<1 | 2 | 3 | 'scan'>(1)
   const [scanPhase, setScanPhase] = useState<'live' | 'done'>('live')
   const [draft, setDraft] = useState<Draft>({
@@ -204,7 +205,7 @@ export function Onboarding({
               <dl className="divide-y divide-line px-4">
                 <Row k={t('on.hospital')} v={t(`hosp.${hospital.id}.name` as StringKey)} />
                 <Row k={t('on.prep')} v={t(`hosp.${hospital.id}.prep` as StringKey)} />
-                <Row k={t('on.scopeDate')} v={prettyDate(draft.date)} />
+                <Row k={t('on.scopeDate')} v={prettyDate(draft.date, lang)} />
                 <Row k={t('on.sessionLabel')} v={draft.slot === 'am' ? t('on.morning') : t('on.afternoon')} />
                 <Row k={t('on.reportBy')} v={prettyTime(draft.reportingTime)} />
               </dl>

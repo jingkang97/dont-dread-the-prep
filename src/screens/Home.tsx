@@ -6,7 +6,8 @@ import { Card, PrimaryButton, SectionLabel } from '../components/ui'
 import { cn } from '../lib/cn'
 import { useLang } from '../i18n/LanguageContext'
 import type { PrepSession, Screen } from '../lib/session'
-import { buildTimeline, resolveEventText } from '../lib/timeline'
+import { buildTimeline, fromNowDays, resolveEventText } from '../lib/timeline'
+import { DATE_LOCALES } from '../lib/dateLocale'
 
 export function Home({
   session,
@@ -15,13 +16,15 @@ export function Home({
   session: PrepSession
   onOpen: (s: Screen) => void
 }) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
+  const locale = DATE_LOCALES[lang]
   const hospital = HOSPITALS[session.hospitalId]
   const events = buildTimeline(session)
   const now = new Date()
   const next = events.find((e) => isAfter(e.at, now)) ?? events[events.length - 1]
+  const nextWhen = next ? fromNowDays(next.at, now, t) : ''
   const report = events.find((e) => e.id === 'arrive')?.at
-  const remaining = report ? formatDistanceStrict(report, now, { addSuffix: true }) : ''
+  const remaining = report ? formatDistanceStrict(report, now, { addSuffix: true, locale }) : ''
   const started = events[0] ? isBefore(events[0].at, now) : false
   const juice =
     hospital.fruitJuice === 'yes'
@@ -52,7 +55,7 @@ export function Home({
         </h1>
       )}
       <p className="mt-1 text-[15px] text-ink-soft">
-        {format(new Date(session.date + 'T12:00:00'), 'EEE d MMM yyyy')} · {t('home.report', { time: session.reportingTime })}
+        {format(new Date(session.date + 'T12:00:00'), 'EEE d MMM yyyy', { locale })} · {t('home.report', { time: session.reportingTime })}
         {report ? ` · ${isAfter(report, now) ? remaining : ''}` : ''}
       </p>
 
@@ -70,7 +73,10 @@ export function Home({
                 <p className="font-display mt-0.5 text-[20px] leading-tight tracking-tight text-ink">
                   {resolveEventText(next, t).title}
                 </p>
-                <p className="mt-1 text-[13px] text-muted">{format(next.at, 'EEE d MMM, h:mm a')}</p>
+                <p className="mt-1 text-[13px] text-muted">
+                  {format(next.at, 'EEE d MMM, h:mm a', { locale })}
+                  {nextWhen ? ` · ${nextWhen}` : ''}
+                </p>
                 <p className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-teal-deep">
                   {t('home.openTimeline')} <ArrowRight size={16} />
                 </p>

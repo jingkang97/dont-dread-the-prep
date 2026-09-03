@@ -1,6 +1,7 @@
 import { format } from 'date-fns'
 import { HOSPITALS } from '../data/hospitals'
 import { useLang } from '../i18n/LanguageContext'
+import { DATE_LOCALES } from '../lib/dateLocale'
 import type { PrepSession } from '../lib/session'
 
 export function SessionBar({
@@ -10,9 +11,11 @@ export function SessionBar({
   session: PrepSession
   onChange: () => void
 }) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const hospital = HOSPITALS[session.hospitalId]
-  const when = format(new Date(`${session.date}T${session.reportingTime}:00`), 'd MMM, h:mm a')
+  const when = format(new Date(`${session.date}T${session.reportingTime}:00`), 'd MMM, h:mm a', {
+    locale: DATE_LOCALES[lang],
+  })
   const slot = session.slot === 'am' ? t('on.morning') : t('on.afternoon')
 
   return (
