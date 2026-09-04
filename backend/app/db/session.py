@@ -1,0 +1,69 @@
+from __future__ import annotations
+
+from collections.abc import Generator
+from contextlib import contextmanager
+from typing import Optional
+
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from app.core.config import get_settings
+
+_engine: Optional[Engine] = None
+_SessionLocal: Optional[sessionmaker] = None
+
+
+def get_engine() -> Engine:
+    global _engine, _SessionLocal
+    if _engine is None:
+        settings = get_settings()
+        url = settings.sqlalchemy_database_url
+        if not url:
+            raise RuntimeError(
+                "DATABASE_URL is not set. Copy backend/.env.example to backend/.env "
+                "and paste your Supabase Postgres connection string."
+            )
+        _engine = create_engine(
+            url,
+            pool_pre_ping=True,
+            pool_size=5,
+            max_overflow=5,
+        )
+        _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False)
+    return _engine
+
+
+def get_session_factory() -> sessionmaker:
+    get_engine()
+    assert _SessionLocal is not None
+    return _SessionLocal
+
+
+def get_db() -> Generator[Session, None, None]:
+    """FastAPI dependency that yields a DB session."""
+    session = get_session_factory()()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+@contextmanager
+def session_scope() -> Generator[Session, None, None]:
+    session = get_session_factory()()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def check_database() -> bool:
+    """Return True if a simple SELECT 1 succeeds."""
+    with get_engine().connect() as conn:
+        conn.execute(text("SELECT 1"))
+    return True

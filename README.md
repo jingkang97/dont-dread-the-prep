@@ -4,12 +4,30 @@ No-install colonoscopy prep microsite for HackitRx 2026 (OAS × LSS). Patients s
 
 ## Run
 
+### Frontend
+
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
 
 Open the local URL on a phone or in a 430px-wide window. On a laptop, a pitch rail appears beside the patient surface.
+
+### Backend
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+uvicorn app.main:app --reload --port 8000
+```
+
+API docs: http://127.0.0.1:8000/docs · health: http://127.0.0.1:8000/health · DB: http://127.0.0.1:8000/health/db
+
+Set `DATABASE_URL` in `backend/.env` to your Supabase Postgres URI (Project Settings → Database → Connection string → URI). Prefer **Session mode** pooler or **Direct** connection for local uvicorn.
 
 ## What is in the MVP
 
