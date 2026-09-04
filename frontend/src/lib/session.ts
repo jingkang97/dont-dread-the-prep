@@ -1,6 +1,8 @@
 import type { HospitalId, Slot } from '../data/hospitals'
 import { defaultReporting } from './timeline'
 import { clearFoodChat } from './foodChat'
+import { clearTimelineUi } from './timelineUi'
+import { clearFoodChatUi } from './foodChatUi'
 
 export type Screen = 'onboarding' | 'home' | 'timeline' | 'food' | 'stool' | 'reminders'
 
@@ -49,6 +51,8 @@ export function saveSession(session: PrepSession) {
 export function clearSession() {
   localStorage.removeItem(KEY)
   clearFoodChat()
+  clearFoodChatUi()
+  clearTimelineUi()
 }
 
 export function createSession(partial: {
@@ -84,6 +88,7 @@ export function updateAppointment(
 ): PrepSession {
   const next = { ...session, ...patch }
   saveSession(next)
+  clearTimelineUi()
   return next
 }
 

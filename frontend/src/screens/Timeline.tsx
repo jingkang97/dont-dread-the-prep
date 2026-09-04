@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion } from 'motion/react'
+import { ArrowDown, ArrowUp } from 'lucide-react'
 import { format, isAfter, isBefore, isSameDay, isToday, startOfDay, startOfMonth } from 'date-fns'
 import { HOSPITALS } from '../data/hospitals'
 import { MonthCalendar } from '../components/MonthCalendar'
@@ -8,6 +10,7 @@ import { useLang } from '../i18n/LanguageContext'
 import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
 import { buildTimeline, fromNowDays, resolveEventText, type EventKind, type TimelineEvent } from '../lib/timeline'
+import { loadTimelineUi, saveTimelineUi, type TimelineView } from '../lib/timelineUi'
 import { cn } from '../lib/cn'
 import { DATE_LOCALES } from '../lib/dateLocale'
 
@@ -43,15 +46,51 @@ function groupByDay(events: TimelineEvent[]) {
   return groups
 }
 
+function scrollerOf(root: Element | null) {
+  const inner = root?.querySelector('[data-tl-scroll]')
+  if (inner instanceof HTMLElement) return inner
+  const scroller = root?.closest('.overflow-y-auto')
+  return scroller instanceof HTMLElement ? scroller : null
+}
+
+function scrollToChild(scroller: HTMLElement, el: HTMLElement, behavior: ScrollBehavior, offset = 0) {
+  const top =
+    el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - offset
+  scroller.scrollTo({ top: Math.max(0, top), behavior })
+}
+
+function dayOffset(root: HTMLElement | null) {
+  const day = root?.querySelector('[data-tl-day]')
+  return day instanceof HTMLElement ? day.offsetHeight : 0
+}
+
+type JumpDir = 'up' | 'down' | 'here'
+
+function nextStamp(li: HTMLElement | null) {
+  const stamp = li?.querySelector('[data-tl-time]')
+  return stamp instanceof HTMLElement ? stamp : li
+}
+
+function jumpToward(scroller: HTMLElement, el: HTMLElement, topPad: number): JumpDir {
+  const s = scroller.getBoundingClientRect()
+  const r = el.getBoundingClientRect()
+  const top = s.top + topPad
+  if (r.bottom <= top + 2) return 'up'
+  if (r.top <= top + 36) return 'here'
+  return 'down'
+}
+
 export function Timeline({ session }: { session: PrepSession }) {
   const { t } = useLang()
   const hospital = HOSPITALS[session.hospitalId]
   const events = buildTimeline(session)
   const now = new Date()
-  const nextId = events.find((e) => isAfter(e.at, now))?.id
+  const nextEvent = events.find((e) => isAfter(e.at, now))
+  const nextId = nextEvent?.id
   const days = useMemo(() => groupByDay(events), [events])
+  const saved = loadTimelineUi(session.id, session.date)
 
-  const [view, setView] = useState<'list' | 'calendar'>('list')
+  const [view, setView] = useState<TimelineView>(() => saved?.view ?? 'list')
   const procedureDay = useMemo(() => {
     const [y, m, d] = session.date.split('-').map(Number)
     return new Date(y, m - 1, d)
@@ -71,37 +110,122 @@ export function Timeline({ session }: { session: PrepSession }) {
   const startMonth = events[0] ? startOfMonth(events[0].at) : undefined
   const endMonth = events.length ? startOfMonth(events[events.length - 1].at) : undefined
   const dayEvents = events.filter((e) => isSameDay(e.at, picked))
+  const today = startOfDay(now)
+  const scrollDay =
+    days.find((g) => isSameDay(g.day, today))?.day ??
+    days.find((g) => !isBefore(g.day, today))?.day ??
+    days[days.length - 1]?.day
+  const rootRef = useRef<HTMLDivElement>(null)
+  const todayRef = useRef<HTMLElement>(null)
+  const nextRef = useRef<HTMLLIElement>(null)
+  const [pane, setPane] = useState<HTMLElement | null>(null)
+  const [jumpDir, setJumpDir] = useState<JumpDir>('down')
+  const [progress, setProgress] = useState(0)
+
+  const bindRoot = useCallback((node: HTMLDivElement | null) => {
+    rootRef.current = node
+    const host = node?.closest('[data-app-pane]')
+    setPane(host instanceof HTMLElement ? host : null)
+  }, [])
+
+  useLayoutEffect(() => {
+    const scroller = scrollerOf(rootRef.current)
+    if (!scroller) return
+    saveTimelineUi(session.id, session.date, { view })
+
+    if (view === 'calendar') {
+      scroller.scrollTo({ top: 0, behavior: 'auto' })
+      return
+    }
+
+    const offset = dayOffset(rootRef.current)
+    const eventPad = offset
+
+    const measure = () => {
+      const max = scroller.scrollHeight - scroller.clientHeight
+      setProgress(max <= 0 ? 0 : Math.min(1, scroller.scrollTop / max))
+      const stamp = nextStamp(nextRef.current)
+      if (stamp) setJumpDir(jumpToward(scroller, stamp, eventPad))
+    }
+
+    const align = () => {
+      const remembered = loadTimelineUi(session.id, session.date)
+      if (remembered?.landed) {
+        scroller.scrollTo({ top: remembered.listTop, behavior: 'auto' })
+        measure()
+        return
+      }
+      const nextEl = nextStamp(nextRef.current)
+      const el = nextEl ?? todayRef.current
+      if (!el) return
+      const pad = offset
+      scrollToChild(scroller, el, 'auto', pad)
+      const pos = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top
+      if (pos <= pad + 16) {
+        saveTimelineUi(session.id, session.date, { listTop: scroller.scrollTop, view: 'list', landed: true })
+      }
+      measure()
+    }
+    align()
+    const frames = [requestAnimationFrame(align), requestAnimationFrame(() => requestAnimationFrame(align))]
+
+    const onScroll = () => {
+      saveTimelineUi(session.id, session.date, { listTop: scroller.scrollTop, view: 'list' })
+      measure()
+    }
+    scroller.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      frames.forEach((id) => cancelAnimationFrame(id))
+      scroller.removeEventListener('scroll', onScroll)
+    }
+  }, [session.id, session.date, view, nextId])
+
+  function jumpToNext() {
+    const scroller = scrollerOf(rootRef.current)
+    const el = nextStamp(nextRef.current)
+    if (!scroller || !el) return
+    scrollToChild(scroller, el, 'smooth', dayOffset(rootRef.current))
+  }
 
   return (
-    <div className="px-5 pb-10 pt-6">
-      <SectionLabel>{t('tl.for', { hospital: hospital.short })}</SectionLabel>
-      <h1 className="font-display mt-1 text-[28px] leading-tight text-navy">{t('tl.title')}</h1>
-      <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">{t('tl.lead')}</p>
-
-      <div className="mt-5 flex rounded-[10px] bg-black/5 p-[3px]">
-        {(['list', 'calendar'] as const).map((id) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setView(id)}
-            className={cn(
-              'min-w-0 flex-1 rounded-[8px] px-1 py-1.5 text-[13px] font-semibold transition',
-              view === id ? 'bg-white text-ink shadow-sm' : 'text-muted',
-            )}
-          >
-            {t(id === 'list' ? 'tl.list' : 'tl.calendar')}
-          </button>
-        ))}
+    <>
+    <div ref={bindRoot} className="flex h-full min-h-0 flex-col">
+      <div className="shrink-0 px-5 pt-6">
+        <SectionLabel>{t('tl.for', { hospital: hospital.short })}</SectionLabel>
+        <h1 className="font-display mt-1 text-[28px] leading-tight text-navy">{t('tl.title')}</h1>
+        <p className="mt-1.5 text-[13px] leading-snug text-ink-soft">{t('tl.lead')}</p>
       </div>
 
+      <div data-tl-bar className="shrink-0 bg-paper px-5 py-2">
+        <div className="flex rounded-[10px] bg-black/5 p-[3px]">
+          {(['list', 'calendar'] as const).map((id) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setView(id)}
+              className={cn(
+                'min-w-0 flex-1 rounded-[8px] px-1 py-1.5 text-[13px] font-semibold transition',
+                view === id ? 'bg-white text-ink shadow-sm' : 'text-muted',
+              )}
+            >
+              {t(id === 'list' ? 'tl.list' : 'tl.calendar')}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div data-tl-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 pb-28">
       {view === 'list' ? (
-        <div className="mt-2">
+        <div>
           {days.map((group) => (
-            <section key={group.day.toISOString()} className="mt-1">
+            <section
+              key={group.day.toISOString()}
+              ref={scrollDay && isSameDay(group.day, scrollDay) ? todayRef : undefined}
+            >
               <DayHeader day={group.day} procedureDay={procedureDay} />
               <ol
                 className={cn(
-                  'relative ml-2 border-l pl-5 pt-2',
+                  'relative ml-2 border-l pl-5 pt-1',
                   isToday(group.day)
                     ? 'border-teal/40'
                     : isSameDay(group.day, procedureDay)
@@ -110,7 +234,11 @@ export function Timeline({ session }: { session: PrepSession }) {
                 )}
               >
                 {group.events.map((event) => (
-                  <li key={event.id} className="relative pb-4 last:pb-1">
+                  <li
+                    key={event.id}
+                    ref={event.id === nextId ? nextRef : undefined}
+                    className="relative overflow-visible pb-4"
+                  >
                     {event.id === nextId && (
                       <motion.span
                         className="pointer-events-none absolute -left-[31px] top-[2px] h-[22px] w-[22px] rounded-full bg-teal"
@@ -130,7 +258,7 @@ export function Timeline({ session }: { session: PrepSession }) {
                         isBefore(event.at, now) ? 'bg-muted' : event.tentative ? 'bg-ask' : 'bg-teal',
                       )}
                     />
-                    <EventStamp event={event} nextId={nextId} now={now} />
+                    <EventStamp event={event} />
                     <EventCard event={event} isNext={event.id === nextId} isPast={isBefore(event.at, now)} />
                   </li>
                 ))}
@@ -139,7 +267,7 @@ export function Timeline({ session }: { session: PrepSession }) {
           ))}
         </div>
       ) : (
-        <div className="mt-5">
+        <div className="mt-2">
           <Card className="px-2 py-3">
             <MonthCalendar
               selected={picked}
@@ -186,7 +314,7 @@ export function Timeline({ session }: { session: PrepSession }) {
               <div className="grid gap-3">
                 {dayEvents.map((event) => (
                   <div key={event.id}>
-                    <EventStamp event={event} nextId={nextId} now={now} />
+                    <EventStamp event={event} />
                     <EventCard event={event} isNext={event.id === nextId} isPast={isBefore(event.at, now)} />
                   </div>
                 ))}
@@ -195,7 +323,20 @@ export function Timeline({ session }: { session: PrepSession }) {
           )}
         </div>
       )}
+      </div>
     </div>
+    {pane &&
+      view === 'list' &&
+      nextEvent &&
+      createPortal(
+        <div data-tl-fab className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-end px-4">
+          <div className="pointer-events-auto">
+            <JumpNextFab dir={jumpDir} progress={progress} onClick={jumpToNext} />
+          </div>
+        </div>,
+        pane,
+      )}
+    </>
   )
 }
 
@@ -214,6 +355,7 @@ function DayHeader({
   const until = scope && !today ? fromNowDays(day, new Date(), t) : ''
   return (
     <h2
+      data-tl-day={sticky ? '' : undefined}
       className={cn(
         'flex items-center gap-2 bg-paper py-2 font-display text-[20px] tracking-tight',
         today ? 'text-teal-deep' : scope ? 'text-navy' : 'text-ink',
@@ -236,14 +378,58 @@ function DayHeader({
   )
 }
 
-function EventStamp({ event, nextId, now }: { event: TimelineEvent; nextId?: string; now: Date }) {
+function JumpNextFab({
+  dir,
+  progress,
+  onClick,
+}: {
+  dir: JumpDir
+  progress: number
+  onClick: () => void
+}) {
   const { t } = useLang()
-  const when = event.id === nextId ? fromNowDays(event.at, now, t) : ''
+  const Icon = dir === 'up' ? ArrowUp : ArrowDown
+  const r = 20
+  const c = 2 * Math.PI * r
   return (
-    <p className="text-[13px] font-semibold text-navy">
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col items-center gap-1"
+      aria-label={t('tl.jumpNext')}
+    >
+      <span className="whitespace-nowrap rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-bold tracking-tight text-ink shadow-[0_1px_8px_rgba(28,28,30,0.12)] backdrop-blur-md">
+        {t('tl.jumpNext')}
+      </span>
+      <span className="relative grid h-[52px] w-[52px] place-items-center rounded-full bg-white shadow-[0_4px_18px_rgba(28,28,30,0.16)]">
+        <svg className="absolute inset-0 -rotate-90" viewBox="0 0 52 52" aria-hidden>
+          <circle cx="26" cy="26" r={r} fill="none" stroke="#e8e8ed" strokeWidth="2.5" />
+          <circle
+            cx="26"
+            cy="26"
+            r={r}
+            fill="none"
+            stroke="#1c1c1e"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={c * (1 - progress)}
+          />
+        </svg>
+        {dir === 'here' ? (
+          <span className="h-3 w-3 rounded-full bg-teal" />
+        ) : (
+          <Icon size={22} strokeWidth={2.6} className="text-teal-deep" />
+        )}
+      </span>
+    </button>
+  )
+}
+
+function EventStamp({ event }: { event: TimelineEvent }) {
+  return (
+    <p data-tl-time className="text-[13px] font-semibold text-navy">
       {format(event.at, 'h:mm a')}
-      {event.id === nextId ? ` · ${t('tl.next')}` : ''}
-      {when ? ` · ${when}` : ''}
     </p>
   )
 }
@@ -260,9 +446,10 @@ function EventCard({
   const { t } = useLang()
   const { title, detail } = resolveEventText(event, t)
   return (
+    <div data-tl-card className="mt-1">
     <Card
       className={cn(
-        'mt-1.5 p-3.5 transition',
+        'p-3.5 transition',
         event.tentative && 'border-ask/30',
         isNext && 'ring-1 ring-teal/45 shadow-[0_2px_10px_rgba(0,199,190,0.14)]',
         isPast && !isNext && 'opacity-65',
@@ -282,5 +469,6 @@ function EventCard({
         {t('source.cited')}: {event.source}
       </p>
     </Card>
+    </div>
   )
 }
