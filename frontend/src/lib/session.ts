@@ -1,5 +1,6 @@
 import type { HospitalId, Slot } from '../data/hospitals'
 import { defaultReporting } from './timeline'
+import { clearFoodChat } from './foodChat'
 
 export type Screen = 'onboarding' | 'home' | 'timeline' | 'food' | 'stool' | 'reminders'
 
@@ -47,6 +48,7 @@ export function saveSession(session: PrepSession) {
 
 export function clearSession() {
   localStorage.removeItem(KEY)
+  clearFoodChat()
 }
 
 export function createSession(partial: {

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { format, formatDistanceStrict, isAfter, isBefore } from 'date-fns'
-import { ArrowRight, Droplets, Sparkles, Utensils } from 'lucide-react'
+import { ArrowRight, Droplets, EllipsisVertical, Sparkles, Utensils } from 'lucide-react'
 import { HOSPITALS } from '../data/hospitals'
 import { Card, PrimaryButton, SectionLabel } from '../components/ui'
 import { cn } from '../lib/cn'
@@ -12,9 +12,11 @@ import { DATE_LOCALES } from '../lib/dateLocale'
 export function Home({
   session,
   onOpen,
+  onShortcut,
 }: {
   session: PrepSession
   onOpen: (s: Screen) => void
+  onShortcut: (os: 'ios' | 'android') => void
 }) {
   const { t, lang } = useLang()
   const locale = DATE_LOCALES[lang]
@@ -150,6 +152,44 @@ export function Home({
         </div>
       </Card>
 
+      <Card className="mt-4 p-4">
+        <p className="text-[13px] font-semibold text-navy">{t('home.shortcut')}</p>
+        <div className="mt-3 grid w-full grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => onShortcut('ios')}
+            className="flex w-full min-w-0 flex-col items-start gap-2 rounded-2xl bg-paper px-3 py-3 text-left"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-paper-2 text-ink">
+              <IosShareIcon />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[14px] font-semibold text-ink">{t('home.shortcutIosTab')}</span>
+              <span className="mt-0.5 block text-[12px] leading-snug text-muted">{t('home.shortcutIos')}</span>
+            </span>
+            <span className="mt-auto inline-flex items-center gap-1 text-[12px] font-semibold text-teal-deep">
+              {t('home.shortcutOpen')} <ArrowRight size={14} />
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onShortcut('android')}
+            className="flex w-full min-w-0 flex-col items-start gap-2 rounded-2xl bg-paper px-3 py-3 text-left"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-paper-2 text-ink">
+              <EllipsisVertical size={20} strokeWidth={2.4} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[14px] font-semibold text-ink">{t('home.shortcutAndroidTab')}</span>
+              <span className="mt-0.5 block text-[12px] leading-snug text-muted">{t('home.shortcutAndroid')}</span>
+            </span>
+            <span className="mt-auto inline-flex items-center gap-1 text-[12px] font-semibold text-teal-deep">
+              {t('home.shortcutOpen')} <ArrowRight size={14} />
+            </span>
+          </button>
+        </div>
+      </Card>
+
       <PrimaryButton className="mt-5" onClick={() => onOpen('timeline')}>
         {t('home.review')}
       </PrimaryButton>
@@ -186,6 +226,26 @@ function WhatsAppMark() {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden>
       <path d="M12.04 2c-5.46 0-9.91 4.44-9.91 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm5.72 14.24c-.24.68-1.4 1.3-1.94 1.35-.49.04-1.1.06-1.77-.11-.41-.1-.93-.3-1.6-.59-2.82-1.22-4.65-4.07-4.79-4.26-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.25-.28.55-.35.73-.35h.53c.17 0 .4-.06.63.48.24.56.8 1.96.87 2.1.07.14.12.31.02.5-.1.19-.15.31-.3.48-.14.17-.3.37-.43.5-.14.14-.29.29-.12.56.16.28.73 1.2 1.57 1.95 1.08.96 1.99 1.26 2.27 1.4.28.14.44.12.6-.07.16-.19.7-.82.89-1.1.19-.28.37-.23.63-.14.25.1 1.6.75 1.87.89.28.14.46.21.53.32.07.12.07.68-.17 1.36z" />
+    </svg>
+  )
+}
+
+function IosShareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden>
+      <path
+        d="M12 4v11M8.5 7.5 12 4l3.5 3.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 13v5.5A1.5 1.5 0 0 0 7.5 20h9a1.5 1.5 0 0 0 1.5-1.5V13"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }
