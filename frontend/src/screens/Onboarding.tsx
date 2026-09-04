@@ -113,10 +113,11 @@ export function Onboarding({
         <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">{t('on.lead')}</p>
       </header>
 
-      <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 pb-8">
+      <div className="relative min-h-0 flex-1">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={busy ? 'build' : String(step)}
+            className="absolute inset-0 overflow-y-auto overscroll-y-contain overflow-anchor-none px-5 pb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}

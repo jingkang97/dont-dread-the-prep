@@ -48,10 +48,10 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-    <div className="h-svh xl:grid xl:grid-cols-[minmax(0,1fr)_430px]">
+    <div className="h-full xl:grid xl:grid-cols-[minmax(0,1fr)_430px]">
       <PitchRail session={session} />
 
-      <div className="relative mx-auto flex h-svh min-h-0 w-full max-w-[430px] flex-col overflow-hidden bg-paper xl:h-full xl:border-x xl:border-black/5">
+      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[430px] flex-col overflow-hidden bg-paper xl:border-x xl:border-black/5">
         <DraftBanner />
         <LanguageBar />
         <AnimatePresence mode="wait" initial={false}>

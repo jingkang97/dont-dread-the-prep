@@ -2,6 +2,7 @@ import { HOSPITALS } from '../data/hospitals'
 import { useLang } from '../i18n/LanguageContext'
 import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
+import pitchQr from '../assets/pitch-qr.png'
 
 const POINTS: { title: StringKey; body: StringKey }[] = [
   { title: 'pitch.1t', body: 'pitch.1d' },
@@ -34,15 +35,29 @@ export function PitchRail({ session }: { session: PrepSession | null }) {
           </li>
         ))}
       </ol>
-      {session && hospital && (
-        <div className="mt-auto max-w-sm rounded-[20px] bg-white/10 p-4 ring-1 ring-white/10">
-          <p className="text-[12px] font-medium text-white/45">{t('pitch.live')}</p>
-          <p className="font-display text-[28px] tracking-tight">{session.id}</p>
-          <p className="text-[13px] text-white/55">
-            {hospital.short} · {session.date} · {session.slot.toUpperCase()}
-          </p>
+      <div className="mt-auto pt-10">
+        <div className="flex w-fit max-w-sm items-center gap-4 rounded-3xl bg-white/10 p-3 pr-5 ring-1 ring-white/10">
+          <img
+            src={pitchQr}
+            alt={t('pitch.scan')}
+            className="h-29 w-29 shrink-0 rounded-2xl bg-white p-1.5"
+          />
+          <div className="min-w-0">
+            {session && hospital ? (
+              <>
+                <p className="text-[12px] font-medium text-white/45">{t('pitch.live')}</p>
+                <p className="font-display text-[28px] leading-none tracking-tight">{session.id}</p>
+                <p className="mt-1.5 text-[13px] text-white/55">
+                  {hospital.short} · {session.date} · {session.slot.toUpperCase()}
+                </p>
+                <p className="mt-3 text-[12px] leading-snug text-white/45">{t('pitch.scan')}</p>
+              </>
+            ) : (
+              <p className="text-[15px] font-semibold leading-snug text-white/80">{t('pitch.scan')}</p>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </aside>
   )
 }
