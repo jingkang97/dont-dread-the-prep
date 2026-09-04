@@ -49,7 +49,6 @@ export function Timeline({ session }: { session: PrepSession }) {
   const events = buildTimeline(session)
   const now = new Date()
   const nextId = events.find((e) => isAfter(e.at, now))?.id
-  const next = events.find((e) => isAfter(e.at, now)) ?? events[events.length - 1]
   const days = useMemo(() => groupByDay(events), [events])
 
   const [view, setView] = useState<'list' | 'calendar'>('list')
