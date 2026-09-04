@@ -26,6 +26,7 @@ import { ShortcutSheet } from './components/ShortcutSheet'
 import { easeOut } from './lib/motion'
 import { DATE_LOCALES } from './lib/dateLocale'
 import { useLang } from './i18n/LanguageContext'
+import { cn } from './lib/cn'
 
 export default function App() {
   const { lang } = useLang()
@@ -84,15 +85,23 @@ export default function App() {
             transition={{ duration: 0.18, ease: easeOut }}
           >
             <SessionBar session={session} onChange={() => setEdit('choose')} />
-            <div className="relative min-h-0 flex-1">
+            <div
+              data-app-pane
+              className={cn('relative min-h-0 flex-1', screen !== 'timeline' && '[&_[data-tl-fab]]:hidden')}
+            >
               <AnimatePresence initial={false}>
                 <motion.div
                   key={
                     screen === 'home'
                       ? `home-${session.date}-${session.slot}-${session.reportingTime}`
-                      : screen
+                      : screen === 'timeline'
+                        ? `timeline-${session.date}-${session.slot}-${session.reportingTime}`
+                        : screen
                   }
-                  className="absolute inset-0 overflow-y-auto overscroll-y-contain"
+                  className={cn(
+                    'absolute inset-0 overscroll-y-contain',
+                    screen === 'timeline' ? 'overflow-hidden' : 'overflow-y-auto',
+                  )}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}

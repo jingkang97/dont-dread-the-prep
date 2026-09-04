@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { format, formatDistanceStrict, isAfter, isBefore } from 'date-fns'
 import { ArrowRight, Droplets, EllipsisVertical, Sparkles, Utensils } from 'lucide-react'
 import { HOSPITALS } from '../data/hospitals'
-import { Card, PrimaryButton, SectionLabel } from '../components/ui'
+import { Card, SectionLabel } from '../components/ui'
 import { cn } from '../lib/cn'
 import { useLang } from '../i18n/LanguageContext'
 import type { PrepSession, Screen } from '../lib/session'
@@ -189,10 +189,6 @@ export function Home({
           </button>
         </div>
       </Card>
-
-      <PrimaryButton className="mt-5" onClick={() => onOpen('timeline')}>
-        {t('home.review')}
-      </PrimaryButton>
     </div>
   )
 }

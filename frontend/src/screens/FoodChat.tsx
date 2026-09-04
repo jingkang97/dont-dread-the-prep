@@ -1,14 +1,29 @@
-import { useEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { Send } from 'lucide-react'
+import { ArrowDown, Send } from 'lucide-react'
 import { classify, SUGGESTIONS, type ChatAnswer } from '../data/foods'
 import { HOSPITALS } from '../data/hospitals'
 import { Card, SectionLabel, SourceLine, VerdictPill } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
 import type { StringKey } from '../i18n/strings'
 import { loadFoodChat, saveFoodChat, type FoodChatMsg } from '../lib/foodChat'
+import { clearFoodChatUi, loadFoodChatUi, saveFoodChatUi } from '../lib/foodChatUi'
 import type { PrepSession } from '../lib/session'
 import { fadeY } from '../lib/motion'
+
+function scrollToLatestTurn(el: HTMLElement, behavior: ScrollBehavior) {
+  const turn = el.querySelector('[data-food-turn]')
+  if (!(turn instanceof HTMLElement)) {
+    el.scrollTo({ top: el.scrollHeight, behavior })
+    return
+  }
+  const top = turn.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - 8
+  el.scrollTo({ top: Math.max(0, top), behavior })
+}
+
+function canJump(el: HTMLElement) {
+  return el.scrollHeight - el.clientHeight >= 32
+}
 
 export function FoodChat({ session }: { session: PrepSession }) {
   const { t } = useLang()
@@ -17,6 +32,8 @@ export function FoodChat({ session }: { session: PrepSession }) {
   const [messages, setMessages] = useState<FoodChatMsg[]>(() => loadFoodChat(session.id))
   const listRef = useRef<HTMLDivElement>(null)
   const skipEnter = useRef(messages.length > 0)
+  const prevLen = useRef(messages.length)
+  const [showJump, setShowJump] = useState(false)
 
   const intro: ChatAnswer = {
     verdict: 'ask',
@@ -27,18 +44,51 @@ export function FoodChat({ session }: { session: PrepSession }) {
     matched: 'intro',
   }
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     saveFoodChat(session.id, messages)
   }, [session.id, messages])
 
-  useEffect(() => {
-    if (messages.length === 0) return
+  useLayoutEffect(() => {
     const el = listRef.current
     if (!el) return
-    const instant = skipEnter.current
-    skipEnter.current = false
-    el.scrollTo({ top: el.scrollHeight, behavior: instant ? 'auto' : 'smooth' })
-  }, [messages])
+
+    const measure = () => setShowJump(canJump(el))
+
+    const added = messages.length > prevLen.current
+    prevLen.current = messages.length
+
+    const alignTurn = (behavior: ScrollBehavior) => {
+      scrollToLatestTurn(el, behavior)
+      saveFoodChatUi(session.id, { listTop: el.scrollTop, landed: true })
+      measure()
+    }
+
+    if (added) {
+      skipEnter.current = false
+    } else {
+      const saved = loadFoodChatUi(session.id)
+      if (saved?.landed) {
+        el.scrollTo({ top: saved.listTop, behavior: 'auto' })
+        measure()
+      } else {
+        alignTurn('auto')
+      }
+    }
+
+    const frames = added
+      ? [requestAnimationFrame(() => requestAnimationFrame(() => alignTurn('smooth')))]
+      : [requestAnimationFrame(measure)]
+
+    const onScroll = () => {
+      saveFoodChatUi(session.id, { listTop: el.scrollTop, landed: true })
+      measure()
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      frames.forEach((id) => cancelAnimationFrame(id))
+      el.removeEventListener('scroll', onScroll)
+    }
+  }, [session.id, messages])
 
   function ask(shown: string, query = shown, labelKey?: StringKey) {
     const text = shown.trim()
@@ -52,6 +102,12 @@ export function FoodChat({ session }: { session: PrepSession }) {
     setInput('')
   }
 
+  const lastUserId = messages.filter((m) => m.role === 'user').at(-1)?.id
+
+  function jumpTo(top: number) {
+    listRef.current?.scrollTo({ top, behavior: 'smooth' })
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="px-5 pt-6">
@@ -63,7 +119,10 @@ export function FoodChat({ session }: { session: PrepSession }) {
           {messages.length > 0 && (
             <button
               type="button"
-              onClick={() => setMessages([])}
+              onClick={() => {
+                setMessages([])
+                clearFoodChatUi()
+              }}
               className="mt-7 shrink-0 text-[13px] font-semibold text-teal-deep"
             >
               {t('food.clear')}
@@ -73,22 +132,39 @@ export function FoodChat({ session }: { session: PrepSession }) {
         <p className="mt-1 text-[13px] text-ink-soft">{t('food.lead', { hospital: hospital.short })}</p>
       </div>
 
-      <div ref={listRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
-        <BotCard answer={intro} />
-        {messages.map((msg) =>
-          msg.role === 'user' ? (
-            <motion.div key={msg.id} className="flex justify-end" {...(skipEnter.current ? {} : fadeY)}>
-              <div className="max-w-[85%] rounded-2xl rounded-br-md bg-navy px-3.5 py-2.5 text-[14px] text-white">
-                {msg.labelKey ? t(msg.labelKey) : msg.text}
-              </div>
-            </motion.div>
-          ) : (
-            msg.answer && (
-              <motion.div key={msg.id} {...(skipEnter.current ? {} : fadeY)}>
-                <BotCard answer={msg.answer} />
+      <div className="relative min-h-0 flex-1">
+        <div ref={listRef} className="h-full space-y-3 overflow-y-auto px-5 py-4">
+          <BotCard answer={intro} />
+          {messages.map((msg) =>
+            msg.role === 'user' ? (
+              <motion.div
+                key={msg.id}
+                data-food-turn={msg.id === lastUserId ? '' : undefined}
+                className="flex justify-end"
+                {...(skipEnter.current ? {} : fadeY)}
+              >
+                <div className="max-w-[85%] rounded-2xl rounded-br-md bg-navy px-3.5 py-2.5 text-[14px] text-white">
+                  {msg.labelKey ? t(msg.labelKey) : msg.text}
+                </div>
               </motion.div>
-            )
-          ),
+            ) : (
+              msg.answer && (
+                <motion.div key={msg.id} {...(skipEnter.current ? {} : fadeY)}>
+                  <BotCard answer={msg.answer} />
+                </motion.div>
+              )
+            ),
+          )}
+        </div>
+        {showJump && (
+          <div className="pointer-events-none absolute bottom-3 right-4 z-10">
+            <div className="pointer-events-auto">
+              <FoodJumpFabs
+                onUp={() => jumpTo(0)}
+                onDown={() => jumpTo(listRef.current?.scrollHeight ?? 0)}
+              />
+            </div>
+          </div>
         )}
       </div>
 
@@ -128,6 +204,29 @@ export function FoodChat({ session }: { session: PrepSession }) {
         </form>
       </div>
     </div>
+  )
+}
+
+function FoodJumpFabs({ onUp, onDown }: { onUp: () => void; onDown: () => void }) {
+  const { t } = useLang()
+  return (
+    <div className="flex flex-col gap-1.5">
+      <JumpCircle label={t('food.jumpTop')} up onClick={onUp} />
+      <JumpCircle label={t('food.jumpLatest')} up={false} onClick={onDown} />
+    </div>
+  )
+}
+
+function JumpCircle({ label, up, onClick }: { label: string; up: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="grid h-9 w-9 place-items-center rounded-full bg-white shadow-[0_3px_12px_rgba(28,28,30,0.14)]"
+    >
+      <ArrowDown size={16} strokeWidth={2.6} className={`text-teal-deep ${up ? 'rotate-180' : ''}`} />
+    </button>
   )
 }
 
