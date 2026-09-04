@@ -127,7 +127,7 @@ const EN = {
   'tl.noEvents': 'Nothing scheduled this day.',
   'tl.today': 'Today',
   'tl.selected': 'Selected',
-  'tl.scopeDay': 'Colonoscopy',
+  'tl.scopeDay': 'Colonoscopy day',
   'tl.hasSteps': 'Prep due',
   'kind.diet': 'Diet',
   'kind.med': 'Medicine',

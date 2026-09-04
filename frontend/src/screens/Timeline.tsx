@@ -49,21 +49,25 @@ export function Timeline({ session }: { session: PrepSession }) {
   const events = buildTimeline(session)
   const now = new Date()
   const nextId = events.find((e) => isAfter(e.at, now))?.id
-  const next = events.find((e) => isAfter(e.at, now)) ?? events[events.length - 1]
   const days = useMemo(() => groupByDay(events), [events])
 
   const [view, setView] = useState<'list' | 'calendar'>('list')
-  const [picked, setPicked] = useState(() => startOfDay(next?.at ?? now))
+  const procedureDay = useMemo(() => {
+    const [y, m, d] = session.date.split('-').map(Number)
+    return new Date(y, m - 1, d)
+  }, [session.date])
+  const [picked, setPicked] = useState(() => {
+    const today = startOfDay(new Date())
+    const [y, m, d] = session.date.split('-').map(Number)
+    const scope = new Date(y, m - 1, d)
+    return isAfter(today, scope) ? scope : today
+  })
 
   const eventDays = useMemo(
     () =>
       events.map((e) => startOfDay(e.at)).filter((day, i, all) => all.findIndex((d) => isSameDay(d, day)) === i),
     [events],
   )
-  const procedureDay = useMemo(() => {
-    const [y, m, d] = session.date.split('-').map(Number)
-    return new Date(y, m - 1, d)
-  }, [session.date])
   const startMonth = events[0] ? startOfMonth(events[0].at) : undefined
   const endMonth = events.length ? startOfMonth(events[events.length - 1].at) : undefined
   const dayEvents = events.filter((e) => isSameDay(e.at, picked))
@@ -94,11 +98,15 @@ export function Timeline({ session }: { session: PrepSession }) {
         <div className="mt-2">
           {days.map((group) => (
             <section key={group.day.toISOString()} className="mt-1">
-              <DayHeader day={group.day} />
+              <DayHeader day={group.day} procedureDay={procedureDay} />
               <ol
                 className={cn(
                   'relative ml-2 border-l pl-5 pt-2',
-                  isToday(group.day) ? 'border-teal/40' : 'border-line',
+                  isToday(group.day)
+                    ? 'border-teal/40'
+                    : isSameDay(group.day, procedureDay)
+                      ? 'border-navy/25'
+                      : 'border-line',
                 )}
               >
                 {group.events.map((event) => (
@@ -144,7 +152,7 @@ export function Timeline({ session }: { session: PrepSession }) {
             />
             <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-2 pb-1 text-[11px] font-semibold text-muted">
               <span className="inline-flex items-center gap-1.5">
-                <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-[11px] font-bold text-teal-deep shadow-[inset_0_0_0_1.5px_#00c7be]">
+                <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-[11px] font-bold text-teal-deep shadow-[0_0_0_2px_#00c7be]">
                   12
                 </span>
                 {t('tl.today')}
@@ -174,7 +182,7 @@ export function Timeline({ session }: { session: PrepSession }) {
             <p className="mt-4 text-[14px] text-ink-soft">{t('tl.noEvents')}</p>
           ) : (
             <div className="mt-2">
-              <DayHeader day={picked} sticky={false} />
+              <DayHeader day={picked} sticky={false} procedureDay={procedureDay} />
               <div className="grid gap-3">
                 {dayEvents.map((event) => (
                   <div key={event.id}>
@@ -191,23 +199,39 @@ export function Timeline({ session }: { session: PrepSession }) {
   )
 }
 
-function DayHeader({ day, sticky = true }: { day: Date; sticky?: boolean }) {
+function DayHeader({
+  day,
+  sticky = true,
+  procedureDay,
+}: {
+  day: Date
+  sticky?: boolean
+  procedureDay?: Date
+}) {
   const { t, lang } = useLang()
   const today = isToday(day)
+  const scope = procedureDay ? isSameDay(day, procedureDay) : false
+  const until = scope && !today ? fromNowDays(day, new Date(), t) : ''
   return (
     <h2
       className={cn(
         'flex items-center gap-2 bg-paper py-2 font-display text-[20px] tracking-tight',
-        today ? 'text-teal-deep' : 'text-ink',
+        today ? 'text-teal-deep' : scope ? 'text-navy' : 'text-ink',
         sticky && 'sticky top-0 z-10 -mx-5 px-5',
       )}
     >
+      <span className="min-w-0 truncate">{format(day, 'EEE d MMM', { locale: DATE_LOCALES[lang] })}</span>
       {today && (
-        <span className="rounded-full bg-teal px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+        <span className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wide text-teal-deep shadow-[inset_0_0_0_1.5px_#00c7be]">
           {t('tl.today')}
         </span>
       )}
-      {format(day, 'EEE d MMM', { locale: DATE_LOCALES[lang] })}
+      {scope && (
+        <span className="shrink-0 rounded-full bg-navy px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+          {t('tl.scopeDay')}
+        </span>
+      )}
+      {until ? <span className="ml-auto shrink-0 text-[12px] font-semibold text-muted">{until}</span> : null}
     </h2>
   )
 }
