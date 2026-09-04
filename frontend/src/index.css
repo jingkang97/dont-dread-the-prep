@@ -57,6 +57,37 @@ body {
   height: 100svh;
 }
 
+html[data-phone-rotate] {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html[data-phone-rotate] body {
+  overflow: hidden;
+}
+
+html[data-phone-rotate="-90"] #root {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100dvh;
+  height: 100dvw;
+  overflow: hidden;
+  transform: rotate(-90deg);
+  transform-origin: left top;
+}
+
+html[data-phone-rotate="90"] #root {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  width: 100dvh;
+  height: 100dvw;
+  overflow: hidden;
+  transform: rotate(90deg);
+  transform-origin: left top;
+}
+
 .font-display {
   letter-spacing: -0.03em;
   font-weight: 700;
