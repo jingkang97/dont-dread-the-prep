@@ -22,6 +22,7 @@ import { HOSPITALS } from './data/hospitals'
 import { SessionBar } from './components/SessionBar'
 import { PitchRail } from './components/PitchRail'
 import { AppointmentChooser, ChangeDatePanel, StartOverSheet } from './components/AppointmentEdit'
+import { ShortcutSheet } from './components/ShortcutSheet'
 import { easeOut } from './lib/motion'
 import { DATE_LOCALES } from './lib/dateLocale'
 import { useLang } from './i18n/LanguageContext'
@@ -32,6 +33,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('onboarding')
   const [ready, setReady] = useState(false)
   const [edit, setEdit] = useState<'off' | 'choose' | 'date' | 'restart'>('off')
+  const [shortcut, setShortcut] = useState<'off' | 'ios' | 'android'>('off')
 
   useEffect(() => {
     const existing = loadSession()
@@ -85,14 +87,20 @@ export default function App() {
             <div className="relative min-h-0 flex-1">
               <AnimatePresence initial={false}>
                 <motion.div
-                  key={screen}
+                  key={
+                    screen === 'home'
+                      ? `home-${session.date}-${session.slot}-${session.reportingTime}`
+                      : screen
+                  }
                   className="absolute inset-0 overflow-y-auto overscroll-y-contain"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.16, ease: easeOut }}
                 >
-              {screen === 'home' && <Home session={session} onOpen={setScreen} />}
+              {screen === 'home' && (
+                <Home session={session} onOpen={setScreen} onShortcut={setShortcut} />
+              )}
               {screen === 'timeline' && <Timeline session={session} />}
               {screen === 'food' && <FoodChat session={session} />}
               {screen === 'stool' && (
@@ -136,6 +144,13 @@ export default function App() {
                   setEdit('off')
                   setScreen('onboarding')
                 }}
+              />
+            )}
+            {shortcut !== 'off' && (
+              <ShortcutSheet
+                key={`shortcut-${shortcut}`}
+                initialOs={shortcut}
+                onClose={() => setShortcut('off')}
               />
             )}
             </AnimatePresence>
