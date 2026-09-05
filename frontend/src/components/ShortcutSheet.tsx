@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { motion } from 'motion/react'
 import { useLang } from '../i18n/LanguageContext'
 import type { StringKey } from '../i18n/strings'
-import { cn } from '../lib/cn'
 import { easeOut } from '../lib/motion'
 import { PrimaryButton } from './ui'
+import { SegmentedControl } from './SegmentedControl'
 import shortcutIos from '../assets/shortcut-ios.png'
 import shortcutAndroid from '../assets/shortcut-android.png'
 
@@ -51,21 +51,17 @@ export function ShortcutSheet({
       >
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 pb-3 pt-5">
           <p className="font-display text-[22px] leading-tight tracking-tight text-ink">{t('home.shortcut')}</p>
-          <div className="mt-3 flex h-9 rounded-[10px] bg-black/5 p-0.75">
-            {(['ios', 'android'] as const).map((id) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setOs(id)}
-                className={cn(
-                  'flex min-w-0 flex-1 items-center justify-center rounded-lg px-1 text-[13px] font-semibold transition',
-                  os === id ? 'bg-white text-ink shadow-sm' : 'text-muted',
-                )}
-              >
-                {t(id === 'ios' ? 'home.shortcutIosTab' : 'home.shortcutAndroidTab')}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            group="shortcut-os"
+            value={os}
+            onChange={setOs}
+            className="mt-3 h-9"
+            buttonClassName="flex items-center justify-center"
+            options={[
+              { id: 'ios', label: t('home.shortcutIosTab') },
+              { id: 'android', label: t('home.shortcutAndroidTab') },
+            ]}
+          />
           <img
             src={ios ? shortcutIos : shortcutAndroid}
             alt={t(ios ? 'home.shortcutImgIos' : 'home.shortcutImgAndroid')}

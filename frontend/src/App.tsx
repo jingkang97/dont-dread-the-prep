@@ -89,7 +89,7 @@ export default function App() {
               data-app-pane
               className={cn('relative min-h-0 flex-1', screen !== 'timeline' && '[&_[data-tl-fab]]:hidden')}
             >
-              <AnimatePresence initial={false}>
+              <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={
                     screen === 'home'
@@ -100,12 +100,12 @@ export default function App() {
                   }
                   className={cn(
                     'absolute inset-0 overscroll-y-contain',
-                    screen === 'timeline' ? 'overflow-hidden' : 'overflow-y-auto',
+                    screen === 'timeline' || screen === 'food' ? 'overflow-hidden' : 'overflow-y-auto',
                   )}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.16, ease: easeOut }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.22, ease: easeOut }}
                 >
               {screen === 'home' && (
                 <Home session={session} onOpen={setScreen} onShortcut={setShortcut} />
