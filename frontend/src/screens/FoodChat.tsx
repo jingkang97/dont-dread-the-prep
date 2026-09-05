@@ -9,7 +9,7 @@ import type { StringKey } from '../i18n/strings'
 import { loadFoodChat, saveFoodChat, type FoodChatMsg } from '../lib/foodChat'
 import { clearFoodChatUi, loadFoodChatUi, saveFoodChatUi } from '../lib/foodChatUi'
 import type { PrepSession } from '../lib/session'
-import { fadeY } from '../lib/motion'
+import { easeOut, fadeY } from '../lib/motion'
 
 function scrollToLatestTurn(el: HTMLElement, behavior: ScrollBehavior) {
   const turn = el.querySelector('[data-food-turn]')
@@ -25,6 +25,21 @@ function canJump(el: HTMLElement) {
   return el.scrollHeight - el.clientHeight >= 32
 }
 
+function animateScrollTop(el: HTMLElement, ms: number) {
+  const from = el.scrollTop
+  if (from <= 2) return () => {}
+  const start = performance.now()
+  let raf = 0
+  const tick = (now: number) => {
+    const t = Math.min(1, (now - start) / ms)
+    const eased = 1 - (1 - t) ** 3
+    el.scrollTop = from * (1 - eased)
+    if (t < 1) raf = requestAnimationFrame(tick)
+  }
+  raf = requestAnimationFrame(tick)
+  return () => cancelAnimationFrame(raf)
+}
+
 export function FoodChat({ session }: { session: PrepSession }) {
   const { t } = useLang()
   const hospital = HOSPITALS[session.hospitalId]
@@ -34,6 +49,9 @@ export function FoodChat({ session }: { session: PrepSession }) {
   const skipEnter = useRef(messages.length > 0)
   const prevLen = useRef(messages.length)
   const [showJump, setShowJump] = useState(false)
+  const [clearing, setClearing] = useState(false)
+  const clearingRef = useRef(false)
+  const clearAnim = useRef<() => void>(() => {})
 
   const intro: ChatAnswer = {
     verdict: 'ask',
@@ -55,6 +73,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
     const measure = () => setShowJump(canJump(el))
 
     const added = messages.length > prevLen.current
+    const cleared = prevLen.current > 0 && messages.length === 0
     prevLen.current = messages.length
 
     const alignTurn = (behavior: ScrollBehavior) => {
@@ -65,7 +84,11 @@ export function FoodChat({ session }: { session: PrepSession }) {
 
     if (added) {
       skipEnter.current = false
-    } else {
+    } else if (cleared) {
+      skipEnter.current = true
+      saveFoodChatUi(session.id, { listTop: 0, landed: true })
+      measure()
+    } else if (!clearingRef.current) {
       const saved = loadFoodChatUi(session.id)
       if (saved?.landed) {
         el.scrollTo({ top: saved.listTop, behavior: 'auto' })
@@ -80,7 +103,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
       : [requestAnimationFrame(measure)]
 
     const onScroll = () => {
-      saveFoodChatUi(session.id, { listTop: el.scrollTop, landed: true })
+      if (!clearingRef.current) saveFoodChatUi(session.id, { listTop: el.scrollTop, landed: true })
       measure()
     }
     el.addEventListener('scroll', onScroll, { passive: true })
@@ -108,6 +131,27 @@ export function FoodChat({ session }: { session: PrepSession }) {
     listRef.current?.scrollTo({ top, behavior: 'smooth' })
   }
 
+  function finishClear() {
+    clearAnim.current()
+    clearingRef.current = false
+    skipEnter.current = true
+    setMessages([])
+    setClearing(false)
+    clearFoodChatUi()
+    saveFoodChatUi(session.id, { listTop: 0, landed: true })
+  }
+
+  function clearChat() {
+    if (clearingRef.current || messages.length === 0) return
+    const el = listRef.current
+    const from = el?.scrollTop ?? 0
+    const ms = Math.round(Math.min(420, Math.max(280, from * 0.35)))
+    clearingRef.current = true
+    setClearing(true)
+    if (el && from > 2) clearAnim.current = animateScrollTop(el, ms)
+    window.setTimeout(finishClear, ms)
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="px-5 pt-6">
@@ -116,13 +160,10 @@ export function FoodChat({ session }: { session: PrepSession }) {
             <SectionLabel>{t('food.kicker')}</SectionLabel>
             <h1 className="font-display mt-1 text-[28px] leading-tight text-navy">{t('food.title')}</h1>
           </div>
-          {messages.length > 0 && (
+          {messages.length > 0 && !clearing && (
             <button
               type="button"
-              onClick={() => {
-                setMessages([])
-                clearFoodChatUi()
-              }}
+              onClick={clearChat}
               className="mt-7 shrink-0 text-[13px] font-semibold text-teal-deep"
             >
               {t('food.clear')}
@@ -133,27 +174,36 @@ export function FoodChat({ session }: { session: PrepSession }) {
       </div>
 
       <div className="relative min-h-0 flex-1">
-        <div ref={listRef} className="h-full space-y-3 overflow-y-auto px-5 py-4">
+        <div ref={listRef} className="h-full min-h-0 space-y-3 overflow-y-auto overflow-anchor-none overscroll-y-contain px-5 py-4">
           <BotCard answer={intro} />
-          {messages.map((msg) =>
-            msg.role === 'user' ? (
-              <motion.div
-                key={msg.id}
-                data-food-turn={msg.id === lastUserId ? '' : undefined}
-                className="flex justify-end"
-                {...(skipEnter.current ? {} : fadeY)}
-              >
-                <div className="max-w-[85%] rounded-2xl rounded-br-md bg-navy px-3.5 py-2.5 text-[14px] text-white">
-                  {msg.labelKey ? t(msg.labelKey) : msg.text}
-                </div>
-              </motion.div>
-            ) : (
-              msg.answer && (
-                <motion.div key={msg.id} {...(skipEnter.current ? {} : fadeY)}>
-                  <BotCard answer={msg.answer} />
-                </motion.div>
-              )
-            ),
+          {messages.length > 0 && (
+            <motion.div
+              initial={false}
+              animate={{ opacity: clearing ? 0 : 1 }}
+              transition={{ duration: 0.32, ease: easeOut }}
+              className="grid gap-3"
+            >
+                {messages.map((msg) =>
+                  msg.role === 'user' ? (
+                    <motion.div
+                      key={msg.id}
+                      data-food-turn={msg.id === lastUserId ? '' : undefined}
+                      className="flex justify-end"
+                      {...(skipEnter.current ? {} : fadeY)}
+                    >
+                      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-navy px-3.5 py-2.5 text-[14px] text-white">
+                        {msg.labelKey ? t(msg.labelKey) : msg.text}
+                      </div>
+                    </motion.div>
+                  ) : (
+                    msg.answer && (
+                      <motion.div key={msg.id} {...(skipEnter.current ? {} : fadeY)}>
+                        <BotCard answer={msg.answer} />
+                      </motion.div>
+                    )
+                  ),
+                )}
+            </motion.div>
           )}
         </div>
         {showJump && (

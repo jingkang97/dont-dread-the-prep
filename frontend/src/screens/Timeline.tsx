@@ -13,6 +13,7 @@ import { buildTimeline, fromNowDays, resolveEventText, type EventKind, type Time
 import { loadTimelineUi, saveTimelineUi, type TimelineView } from '../lib/timelineUi'
 import { cn } from '../lib/cn'
 import { DATE_LOCALES } from '../lib/dateLocale'
+import { SegmentedControl } from '../components/SegmentedControl'
 
 const KIND_TONE: Record<EventKind, string> = {
   diet: 'bg-teal/15 text-teal-deep',
@@ -193,25 +194,19 @@ export function Timeline({ session }: { session: PrepSession }) {
       <div className="shrink-0 px-5 pt-6">
         <SectionLabel>{t('tl.for', { hospital: hospital.short })}</SectionLabel>
         <h1 className="font-display mt-1 text-[28px] leading-tight text-navy">{t('tl.title')}</h1>
-        <p className="mt-1.5 text-[13px] leading-snug text-ink-soft">{t('tl.lead')}</p>
       </div>
 
       <div data-tl-bar className="shrink-0 bg-paper px-5 py-2">
-        <div className="flex rounded-[10px] bg-black/5 p-[3px]">
-          {(['list', 'calendar'] as const).map((id) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setView(id)}
-              className={cn(
-                'min-w-0 flex-1 rounded-[8px] px-1 py-1.5 text-[13px] font-semibold transition',
-                view === id ? 'bg-white text-ink shadow-sm' : 'text-muted',
-              )}
-            >
-              {t(id === 'list' ? 'tl.list' : 'tl.calendar')}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          group="tl-view"
+          value={view}
+          onChange={setView}
+          buttonClassName="py-1.5"
+          options={[
+            { id: 'list', label: t('tl.list') },
+            { id: 'calendar', label: t('tl.calendar') },
+          ]}
+        />
       </div>
 
       <div data-tl-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 pb-28">

@@ -1,5 +1,6 @@
 import { addMonths, format, startOfMonth } from 'date-fns'
 import { MonthCalendar } from './MonthCalendar'
+import { SegmentedControl } from './SegmentedControl'
 import { Card } from './ui'
 import { useLang } from '../i18n/LanguageContext'
 import { cn } from '../lib/cn'
@@ -49,27 +50,32 @@ export function DateSlotPicker({
       </Card>
 
       <p className="mt-5 text-[13px] font-semibold text-navy">{t('on.session')}</p>
-      <div className="mt-2 flex rounded-[12px] bg-black/5 p-[3px]">
-        {(['am', 'pm'] as const).map((id) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() =>
-              onChange({
-                slot: id,
-                reportingTime: defaultReporting(id),
-              })
-            }
-            className={cn(
-              'min-h-[48px] min-w-0 flex-1 rounded-[10px] px-2 py-2 transition',
-              slot === id ? 'bg-white text-ink shadow-sm' : 'text-muted',
-            )}
-          >
-            <span className="block text-[15px] font-semibold">{t(id === 'am' ? 'on.am' : 'on.pm')}</span>
-            <span className="block text-[11px]">{t(id === 'am' ? 'on.amHint' : 'on.pmHint')}</span>
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        value={slot ?? 'am'}
+        onChange={(id) => onChange({ slot: id, reportingTime: defaultReporting(id) })}
+        className="mt-2 rounded-[12px]"
+        buttonClassName="min-h-[48px] px-2 py-2"
+        options={[
+          {
+            id: 'am',
+            label: (
+              <>
+                <span className="block text-[15px] font-semibold">{t('on.am')}</span>
+                <span className="block text-[11px] font-normal">{t('on.amHint')}</span>
+              </>
+            ),
+          },
+          {
+            id: 'pm',
+            label: (
+              <>
+                <span className="block text-[15px] font-semibold">{t('on.pm')}</span>
+                <span className="block text-[11px] font-normal">{t('on.pmHint')}</span>
+              </>
+            ),
+          },
+        ]}
+      />
 
       <p className="mt-5 text-[13px] font-semibold text-navy">{t('on.report')}</p>
       <div className="mt-2 grid grid-cols-3 gap-2">

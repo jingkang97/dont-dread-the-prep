@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { format } from 'date-fns'
-import { Camera, ChevronRight, Hospital } from 'lucide-react'
+import { Camera } from 'lucide-react'
 import { HOSPITAL_LIST, type HospitalId, type Slot } from '../data/hospitals'
 import { DateSlotPicker } from '../components/DateSlotPicker'
+import { HospitalPicker } from '../components/HospitalPicker'
 import { Card, GeneratingPane, GhostButton, PrimaryButton, SectionLabel } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
 import type { Lang, StringKey } from '../i18n/strings'
@@ -110,7 +111,7 @@ export function Onboarding({
       <header className="shrink-0 px-5 pb-4 pt-8">
         <p className="text-[13px] font-semibold text-teal-deep">{t('on.kicker')}</p>
         <h1 className="font-display mt-1 text-[34px] leading-[1.1] tracking-tight text-ink">{t('on.title')}</h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">{t('on.lead')}</p>
+        <p className="mt-3 text-[15px] leading-snug text-ink-soft">{t('on.lead')}</p>
       </header>
 
       <div className="relative min-h-0 flex-1">
@@ -133,45 +134,24 @@ export function Onboarding({
         {step === 1 && (
           <div>
             <SectionLabel>{t('on.step1')}</SectionLabel>
-            <div className="mt-3 grid gap-2.5">
-              {HOSPITAL_LIST.map((h) => (
-                <button
-                  key={h.id}
-                  type="button"
-                  onClick={() => {
-                    setDraft((d) => ({ ...d, hospitalId: h.id }))
-                    setStep(2)
-                  }}
-                  className={cn(
-                    'flex items-center gap-3 rounded-[20px] bg-paper-2 px-4 py-3.5 text-left transition',
-                    draft.hospitalId === h.id ? 'ring-2 ring-teal/40' : '',
-                  )}
-                >
-                  <span
-                    className="flex h-10 w-10 items-center justify-center rounded-xl text-white"
-                    style={{ background: h.accent }}
-                  >
-                    <Hospital size={18} />
-                  </span>
-                  <span className="flex-1">
-                    <span className="block text-[15px] font-semibold text-ink">{h.short}</span>
-                    <span className="block text-[12px] text-muted">
-                      {t(`hosp.${h.id}.name` as StringKey)} · {t(`hosp.${h.id}.prep` as StringKey)}
-                    </span>
-                  </span>
-                  <ChevronRight size={18} className="text-muted" />
-                </button>
-              ))}
-            </div>
             <button
               type="button"
               onClick={runScan}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-teal/40 bg-cream px-4 py-3.5 text-[14px] font-semibold text-teal-deep"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-teal/40 bg-cream px-4 py-3.5 text-[14px] font-semibold text-teal-deep"
             >
               <Camera size={18} />
               {t('on.scanCta')}
             </button>
             <p className="mt-2 text-center text-[11px] text-muted">{t('on.scanNote')}</p>
+            <div className="mt-5">
+              <HospitalPicker
+                selected={draft.hospitalId}
+                onPick={(hospitalId) => {
+                  setDraft((d) => ({ ...d, hospitalId }))
+                  setStep(2)
+                }}
+              />
+            </div>
           </div>
         )}
 
