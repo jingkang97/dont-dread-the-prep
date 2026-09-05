@@ -117,26 +117,33 @@ export function StartOverSheet({
 
 export function ChangeDatePanel({
   session,
+  error,
+  busy: busyFromParent,
   onCancel,
   onSave,
 }: {
   session: PrepSession
+  error?: string | null
+  busy?: boolean
   onCancel: () => void
-  onSave: (next: { date: string; slot: Slot; reportingTime: string }) => void
+  onSave: (next: { date: string; slot: Slot; reportingTime: string }) => void | Promise<void>
 }) {
   const { t } = useLang()
   const hospital = HOSPITALS[session.hospitalId]
   const [date, setDate] = useState(session.date)
   const [slot, setSlot] = useState<Slot>(session.slot)
   const [reportingTime, setReportingTime] = useState(session.reportingTime)
-  const [busy, setBusy] = useState(false)
+  const [localBusy, setLocalBusy] = useState(false)
+  const busy = busyFromParent ?? localBusy
 
-  function save() {
+  async function save() {
     if (busy) return
-    setBusy(true)
-    window.setTimeout(() => {
-      onSave({ date, slot, reportingTime })
-    }, 1200)
+    setLocalBusy(true)
+    try {
+      await onSave({ date, slot, reportingTime })
+    } finally {
+      setLocalBusy(false)
+    }
   }
 
   return (
@@ -179,8 +186,13 @@ export function ChangeDatePanel({
                     }}
                   />
                 </div>
+                {error ? (
+                  <p className="mt-3 text-[13px] leading-relaxed text-no" role="alert">
+                    {error}
+                  </p>
+                ) : null}
                 <div className="mt-5 grid gap-2">
-                  <PrimaryButton onClick={save}>{t('app.saveDate')}</PrimaryButton>
+                  <PrimaryButton onClick={() => void save()}>{t('app.saveDate')}</PrimaryButton>
                   <button
                     type="button"
                     onClick={onCancel}

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown, ChevronRight, Hospital, Search } from 'lucide-react'
 import {
   PICKER_CLUSTERS,
+  canStartSession,
   clustersIn,
   hospitalsFor,
   matchHospital,
@@ -25,9 +26,12 @@ const SIZES: { id: PickerSize; label: StringKey }[] = [
 export function HospitalPicker({
   selected,
   onPick,
+  selectableIds,
 }: {
   selected: HospitalId | null
   onPick: (id: HospitalId) => void
+  /** When set, only these hospital ids create a real session; others show the preview note. */
+  selectableIds?: HospitalId[] | null
 }) {
   const { t } = useLang()
   const [size, setSize] = useState<PickerSize>('now')
@@ -57,7 +61,7 @@ export function HospitalPicker({
   }
 
   function choose(h: PickerHospital) {
-    if (h.hospitalId) {
+    if (canStartSession(h, selectableIds)) {
       setPreviewNote(false)
       onPick(h.hospitalId)
       return

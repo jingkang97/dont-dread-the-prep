@@ -217,6 +217,21 @@ export const HOSPITALS: Record<HospitalId, Hospital> = {
 
 export const HOSPITAL_LIST = Object.values(HOSPITALS)
 
+/**
+ * Hospitals seeded in the backend MVP (`mvp.seed.sql` / sessions API).
+ * Picker “extras” and SKH/CGH stay in the UI catalog but cannot create sessions yet.
+ */
+export const MVP_HOSPITAL_IDS = ['sgh', 'nccs', 'ttsh'] as const satisfies readonly HospitalId[]
+
+export type MvpHospitalId = (typeof MVP_HOSPITAL_IDS)[number]
+
+export function isMvpHospitalId(id: string): id is MvpHospitalId {
+  return (MVP_HOSPITAL_IDS as readonly string[]).includes(id)
+}
+
+/** @deprecated Prefer MVP_HOSPITAL_IDS — same list. */
+export const API_HOSPITAL_IDS: HospitalId[] = [...MVP_HOSPITAL_IDS]
+
 export function formatPhone(phone: string) {
   if (phone.length === 8) return `${phone.slice(0, 4)} ${phone.slice(4)}`
   return phone

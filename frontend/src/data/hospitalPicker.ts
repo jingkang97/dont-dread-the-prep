@@ -1,26 +1,38 @@
-import { HOSPITAL_LIST, type Hospital, type HospitalId } from './hospitals'
+import {
+  HOSPITAL_LIST,
+  isMvpHospitalId,
+  type Hospital,
+  type HospitalId,
+} from './hospitals'
 
 export type PickerSize = 'now' | 'large'
 
+export const PICKER_CLUSTERS = ['SingHealth', 'NHG', 'NUHS'] as const
+export type PickerCluster = (typeof PICKER_CLUSTERS)[number]
+
+/**
+ * Catalog row for the onboarding hospital picker.
+ * - `hospitalId` set → real PrepPath hospital (from `hospitals.ts`)
+ * - no `hospitalId` → preview-only extra (NUH, KTPH, …)
+ * Session create still requires MVP ids via `canStartSession` / `selectableIds`.
+ */
 export type PickerHospital = {
   key: string
   short: string
   name: string
-  cluster: string
+  cluster: PickerCluster
   prep: string
   accent: string
   hospitalId?: HospitalId
 }
 
-export const PICKER_CLUSTERS = ['SingHealth', 'NHG', 'NUHS'] as const
-export type PickerCluster = (typeof PICKER_CLUSTERS)[number]
-
 function fromReal(h: Hospital): PickerHospital {
+  const cluster = h.cluster as PickerCluster
   return {
     key: h.id,
     short: h.short,
     name: h.name,
-    cluster: h.cluster,
+    cluster,
     prep: h.prepAgentLabel,
     accent: h.accent,
     hospitalId: h.id,
@@ -76,4 +88,17 @@ export function matchHospital(h: PickerHospital, q: string) {
   const n = q.trim().toLowerCase()
   if (!n) return true
   return `${h.short} ${h.name} ${h.cluster} ${h.prep}`.toLowerCase().includes(n)
+}
+
+/**
+ * Whether picking this row should call onboarding `onPick` / create a session.
+ * Aligns with `MVP_HOSPITAL_IDS` in `hospitals.ts` and Onboarding’s `selectableIds`.
+ */
+export function canStartSession(
+  h: PickerHospital,
+  selectableIds?: readonly HospitalId[] | null,
+): h is PickerHospital & { hospitalId: HospitalId } {
+  if (!h.hospitalId) return false
+  if (selectableIds == null) return isMvpHospitalId(h.hospitalId)
+  return selectableIds.includes(h.hospitalId)
 }
