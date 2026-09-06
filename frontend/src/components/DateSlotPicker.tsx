@@ -26,11 +26,13 @@ export function DateSlotPicker({
   slot,
   reportingTime,
   onChange,
+  dateLabel,
 }: {
   date: string
   slot: Slot | null
   reportingTime: string
   onChange: (next: { date?: string; slot?: Slot; reportingTime?: string }) => void
+  dateLabel?: string
 }) {
   const { t, lang } = useLang()
   const selected = parseYmd(date)
@@ -38,7 +40,7 @@ export function DateSlotPicker({
 
   return (
     <div>
-      <p className="text-[13px] font-semibold text-navy">{t('on.date')}</p>
+      <p className="text-[13px] font-semibold text-navy">{dateLabel ?? t('on.date')}</p>
       <p className="font-display mt-1 text-[22px] tracking-tight text-ink">{format(selected, 'EEE d MMM yyyy', { locale: DATE_LOCALES[lang] })}</p>
       <Card className="mt-3 px-1 py-2">
         <MonthCalendar
