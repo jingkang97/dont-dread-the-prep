@@ -7,13 +7,11 @@ ALTER TABLE protocols
 
 CREATE TYPE event_kind AS ENUM (
   'diet',
-  'med',
   'dose',
   'meal',
   'fast',
   'arrive',
-  'check',
-  'gap'
+  'stool'
 );
 
 -- Absolute clock on procedure calendar vs relative to reporting_time.

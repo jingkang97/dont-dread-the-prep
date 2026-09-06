@@ -17,13 +17,13 @@ INSERT INTO protocols (
 (
   'ttsh-picoprep',
   'picoprep',
-  'Picoprep · 2 sachets (8am–2pm PDF)',
+  'Picoprep · 2 sachets (brochure page 4)',
   3,
   'Light dinner until 6:30pm on the eve of scope',
-  'TTSH Picoprep-only path (brochure page 4, 8am–2pm). Same prep agent as SGH/NCCS; different dosing (2 sachets ~2–3pm and 8–9pm). No food after 6:30pm. Report 2h before procedure.',
+  'TTSH Picoprep-only path (brochure page 4). Two sachets the day before: mix each with 150 ml warm water (2–3pm and 8–9pm), then drink at least 1 litre of plain water. Light dinner 6–6:30pm; no food after 6:30pm. Stop fluids 2 hours before the procedure.',
   2,
   'yes', 'ask', 'no', 'yes',
-  'TTSH issues separate PDFs per appointment slot. This protocol is Picoprep-only (page 4), not Picoprep+PEG.'
+  'This protocol follows brochure page 4 (Picoprep only), not pages 5–6 (Picoprep + PEG). Medications to stop are handwritten on the form.'
 ),
 (
   'ttsh-picoprep-peg',

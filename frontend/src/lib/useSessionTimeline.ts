@@ -1,24 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getApiTimeline, type ApiEventKind } from './api'
+import { getApiTimeline } from './api'
 import type { PrepSession } from './session'
-import type { EventKind, TimelineEvent } from './timeline'
-
-function isEventKind(value: string): value is EventKind {
-  return (
-    value === 'diet' ||
-    value === 'med' ||
-    value === 'dose' ||
-    value === 'meal' ||
-    value === 'fast' ||
-    value === 'arrive' ||
-    value === 'check' ||
-    value === 'gap'
-  )
-}
-
-function fromApiKind(kind: ApiEventKind): EventKind {
-  return isEventKind(kind) ? kind : 'gap'
-}
+import type { TimelineEvent } from './timeline'
 
 export function useSessionTimeline(session: PrepSession) {
   const [events, setEvents] = useState<TimelineEvent[]>([])
@@ -38,11 +21,12 @@ export function useSessionTimeline(session: PrepSession) {
           data.events.map((e) => ({
             id: e.id,
             at: new Date(e.at),
-            kind: fromApiKind(e.kind),
+            kind: e.kind,
             title: e.title,
             detail: e.detail,
             source: data.source_label,
             tentative: e.tentative,
+            agent: e.agent,
           })),
         )
       } catch (err) {

@@ -87,6 +87,7 @@ def get_timeline(db: DbSession, public_code: str) -> TimelineOut:
 
     events: list[TimelineEventOut] = []
     for step in steps:
+        kind = step.kind
         at = _resolve_at(
             procedure_date=row.procedure_date,
             reporting_time=row.reporting_time,
@@ -99,7 +100,7 @@ def get_timeline(db: DbSession, public_code: str) -> TimelineOut:
             TimelineEventOut(
                 id=step.step_key,
                 at=at,
-                kind=step.kind,  # type: ignore[arg-type]
+                kind=kind,  # type: ignore[arg-type]
                 title=step.title,
                 detail=step.detail,
                 tentative=step.tentative,

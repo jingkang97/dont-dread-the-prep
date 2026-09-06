@@ -6,7 +6,7 @@
 --   report_relative → reporting_time − hours_before_report
 
 -- Safe if event_kind was created before 'check' existed; no-op on a fresh install.
-ALTER TYPE event_kind ADD VALUE IF NOT EXISTS 'check';
+ALTER TYPE event_kind ADD VALUE IF NOT EXISTS 'stool';
 
 -- ---------------------------------------------------------------------------
 -- Protocol metadata extras
@@ -14,7 +14,10 @@ ALTER TYPE event_kind ADD VALUE IF NOT EXISTS 'check';
 UPDATE protocols SET source_label = 'SGH/NCCS yellow form'
 WHERE name = 'sgh-nccs-picoprep';
 
-UPDATE protocols SET source_label = 'TTSH brochure March 2026 · Picoprep-only (page 4)'
+UPDATE protocols SET
+  source_label = 'TTSH brochure March 2026 · Picoprep-only (page 4)',
+  prep_agent_label = 'Picoprep · 2 sachets (brochure page 4)',
+  last_meal_note = 'TTSH Picoprep-only path (brochure page 4). Two sachets the day before: mix each with 150 ml warm water (2–3pm and 8–9pm), then drink at least 1 litre of plain water. Light dinner 6–6:30pm; no food after 6:30pm. Stop fluids 2 hours before the procedure.'
 WHERE name = 'ttsh-picoprep';
 
 UPDATE protocols SET source_label = 'TTSH brochure March 2026 · Picoprep+PEG (pages 5–6)'
@@ -37,7 +40,7 @@ VALUES
   1,
   '2026-03',
   DATE '2026-03-01',
-  'TTSH Picoprep-only path · 8am–2pm / 2pm–5pm slot PDFs.'
+  'TTSH Picoprep-only · brochure page 4. Both sachets the day before (2–3pm and 8–9pm).'
 ),
 (
   (SELECT id FROM protocols WHERE name = 'ttsh-picoprep-peg'),
@@ -103,17 +106,17 @@ CROSS JOIN (
    'Light breakfast (afternoon slot — confirm)',
    'Afternoon packet times are not printed on the yellow form. Confirm handwritten times at counselling.',
    true, 70, NULL, NULL, NULL, NULL),
-  ('p3-pm', 'gap', 'pm', 'day_clock', 0, '08:00', NULL,
+  ('p3-pm', 'dose', 'pm', 'day_clock', 0, '08:00', NULL,
    'Picoprep packet 3 (handwritten / confirm)',
    'Not printed for afternoon slots. Follow the time written on your form, or ask your care team.',
    true, 80, '3', 150, 1000, 'picoprep'),
-  ('p4-pm', 'gap', 'pm', 'report_relative', NULL, NULL, 5.0,
+  ('p4-pm', 'dose', 'pm', 'report_relative', NULL, NULL, 5.0,
    'Picoprep packet 4 (about 5h before reporting)',
    'Guide only — last dose often 2–5 hours before the procedure. Prefer the time written on your form.',
    true, 90, '4', 150, 1000, 'picoprep'),
 
   -- shared close
-  ('stool-check', 'check', 'any', 'report_relative', NULL, NULL, 3.0,
+  ('stool-check', 'stool', 'any', 'report_relative', NULL, NULL, 3.0,
    'Check your stool against the colour scale',
    'The SGH/NCCS form has no stool chart. This guide adapts TTSH''s 6-point scale. If stool still looks like stages 1–4, call the number below or report 2 hours early.',
    false, 100, NULL, NULL, NULL, NULL),
@@ -134,8 +137,20 @@ WHERE p.name = 'sgh-nccs-picoprep'
   AND v.version_id = 1;
 
 -- ---------------------------------------------------------------------------
--- TTSH Picoprep-only (2 sachets, slot-specific PDFs)
+-- TTSH Picoprep-only (brochure page 4 · 2 sachets, both the day before)
 -- ---------------------------------------------------------------------------
+UPDATE protocol_versions v
+SET notes = 'TTSH Picoprep-only · brochure page 4. Both sachets the day before (2–3pm and 8–9pm).'
+FROM protocols p
+WHERE p.id = v.protocol_id AND p.name = 'ttsh-picoprep' AND v.version_id = 1;
+
+DELETE FROM protocol_steps
+WHERE protocol_version_id IN (
+  SELECT v.id FROM protocol_versions v
+  JOIN protocols p ON p.id = v.protocol_id
+  WHERE p.name = 'ttsh-picoprep' AND v.version_id = 1
+);
+
 INSERT INTO protocol_steps (
   protocol_version_id, step_key, kind, slot, timing_mode,
   day_offset, clock_time, hours_before_report,
@@ -152,46 +167,50 @@ FROM protocol_versions v
 JOIN protocols p ON p.id = v.protocol_id
 CROSS JOIN (
   VALUES
+  -- Page 4 does not reprint the 3-day diet list; keep the protocol diet_days lead-in.
   ('diet-start', 'diet', 'any', 'day_clock', -3, '00:00', NULL,
    'Start low-residue diet (3 days)',
-   'Follow the TTSH diet list until your last meal.',
+   'A low-residue diet is a temporary eating plan that limits high-fiber foods and other hard-to-digest items to reduce the amount of undigested material passing through your large intestine.',
    false, 30, NULL, NULL, NULL, NULL),
-  ('last-meal-eve', 'meal', 'any', 'day_clock', -1, '18:30', NULL,
-   'Last meal',
-   'Light dinner until 6:30pm on the eve of scope.',
+
+  -- 1 DAY BEFORE
+  ('breakfast-eve', 'meal', 'any', 'day_clock', -1, '07:00', NULL,
+   'Light low-fibre breakfast',
+   'As on brochure page 4. Follow the TTSH low-fibre diet list.',
+   false, 35, NULL, NULL, NULL, NULL),
+  ('lunch-eve', 'meal', 'any', 'day_clock', -1, '12:00', NULL,
+   'Light low-fibre lunch',
+   'As on brochure page 4. Follow the TTSH low-fibre diet list.',
    false, 40, NULL, NULL, NULL, NULL),
-
-  -- AM (8am–2pm PDF)
-  ('ttsh-p1', 'dose', 'am', 'day_clock', -1, '18:00', NULL,
-   'Picoprep (eve)',
-   'Take the evening Picoprep dose as on the 8am–2pm PDF.',
+  ('ttsh-p1', 'dose', 'any', 'day_clock', -1, '14:00', NULL,
+   'Picoprep packet 1 (2–3pm)',
+   'Mix 1 packet of powder with 150 ml of warm water and stir for 2 to 3 minutes. Then drink at least 1 litre or 2 cups of plain water (1 cup = 500 ml), using the PICOPREP cup given.',
    false, 50, '1', 150, 1000, 'picoprep'),
-  ('ttsh-p2', 'dose', 'am', 'day_clock', 0, '05:00', NULL,
-   'Picoprep (morning)',
-   'Take the morning Picoprep dose as on the 8am–2pm PDF.',
-   false, 60, '2', 150, 1000, 'picoprep'),
+  ('last-meal-eve', 'meal', 'any', 'day_clock', -1, '18:00', NULL,
+   'Light low-fibre dinner',
+   'Eat between 6pm and 6:30pm. No more food allowed after 6:30pm.',
+   false, 60, NULL, NULL, NULL, NULL),
+  ('ttsh-p2', 'dose', 'any', 'day_clock', -1, '20:00', NULL,
+   'Picoprep packet 2 (8–9pm)',
+   'Mix 1 packet of powder with 150 ml of warm water and stir for 2 to 3 minutes. Then drink at least 1 litre or 2 cups of plain water (1 cup = 500 ml), using the PICOPREP cup given.',
+   false, 70, '2', 150, 1000, 'picoprep'),
 
-  -- PM (2pm–5pm PDF)
-  ('ttsh-p1-pm', 'dose', 'pm', 'day_clock', 0, '06:00', NULL,
-   'Picoprep (first dose · afternoon slot)',
-   'Follow the 2pm–5pm PDF timing for the first sachet.',
-   false, 50, '1', 150, 1000, 'picoprep'),
-  ('ttsh-p2-pm', 'dose', 'pm', 'report_relative', NULL, NULL, 5.0,
-   'Picoprep (second dose · ~5h before reporting)',
-   'Confirm exact time on your slot PDF; this is a guide when the PDF ties the last dose to arrival.',
-   true, 60, '2', 150, 1000, 'picoprep'),
-
-  ('stool-check', 'check', 'any', 'report_relative', NULL, NULL, 3.0,
+  -- ON THE DAY
+  ('no-food-midnight', 'meal', 'any', 'day_clock', 0, '00:00', NULL,
+   'No food from midnight',
+   'No food allowed from 12 midnight onwards.',
+   false, 80, NULL, NULL, NULL, NULL),
+  ('stool-check', 'stool', 'any', 'report_relative', NULL, NULL, 3.0,
    'Check your stool against the colour scale',
    'If stool still looks like stages 1–4, report 2 hours early and call Endo PACE / the endoscopy centre.',
    false, 100, NULL, NULL, NULL, NULL),
   ('fast', 'fast', 'any', 'report_relative', NULL, NULL, 2.0,
    'Stop all fluids',
-   'Clear fluids only until this time, then nothing by mouth.',
+   'Stop drinking fluids including plain water. This is 2 hours before the procedure on brochure page 4.',
    false, 110, NULL, NULL, NULL, NULL),
   ('arrive', 'arrive', 'any', 'report_relative', NULL, NULL, 0.0,
-   'Report to endoscopy',
-   'Arrive at your reporting time (TTSH: typically 2h before procedure on the AM path).',
+   'Report to Endoscopy Centre',
+   'Arrive at the reporting time written on your form.',
    false, 120, NULL, NULL, NULL, NULL)
 ) AS s(
   step_key, kind, slot, timing_mode, day_offset, clock_time, hours_before_report,
@@ -240,7 +259,7 @@ CROSS JOIN (
    'PEG morning dose',
    'Mix 1 packet PEG with 1L water; drink between 5–6am.',
    false, 70, 'PEG', NULL, 1000, 'peg'),
-  ('stool-check', 'check', 'any', 'report_relative', NULL, NULL, 3.0,
+  ('stool-check', 'stool', 'any', 'report_relative', NULL, NULL, 3.0,
    'Check your stool against the colour scale',
    'If stool still looks like stages 1–4, report 2 hours early and call Endo PACE / the endoscopy centre.',
    false, 100, NULL, NULL, NULL, NULL),

@@ -37,13 +37,11 @@ prep_agent_enum = ENUM(
 three_way_enum = ENUM("yes", "no", "ask", name="three_way", create_type=False)
 event_kind_enum = ENUM(
     "diet",
-    "med",
     "dose",
     "meal",
     "fast",
     "arrive",
-    "check",
-    "gap",
+    "stool",
     name="event_kind",
     create_type=False,
 )
