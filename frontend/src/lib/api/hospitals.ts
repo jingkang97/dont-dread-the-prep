@@ -1,0 +1,22 @@
+import { apiFetch } from './client'
+
+export type ApiProtocolSummary = {
+  name: string
+  prep_agent: string
+  prep_agent_label: string
+  diet_days: number
+  last_meal: string
+}
+
+export type ApiHospital = {
+  code: string
+  short_name: string
+  name: string
+  cluster: string
+  contacts: { label: string; phone: string; hours?: string; note?: string }[]
+  protocols: ApiProtocolSummary[]
+}
+
+export function listApiHospitals() {
+  return apiFetch<ApiHospital[]>('/api/hospitals')
+}

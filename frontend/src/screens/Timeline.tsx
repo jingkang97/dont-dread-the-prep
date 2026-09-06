@@ -62,7 +62,7 @@ function jumpToward(scroller: HTMLElement, el: HTMLElement, topPad: number): Jum
 
 export function Timeline({ session }: { session: PrepSession }) {
   const { t } = useLang()
-  const { hospital, events, now, nextUpcoming } = usePrepSummary(session)
+  const { hospital, events, loading, error, now, nextUpcoming } = usePrepSummary(session)
   const nextId = nextUpcoming?.id
   const days = useMemo(() => groupByDay(events), [events])
   const saved = loadTimelineUi(session.id, session.date)
@@ -181,6 +181,15 @@ export function Timeline({ session }: { session: PrepSession }) {
       </div>
 
       <div data-tl-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 pb-28">
+      {loading && events.length === 0 ? (
+        <p className="mt-6 text-[14px] text-muted">{t('app.regenerating')}</p>
+      ) : null}
+      {!loading && error ? (
+        <p className="mt-6 text-[14px] text-no">{error}</p>
+      ) : null}
+      {!loading && !error && events.length === 0 ? (
+        <p className="mt-6 text-[14px] text-muted">{t('tl.noEvents')}</p>
+      ) : null}
       {view === 'list' ? (
         <div>
           {days.map((group) => (

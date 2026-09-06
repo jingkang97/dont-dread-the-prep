@@ -21,7 +21,7 @@ export function Home({
 }) {
   const { t, lang } = useLang()
   const locale = DATE_LOCALES[lang]
-  const { hospital, now, next, nextWhen, report, started } = usePrepSummary(session)
+  const { hospital, events, loading, error, now, next, nextWhen, report, started } = usePrepSummary(session)
   const remaining = report ? formatDistanceStrict(report, now, { addSuffix: true, locale }) : ''
   const juice =
     hospital.fruitJuice === 'yes'
@@ -55,6 +55,18 @@ export function Home({
         {formatYmd(session.date, lang)} · {t('home.report', { time: session.reportingTime })}
         {report ? ` · ${isAfter(report, now) ? remaining : ''}` : ''}
       </p>
+
+      {loading && events.length === 0 ? (
+        <Card className="mt-5 p-4">
+          <p className="text-[14px] text-muted">{t('app.regenerating')}</p>
+        </Card>
+      ) : null}
+
+      {!loading && error ? (
+        <Card className="mt-5 p-4">
+          <p className="text-[14px] text-no">{error}</p>
+        </Card>
+      ) : null}
 
       {next && (
         <button type="button" onClick={() => onOpen('timeline')} className="mt-5 w-full text-left">

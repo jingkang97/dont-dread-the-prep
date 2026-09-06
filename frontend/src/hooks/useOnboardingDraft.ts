@@ -1,12 +1,15 @@
 import { useMemo, useRef, useState } from 'react'
 import { type HospitalId } from '../data/hospitals'
 import {
-  defaultProtocolName,
   type OnboardingDraft,
   type OnboardingStep,
   type ScanPhase,
 } from '../data/onboarding'
-import type { ApiHospital, ApiProtocolSummary } from '../lib/api'
+import {
+  defaultProtocolName,
+  type ApiHospital,
+  type ApiProtocolSummary,
+} from '../lib/api'
 import { plusDays } from '../lib/dates'
 import { defaultReporting } from '../lib/timeline'
 
