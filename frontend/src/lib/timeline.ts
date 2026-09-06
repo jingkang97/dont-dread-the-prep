@@ -1,6 +1,8 @@
 import { differenceInCalendarDays, startOfDay } from 'date-fns'
 import { HOSPITALS, type Hospital, type HospitalId, type Slot } from '../data/hospitals'
+import { hospCopyKey } from '../i18n/keys'
 import type { StringKey } from '../i18n/strings'
+import { parseYmd } from './dates'
 
 export type EventKind = 'diet' | 'med' | 'dose' | 'meal' | 'fast' | 'arrive' | 'check' | 'gap'
 
@@ -48,17 +50,17 @@ export function fromNowDays(at: Date, now: Date, t: Translate) {
 }
 
 function atDate(dateStr: string, dayOffset: number, hm: string) {
-  const [y, m, d] = dateStr.split('-').map(Number)
+  const base = parseYmd(dateStr)
   const [hh, mm] = hm.split(':').map(Number)
-  return new Date(y, m - 1, d + dayOffset, hh, mm, 0, 0)
+  return new Date(base.getFullYear(), base.getMonth(), base.getDate() + dayOffset, hh, mm, 0, 0)
 }
 
 function subHours(date: Date, hours: number) {
   return new Date(date.getTime() - hours * 60 * 60 * 1000)
 }
 
-function stoolActionKey(id: HospitalId): StringKey {
-  return `hosp.${id}.stoolAction` as StringKey
+function stoolActionKey(id: HospitalId) {
+  return hospCopyKey(id, 'stoolAction')
 }
 
 export function defaultReporting(slot: Slot) {

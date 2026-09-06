@@ -1,71 +1,43 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { format } from 'date-fns'
 import { Camera } from 'lucide-react'
-import { type HospitalId, API_HOSPITAL_IDS, HOSPITALS } from '../data/hospitals'
-import {
-  defaultProtocolName,
-  protocolCopy,
-  type OnboardingDraft,
-  type OnboardingResult,
-  type OnboardingStep,
-  type ScanPhase,
-} from '../data/onboarding'
+import { HOSPITALS } from '../data/hospitals'
+import { protocolCopy, type OnboardingResult } from '../data/onboarding'
 import { DateSlotPicker } from '../components/DateSlotPicker'
 import { HospitalPicker } from '../components/HospitalPicker'
 import { Card, GeneratingPane, GhostButton, PrimaryButton, SectionLabel } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
-import type { Lang, StringKey } from '../i18n/strings'
+import { hospCopyKey } from '../i18n/keys'
 import { cn } from '../lib/cn'
-import { DATE_LOCALES } from '../lib/dateLocale'
-import { defaultReporting } from '../lib/timeline'
-import { ApiError, listApiHospitals, type ApiHospital, type ApiProtocolSummary } from '../lib/api'
+import { formatHm, formatYmd } from '../lib/dates'
+import { ApiError } from '../lib/api'
 import { easeOut, fadeY } from '../lib/motion'
+import { useApiHospitals } from '../hooks/useApiHospitals'
+import { useOnboardingDraft } from '../hooks/useOnboardingDraft'
 import yellowForm from '../assets/sgh-yellow-form.jpg'
-
-function prettyTime(hm: string) {
-  const [h, m] = hm.split(':').map(Number)
-  return format(new Date(2000, 0, 1, h, m), 'h:mm a')
-}
-
-function prettyDate(ymd: string, lang: Lang) {
-  const [y, m, d] = ymd.split('-').map(Number)
-  return format(new Date(y, m - 1, d), 'EEE d MMM yyyy', { locale: DATE_LOCALES[lang] })
-}
-
-function plusDays(n: number) {
-  const d = new Date()
-  d.setDate(d.getDate() + n)
-  const m = `${d.getMonth() + 1}`.padStart(2, '0')
-  const day = `${d.getDate()}`.padStart(2, '0')
-  return `${d.getFullYear()}-${m}-${day}`
-}
 
 export function Onboarding({
   onComplete,
 }: {
-  onComplete: (d: OnboardingResult) => void | Promise<void>
+  onComplete: (d: OnboardingResult) => void | Promise<unknown>
 }) {
   const { t, lang } = useLang()
-  const [step, setStep] = useState<OnboardingStep>('hospital')
-  const [scanPhase, setScanPhase] = useState<ScanPhase>('live')
-  const [draft, setDraft] = useState<OnboardingDraft>({
-    hospitalId: null,
-    protocolName: null,
-    date: plusDays(7),
-    slot: 'am',
-    reportingTime: defaultReporting('am'),
-    firstName: '',
-  })
+  const { apiHospitals, selectableIds, hospitalsError } = useApiHospitals()
+  const {
+    step,
+    setStep,
+    scanPhase,
+    draft,
+    setDraft,
+    demoDate,
+    pickHospital,
+    runScan,
+    leaveScan,
+  } = useOnboardingDraft()
 
   const hospital = draft.hospitalId ? HOSPITALS[draft.hospitalId] : null
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [apiHospitals, setApiHospitals] = useState<ApiHospital[]>([])
-  const [selectableIds, setSelectableIds] = useState<HospitalId[] | null>(API_HOSPITAL_IDS)
-  const [hospitalsError, setHospitalsError] = useState<string | null>(null)
-  const demoDate = useMemo(() => plusDays(4), [])
-  const scanTimer = useRef<number | null>(null)
 
   const apiHospital = useMemo(
     () => apiHospitals.find((h) => h.code === draft.hospitalId) ?? null,
@@ -80,77 +52,6 @@ export function Onboarding({
       draft.slot &&
       (!needsProtocolChoice || draft.protocolName),
   )
-
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        const rows = await listApiHospitals()
-        if (cancelled) return
-        setApiHospitals(rows)
-        const ids = rows
-          .map((row) => row.code)
-          .filter((code): code is HospitalId =>
-            (API_HOSPITAL_IDS as string[]).includes(code),
-          )
-        setSelectableIds(ids.length ? ids : [])
-        setHospitalsError(
-          ids.length
-            ? null
-            : 'No hospitals returned from the API. Check mvp.seed.sql was applied.',
-        )
-      } catch (err) {
-        if (cancelled) return
-        setApiHospitals([])
-        setSelectableIds([])
-        setHospitalsError(
-          err instanceof ApiError
-            ? err.detail
-            : 'Could not load hospitals. Is the API running on port 8000?',
-        )
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  function pickHospital(hospitalId: HospitalId) {
-    const row = apiHospitals.find((h) => h.code === hospitalId)
-    const protocolName = defaultProtocolName(row?.protocols ?? [], hospitalId)
-    setDraft((d) => ({ ...d, hospitalId, protocolName }))
-    setError(null)
-    setStep('schedule')
-  }
-
-  function runScan() {
-    if (scanTimer.current) window.clearTimeout(scanTimer.current)
-    setStep('scan')
-    setScanPhase('live')
-    scanTimer.current = window.setTimeout(() => {
-      const sgh = apiHospitals.find((h) => h.code === 'sgh')
-      setDraft({
-        hospitalId: 'sgh',
-        protocolName: defaultProtocolName(
-          sgh?.protocols ?? [{ name: 'sgh-nccs-picoprep' } as ApiProtocolSummary],
-          'sgh',
-        ),
-        date: demoDate,
-        slot: 'am',
-        reportingTime: '08:00',
-        firstName: '',
-      })
-      setScanPhase('done')
-      scanTimer.current = null
-    }, 2200)
-  }
-
-  function leaveScan() {
-    if (scanTimer.current) window.clearTimeout(scanTimer.current)
-    scanTimer.current = null
-    setScanPhase('live')
-    setStep('hospital')
-  }
 
   async function generate() {
     if (!canFinish || !draft.hospitalId || !draft.slot || busy) return
@@ -177,7 +78,7 @@ export function Onboarding({
 
   const prepDisplay = (() => {
     if (!selectedProtocol) {
-      return hospital ? t(`hosp.${hospital.id}.prep` as StringKey) : ''
+      return hospital ? t(hospCopyKey(hospital.id, 'prep')) : ''
     }
     const copy = protocolCopy(selectedProtocol.name)
     return copy ? t(copy.label) : selectedProtocol.prep_agent_label
@@ -207,7 +108,6 @@ export function Onboarding({
               <>
         {step === 'hospital' && (
           <div>
-            <SectionLabel>{t('on.step1')}</SectionLabel>
             {hospitalsError ? (
               <p className="mt-3 text-[13px] leading-relaxed text-no" role="alert">
                 {hospitalsError}
@@ -215,7 +115,7 @@ export function Onboarding({
             ) : null}
             <button
               type="button"
-              onClick={runScan}
+              onClick={() => runScan(apiHospitals)}
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-teal/40 bg-cream px-4 py-3.5 text-[14px] font-semibold text-teal-deep"
             >
               <Camera size={18} />
@@ -223,10 +123,14 @@ export function Onboarding({
             </button>
             <p className="mt-2 text-center text-[11px] text-muted">{t('on.scanNote')}</p>
             <div className="mt-5">
+              <SectionLabel>{t('on.step1')}</SectionLabel>
               <HospitalPicker
                 selected={draft.hospitalId}
                 selectableIds={selectableIds}
-                onPick={pickHospital}
+                onPick={(id) => {
+                  setError(null)
+                  pickHospital(id, apiHospitals)
+                }}
               />
             </div>
           </div>
@@ -296,11 +200,11 @@ export function Onboarding({
                 <p className="font-display text-[22px] tracking-tight text-ink">{hospital.short}</p>
               </div>
               <dl className="divide-y divide-line px-4">
-                <Row k={t('on.hospital')} v={t(`hosp.${hospital.id}.name` as StringKey)} />
+                <Row k={t('on.hospital')} v={t(hospCopyKey(hospital.id, 'name'))} />
                 <Row k={t('on.prep')} v={prepDisplay} />
-                <Row k={t('on.scopeDate')} v={prettyDate(draft.date, lang)} />
+                <Row k={t('on.scopeDate')} v={formatYmd(draft.date, lang)} />
                 <Row k={t('on.sessionLabel')} v={draft.slot === 'am' ? t('on.morning') : t('on.afternoon')} />
-                <Row k={t('on.reportBy')} v={prettyTime(draft.reportingTime)} />
+                <Row k={t('on.reportBy')} v={formatHm(draft.reportingTime)} />
               </dl>
             </Card>
             <label className="mt-4 block text-[13px] font-semibold text-navy" htmlFor="firstName">
@@ -377,7 +281,7 @@ export function Onboarding({
             ) : (
               <div className="mt-4 grid gap-2">
                 <PrimaryButton onClick={() => setStep('confirm')}>{t('on.useDetails')}</PrimaryButton>
-                <GhostButton onClick={runScan}>{t('on.scanAgain')}</GhostButton>
+                <GhostButton onClick={() => runScan(apiHospitals)}>{t('on.scanAgain')}</GhostButton>
                 <GhostButton onClick={leaveScan}>{t('on.back')}</GhostButton>
               </div>
             )}

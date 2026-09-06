@@ -1,0 +1,56 @@
+import { useEffect, useState } from 'react'
+import type { OnboardingResult } from '../data/onboarding'
+import type { Slot } from '../data/hospitals'
+import {
+  clearSession,
+  createSession,
+  hydrateSession,
+  updateAppointment,
+  type PrepSession,
+  type Screen,
+} from '../lib/session'
+
+export function useSession() {
+  const [session, setSession] = useState<PrepSession | null>(null)
+  const [screen, setScreen] = useState<Screen>('onboarding')
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const existing = await hydrateSession()
+      if (cancelled) return
+      if (existing) {
+        setSession(existing)
+        setScreen('home')
+      }
+      setReady(true)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function create(draft: OnboardingResult) {
+    const next = await createSession(draft)
+    setSession(next)
+    setScreen('home')
+    return next
+  }
+
+  function clear() {
+    clearSession()
+    setSession(null)
+    setScreen('onboarding')
+  }
+
+  async function update(patch: { date: string; slot: Slot; reportingTime: string }) {
+    if (!session) throw new Error('No session to update')
+    const next = await updateAppointment(session, patch)
+    setSession(next)
+    setScreen('home')
+    return next
+  }
+
+  return { session, setSession, screen, setScreen, ready, create, clear, update }
+}

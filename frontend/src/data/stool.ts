@@ -1,5 +1,7 @@
+import type { StoolStageN } from '../i18n/keys'
+
 export type StoolStage = {
-  n: number
+  n: StoolStageN
   name: string
   look: string
   ready: 'not' | 'almost' | 'ready'

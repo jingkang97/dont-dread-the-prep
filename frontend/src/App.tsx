@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
-import { format } from 'date-fns'
 import { DraftBanner } from './components/ui'
 import { LanguageBar } from './components/LanguageBar'
 import { BottomNav } from './components/BottomNav'
@@ -10,50 +8,24 @@ import { Timeline } from './screens/Timeline'
 import { FoodChat } from './screens/FoodChat'
 import { StoolGuide } from './screens/StoolGuide'
 import { Reminders } from './screens/Reminders'
-import {
-  clearSession,
-  createSession,
-  hydrateSession,
-  updateAppointment,
-  type PrepSession,
-  type Screen,
-} from './lib/session'
-import { ApiError } from './lib/api'
 import { HOSPITALS } from './data/hospitals'
 import { SessionBar } from './components/SessionBar'
 import { PitchRail } from './components/PitchRail'
 import { AppointmentChooser, ChangeDatePanel, StartOverSheet } from './components/AppointmentEdit'
 import { ShortcutSheet } from './components/ShortcutSheet'
 import { fadeY } from './lib/motion'
-import { DATE_LOCALES } from './lib/dateLocale'
+import { formatSessionWhen } from './lib/dates'
 import { useLang } from './i18n/LanguageContext'
 import { cn } from './lib/cn'
+import { useAppointmentEdit } from './hooks/useAppointmentEdit'
+import { useSession } from './hooks/useSession'
+import { useState } from 'react'
 
 export default function App() {
   const { lang } = useLang()
-  const [session, setSession] = useState<PrepSession | null>(null)
-  const [screen, setScreen] = useState<Screen>('onboarding')
-  const [ready, setReady] = useState(false)
-  const [edit, setEdit] = useState<'off' | 'choose' | 'date' | 'restart'>('off')
+  const { session, setSession, screen, setScreen, ready, create, clear, update } = useSession()
+  const edit = useAppointmentEdit()
   const [shortcut, setShortcut] = useState<'off' | 'ios' | 'android'>('off')
-  const [savingEdit, setSavingEdit] = useState(false)
-  const [editError, setEditError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      const existing = await hydrateSession()
-      if (cancelled) return
-      if (existing) {
-        setSession(existing)
-        setScreen('home')
-      }
-      setReady(true)
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   if (!ready) return null
 
@@ -64,7 +36,7 @@ export default function App() {
     <div className="h-full xl:grid xl:grid-cols-[minmax(0,1fr)_430px]">
       <PitchRail session={session} />
 
-      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[430px] flex-col overflow-hidden bg-paper xl:border-x xl:border-black/5">
+      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col overflow-hidden bg-paper xl:border-x xl:border-black/5">
         <DraftBanner />
         <LanguageBar />
         <AnimatePresence mode="wait" initial={false}>
@@ -74,13 +46,7 @@ export default function App() {
             className="flex min-h-0 flex-1 flex-col overflow-hidden"
             {...fadeY}
           >
-          <Onboarding
-            onComplete={async (d) => {
-              const next = await createSession(d)
-              setSession(next)
-              setScreen('home')
-            }}
-          />
+          <Onboarding onComplete={create} />
           </motion.div>
         ) : (
           <motion.div
@@ -88,16 +54,10 @@ export default function App() {
             className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
             {...fadeY}
           >
-            <SessionBar
-              session={session}
-              onChange={() => {
-                setEditError(null)
-                setEdit('choose')
-              }}
-            />
+            <SessionBar session={session} onChange={edit.openChooser} />
             <div
               data-app-pane
-              className={cn('relative min-h-0 flex-1', screen !== 'timeline' && '[&_[data-tl-fab]]:hidden')}
+              className={cn('relative min-h-0 flex-1', screen !== 'timeline' && '**:data-tl-fab:hidden')}
             >
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
@@ -128,58 +88,31 @@ export default function App() {
             </div>
             <BottomNav screen={screen} onChange={setScreen} />
             <AnimatePresence>
-            {edit === 'choose' && hospital && (
+            {edit.edit === 'choose' && hospital && (
               <AppointmentChooser
                 hospitalShort={hospital.short}
                 slot={session.slot}
-                when={format(new Date(`${session.date}T${session.reportingTime}:00`), 'd MMM, h:mm a', {
-                  locale: DATE_LOCALES[lang],
-                })}
-                onChangeDate={() => {
-                  setEditError(null)
-                  setEdit('date')
-                }}
-                onStartOver={() => setEdit('restart')}
-                onKeep={() => setEdit('off')}
+                when={formatSessionWhen(session, lang)}
+                onChangeDate={edit.openDate}
+                onStartOver={edit.openRestart}
+                onKeep={edit.close}
               />
             )}
-            {edit === 'date' && (
+            {edit.edit === 'date' && (
               <ChangeDatePanel
                 session={session}
-                error={editError}
-                busy={savingEdit}
-                onCancel={() => {
-                  if (savingEdit) return
-                  setEditError(null)
-                  setEdit('off')
-                }}
-                onSave={async (next) => {
-                  setSavingEdit(true)
-                  setEditError(null)
-                  try {
-                    setSession(await updateAppointment(session, next))
-                    setEdit('off')
-                    setScreen('home')
-                  } catch (err) {
-                    setEditError(
-                      err instanceof ApiError
-                        ? err.detail
-                        : 'Could not save. Check the API is running.',
-                    )
-                  } finally {
-                    setSavingEdit(false)
-                  }
-                }}
+                error={edit.editError}
+                busy={edit.savingEdit}
+                onCancel={edit.close}
+                onSave={(next) => edit.save(update, next)}
               />
             )}
-            {edit === 'restart' && (
+            {edit.edit === 'restart' && (
               <StartOverSheet
-                onBack={() => setEdit('choose')}
+                onBack={() => edit.setEdit('choose')}
                 onConfirm={() => {
-                  clearSession()
-                  setSession(null)
-                  setEdit('off')
-                  setScreen('onboarding')
+                  clear()
+                  edit.setEdit('off')
                 }}
               />
             )}

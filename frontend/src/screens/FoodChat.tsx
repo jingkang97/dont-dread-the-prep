@@ -3,7 +3,8 @@ import { motion } from 'motion/react'
 import { ArrowDown, Send } from 'lucide-react'
 import { classify, SUGGESTIONS, type ChatAnswer } from '../data/foods'
 import { HOSPITALS } from '../data/hospitals'
-import { Card, SectionLabel, SourceLine, VerdictPill } from '../components/ui'
+import { BotCard } from '../components/food/BotCard'
+import { ScreenHeader } from '../components/ScreenHeader'
 import { useLang } from '../i18n/LanguageContext'
 import type { StringKey } from '../i18n/strings'
 import { loadFoodChat, saveFoodChat, type FoodChatMsg } from '../lib/foodChat'
@@ -155,22 +156,23 @@ export function FoodChat({ session }: { session: PrepSession }) {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="px-5 pt-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <SectionLabel>{t('food.kicker')}</SectionLabel>
-            <h1 className="font-display mt-1 text-[28px] leading-tight text-navy">{t('food.title')}</h1>
-          </div>
-          {messages.length > 0 && !clearing && (
-            <button
-              type="button"
-              onClick={clearChat}
-              className="mt-7 shrink-0 text-[13px] font-semibold text-teal-deep"
-            >
-              {t('food.clear')}
-            </button>
-          )}
-        </div>
-        <p className="mt-1 text-[13px] text-ink-soft">{t('food.lead', { hospital: hospital.short })}</p>
+        <ScreenHeader
+          kicker={t('food.kicker')}
+          title={t('food.title')}
+          lead={t('food.lead', { hospital: hospital.short })}
+          leadClassName="mt-1 text-[13px] text-ink-soft"
+          trailing={
+            messages.length > 0 && !clearing ? (
+              <button
+                type="button"
+                onClick={clearChat}
+                className="mt-7 shrink-0 text-[13px] font-semibold text-teal-deep"
+              >
+                {t('food.clear')}
+              </button>
+            ) : null
+          }
+        />
       </div>
 
       <div className="relative min-h-0 flex-1">
@@ -277,40 +279,5 @@ function JumpCircle({ label, up, onClick }: { label: string; up: boolean; onClic
     >
       <ArrowDown size={16} strokeWidth={2.6} className={`text-teal-deep ${up ? 'rotate-180' : ''}`} />
     </button>
-  )
-}
-
-function BotCard({ answer }: { answer: ChatAnswer }) {
-  const { t } = useLang()
-  const title = answer.titleKey ? t(answer.titleKey, answer.bodyVars) : answer.title
-  const body = [
-    answer.bodyKey ? t(answer.bodyKey, answer.bodyVars) : answer.body,
-    answer.hospital ? t('food.forHospital', { hospital: answer.hospital }) : '',
-  ]
-    .filter(Boolean)
-    .join(' ')
-
-  return (
-    <Card className="p-3.5">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-[16px] font-semibold text-ink">{title}</p>
-        <VerdictPill verdict={answer.verdict} />
-      </div>
-      <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">{body}</p>
-      {answer.split && (
-        <div className="mt-3 grid gap-2">
-          {answer.split.map((part) => (
-            <div key={part.titleKey} className="flex items-start justify-between gap-2 rounded-xl bg-paper px-3 py-2">
-              <div>
-                <p className="text-[13px] font-semibold text-ink">{t(part.titleKey)}</p>
-                <p className="text-[12px] text-muted">{t(part.bodyKey)}</p>
-              </div>
-              <VerdictPill verdict={part.verdict} compact />
-            </div>
-          ))}
-        </div>
-      )}
-      <SourceLine text={answer.source} rules={answer.rules} />
-    </Card>
   )
 }

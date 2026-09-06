@@ -1,41 +1,22 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion } from 'motion/react'
-import { ArrowDown, ArrowUp } from 'lucide-react'
-import { format, isAfter, isBefore, isSameDay, isToday, startOfDay, startOfMonth } from 'date-fns'
-import { HOSPITALS } from '../data/hospitals'
+import { isAfter, isBefore, isSameDay, isToday, startOfDay, startOfMonth } from 'date-fns'
 import { MonthCalendar } from '../components/MonthCalendar'
-import { Card, SectionLabel } from '../components/ui'
+import { Card } from '../components/ui'
+import { ScreenHeader } from '../components/ScreenHeader'
+import { DayHeader } from '../components/timeline/DayHeader'
+import { EventCard } from '../components/timeline/EventCard'
+import { EventStamp } from '../components/timeline/EventStamp'
+import { JumpNextFab, type JumpDir } from '../components/timeline/JumpNextFab'
 import { useLang } from '../i18n/LanguageContext'
-import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
-import { buildTimeline, fromNowDays, resolveEventText, type EventKind, type TimelineEvent } from '../lib/timeline'
+import { parseYmd } from '../lib/dates'
+import type { TimelineEvent } from '../lib/timeline'
 import { loadTimelineUi, saveTimelineUi, type TimelineView } from '../lib/timelineUi'
 import { cn } from '../lib/cn'
-import { DATE_LOCALES } from '../lib/dateLocale'
 import { SegmentedControl } from '../components/SegmentedControl'
-
-const KIND_TONE: Record<EventKind, string> = {
-  diet: 'bg-teal/15 text-teal-deep',
-  med: 'bg-ask-bg text-ask',
-  dose: 'bg-[#e8f8ff] text-[#007aff]',
-  meal: 'bg-yes-bg text-yes',
-  fast: 'bg-no-bg text-no',
-  arrive: 'bg-cream text-teal-deep',
-  check: 'bg-ask-bg text-ask',
-  gap: 'bg-ask-bg text-ask',
-}
-
-const KIND_KEY: Record<EventKind, StringKey> = {
-  diet: 'kind.diet',
-  med: 'kind.med',
-  dose: 'kind.dose',
-  meal: 'kind.meal',
-  fast: 'kind.fast',
-  arrive: 'kind.arrive',
-  check: 'kind.check',
-  gap: 'kind.gap',
-}
+import { usePrepSummary } from '../hooks/usePrepSummary'
 
 function groupByDay(events: TimelineEvent[]) {
   const groups: { day: Date; events: TimelineEvent[] }[] = []
@@ -65,8 +46,6 @@ function dayOffset(root: HTMLElement | null) {
   return day instanceof HTMLElement ? day.offsetHeight : 0
 }
 
-type JumpDir = 'up' | 'down' | 'here'
-
 function nextStamp(li: HTMLElement | null) {
   const stamp = li?.querySelector('[data-tl-time]')
   return stamp instanceof HTMLElement ? stamp : li
@@ -83,23 +62,16 @@ function jumpToward(scroller: HTMLElement, el: HTMLElement, topPad: number): Jum
 
 export function Timeline({ session }: { session: PrepSession }) {
   const { t } = useLang()
-  const hospital = HOSPITALS[session.hospitalId]
-  const events = buildTimeline(session)
-  const now = new Date()
-  const nextEvent = events.find((e) => isAfter(e.at, now))
-  const nextId = nextEvent?.id
+  const { hospital, events, now, nextUpcoming } = usePrepSummary(session)
+  const nextId = nextUpcoming?.id
   const days = useMemo(() => groupByDay(events), [events])
   const saved = loadTimelineUi(session.id, session.date)
 
   const [view, setView] = useState<TimelineView>(() => saved?.view ?? 'list')
-  const procedureDay = useMemo(() => {
-    const [y, m, d] = session.date.split('-').map(Number)
-    return new Date(y, m - 1, d)
-  }, [session.date])
+  const procedureDay = useMemo(() => parseYmd(session.date), [session.date])
   const [picked, setPicked] = useState(() => {
     const today = startOfDay(new Date())
-    const [y, m, d] = session.date.split('-').map(Number)
-    const scope = new Date(y, m - 1, d)
+    const scope = parseYmd(session.date)
     return isAfter(today, scope) ? scope : today
   })
 
@@ -192,8 +164,7 @@ export function Timeline({ session }: { session: PrepSession }) {
     <>
     <div ref={bindRoot} className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 px-5 pt-6">
-        <SectionLabel>{t('tl.for', { hospital: hospital.short })}</SectionLabel>
-        <h1 className="font-display mt-1 text-[28px] leading-tight text-navy">{t('tl.title')}</h1>
+        <ScreenHeader kicker={t('tl.for', { hospital: hospital.short })} title={t('tl.title')} />
       </div>
 
       <div data-tl-bar className="shrink-0 bg-paper px-5 py-2">
@@ -322,7 +293,7 @@ export function Timeline({ session }: { session: PrepSession }) {
     </div>
     {pane &&
       view === 'list' &&
-      nextEvent &&
+      nextUpcoming &&
       createPortal(
         <div data-tl-fab className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-end px-4">
           <div className="pointer-events-auto">
@@ -332,138 +303,5 @@ export function Timeline({ session }: { session: PrepSession }) {
         pane,
       )}
     </>
-  )
-}
-
-function DayHeader({
-  day,
-  sticky = true,
-  procedureDay,
-}: {
-  day: Date
-  sticky?: boolean
-  procedureDay?: Date
-}) {
-  const { t, lang } = useLang()
-  const today = isToday(day)
-  const scope = procedureDay ? isSameDay(day, procedureDay) : false
-  const until = scope && !today ? fromNowDays(day, new Date(), t) : ''
-  return (
-    <h2
-      data-tl-day={sticky ? '' : undefined}
-      className={cn(
-        'flex items-center gap-2 bg-paper py-2 font-display text-[20px] tracking-tight',
-        today ? 'text-teal-deep' : scope ? 'text-navy' : 'text-ink',
-        sticky && 'sticky top-0 z-10 -mx-5 px-5',
-      )}
-    >
-      <span className="min-w-0 truncate">{format(day, 'EEE d MMM', { locale: DATE_LOCALES[lang] })}</span>
-      {today && (
-        <span className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wide text-teal-deep shadow-[inset_0_0_0_1.5px_#00c7be]">
-          {t('tl.today')}
-        </span>
-      )}
-      {scope && (
-        <span className="shrink-0 rounded-full bg-navy px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
-          {t('tl.scopeDay')}
-        </span>
-      )}
-      {until ? <span className="ml-auto shrink-0 text-[12px] font-semibold text-muted">{until}</span> : null}
-    </h2>
-  )
-}
-
-function JumpNextFab({
-  dir,
-  progress,
-  onClick,
-}: {
-  dir: JumpDir
-  progress: number
-  onClick: () => void
-}) {
-  const { t } = useLang()
-  const Icon = dir === 'up' ? ArrowUp : ArrowDown
-  const r = 20
-  const c = 2 * Math.PI * r
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex flex-col items-center gap-1"
-      aria-label={t('tl.jumpNext')}
-    >
-      <span className="whitespace-nowrap rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-bold tracking-tight text-ink shadow-[0_1px_8px_rgba(28,28,30,0.12)] backdrop-blur-md">
-        {t('tl.jumpNext')}
-      </span>
-      <span className="relative grid h-[52px] w-[52px] place-items-center rounded-full bg-white shadow-[0_4px_18px_rgba(28,28,30,0.16)]">
-        <svg className="absolute inset-0 -rotate-90" viewBox="0 0 52 52" aria-hidden>
-          <circle cx="26" cy="26" r={r} fill="none" stroke="#e8e8ed" strokeWidth="2.5" />
-          <circle
-            cx="26"
-            cy="26"
-            r={r}
-            fill="none"
-            stroke="#1c1c1e"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeDasharray={c}
-            strokeDashoffset={c * (1 - progress)}
-          />
-        </svg>
-        {dir === 'here' ? (
-          <span className="h-3 w-3 rounded-full bg-teal" />
-        ) : (
-          <Icon size={22} strokeWidth={2.6} className="text-teal-deep" />
-        )}
-      </span>
-    </button>
-  )
-}
-
-function EventStamp({ event }: { event: TimelineEvent }) {
-  return (
-    <p data-tl-time className="text-[13px] font-semibold text-navy">
-      {format(event.at, 'h:mm a')}
-    </p>
-  )
-}
-
-function EventCard({
-  event,
-  isNext,
-  isPast,
-}: {
-  event: TimelineEvent
-  isNext?: boolean
-  isPast?: boolean
-}) {
-  const { t } = useLang()
-  const { title, detail } = resolveEventText(event, t)
-  return (
-    <div data-tl-card className="mt-1">
-    <Card
-      className={cn(
-        'p-3.5 transition',
-        event.tentative && 'border-ask/30',
-        isNext && 'ring-1 ring-teal/45 shadow-[0_2px_10px_rgba(0,199,190,0.14)]',
-        isPast && !isNext && 'opacity-65',
-      )}
-    >
-      <div className="flex items-center gap-2">
-        <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide', KIND_TONE[event.kind])}>
-          {t(KIND_KEY[event.kind])}
-        </span>
-        {event.tentative && (
-          <span className="text-[10px] font-bold tracking-wide text-ask">{t('tl.notOnForm')}</span>
-        )}
-      </div>
-      <p className="mt-1.5 text-[16px] font-semibold text-ink">{title}</p>
-      <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">{detail}</p>
-      <p className="mt-2 text-[11px] leading-relaxed text-muted">
-        {t('source.cited')}: {event.source}
-      </p>
-    </Card>
-    </div>
   )
 }

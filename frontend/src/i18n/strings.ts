@@ -9,10 +9,10 @@ export const LANGS = [
 
 export type Lang = (typeof LANGS)[number]['id']
 
-const EN = {
+export const EN = {
   ...CLINICAL_EN,
   'draft.banner':
-    'Draft prototype — not medical advice. Food answers use an unapproved ruleset (Doc 03). Always follow your own hospital’s form.',
+    'Draft prototype — not medical advice. Food answers use an unapproved ruleset (Doc 03). **Always follow your own hospital’s form.**',
   'nav.home': 'Home',
   'nav.timeline': 'Timeline',
   'nav.food': 'Food',
@@ -27,7 +27,7 @@ const EN = {
   'on.kicker': 'From the yellow form',
   'on.title': 'Your prep, on your phone.',
   'on.lead': 'No app installation. Catered to your hospital.',
-  'on.step1': 'Which hospital?',
+  'on.step1': 'Choose hospital',
   'on.pickerCompare': 'Compare list size',
   'on.pickerNow': 'Now',
   'on.pickerLarge': 'Future',
@@ -261,7 +261,7 @@ export type StringKey = keyof typeof EN
 const ZH: Record<StringKey, string> = {
   ...CLINICAL_ZH,
   'draft.banner':
-    '试用原型 — 不是医疗建议。食物答案来自尚未经营养师审核的规则（Doc 03）。请以您医院的表格为准。',
+    '试用原型 — 不是医疗建议。食物答案来自尚未经营养师审核的规则（Doc 03）。**请以您医院的表格为准。**',
   'nav.home': '主页',
   'nav.timeline': '时间表',
   'nav.food': '食物',
@@ -275,7 +275,7 @@ const ZH: Record<StringKey, string> = {
   'on.kicker': '来自黄色表格',
   'on.title': '肠道准备，就在手机上。',
   'on.lead': '不用安装应用。按您的医院定制。',
-  'on.step1': '哪一家医院？',
+  'on.step1': '选择医院',
   'on.pickerCompare': '对比列表规模',
   'on.pickerNow': '现在',
   'on.pickerLarge': '未来',
@@ -500,7 +500,7 @@ const ZH: Record<StringKey, string> = {
 const MS: Record<StringKey, string> = {
   ...CLINICAL_MS,
   'draft.banner':
-    'Prototaip draf — bukan nasihat perubatan. Jawapan makanan guna ruleset yang belum diluluskan (Doc 03). Ikut borang hospital anda.',
+    'Prototaip draf — bukan nasihat perubatan. Jawapan makanan guna ruleset yang belum diluluskan (Doc 03). **Ikut borang hospital anda.**',
   'nav.home': 'Utama',
   'nav.timeline': 'Jadual',
   'nav.food': 'Makanan',
@@ -515,7 +515,7 @@ const MS: Record<StringKey, string> = {
   'on.kicker': 'Dari borang kuning',
   'on.title': 'Persediaan anda, dalam telefon.',
   'on.lead': 'Tidak perlu pasang apl. Untuk hospital anda.',
-  'on.step1': 'Hospital mana?',
+  'on.step1': 'Pilih hospital',
   'on.pickerCompare': 'Banding saiz senarai',
   'on.pickerNow': 'Kini',
   'on.pickerLarge': 'Hadapan',
@@ -747,7 +747,7 @@ const MS: Record<StringKey, string> = {
 const TA: Record<StringKey, string> = {
   ...CLINICAL_TA,
   'draft.banner':
-    'வரைவு முன்மாதிரி — மருத்துவ ஆலோசனை அல்ல. உணவு பதில்கள் அங்கீகரிக்கப்படாத விதிகளிலிருந்து (Doc 03). உங்கள் மருத்துவமனை படிவத்தையே பின்பற்றுங்கள்.',
+    'வரைவு முன்மாதிரி — மருத்துவ ஆலோசனை அல்ல. உணவு பதில்கள் அங்கீகரிக்கப்படாத விதிகளிலிருந்து (Doc 03). **உங்கள் மருத்துவமனை படிவத்தையே பின்பற்றுங்கள்.**',
   'nav.home': 'முகப்பு',
   'nav.timeline': 'அட்டவணை',
   'nav.food': 'உணவு',
@@ -762,7 +762,7 @@ const TA: Record<StringKey, string> = {
   'on.kicker': 'மஞ்சள் படிவத்திலிருந்து',
   'on.title': 'உங்கள் தயாரிப்பு, உங்கள் தொலைபேசியில்.',
   'on.lead': 'செயலி நிறுவல் இல்லை. உங்கள் மருத்துவமனைக்கேற்ப.',
-  'on.step1': 'எந்த மருத்துவமனை?',
+  'on.step1': 'மருத்துவமனையைத் தேர்ந்தெடு',
   'on.pickerCompare': 'பட்டியல் அளவை ஒப்பிடு',
   'on.pickerNow': 'இப்போது',
   'on.pickerLarge': 'எதிர்காலம்',
@@ -998,6 +998,10 @@ export const DICTS: Record<Lang, Record<StringKey, string>> = {
   ta: TA,
 }
 
+export function isStringKey(key: string): key is StringKey {
+  return Object.hasOwn(EN, key)
+}
+
 export function translate(
   lang: Lang,
   key: StringKey,
@@ -1007,6 +1011,12 @@ export function translate(
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       s = s.replaceAll(`{${k}}`, v)
+    }
+  }
+  if (import.meta.env.DEV) {
+    const leftover = s.match(/\{[A-Za-z0-9_]+\}/g)
+    if (leftover) {
+      console.warn(`[i18n] ${key} still has ${leftover.join(' ')}`)
     }
   }
   return s
