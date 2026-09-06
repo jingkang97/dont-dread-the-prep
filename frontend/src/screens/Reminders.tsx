@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { format, isAfter } from 'date-fns'
 import { Check } from 'lucide-react'
 import { motion } from 'motion/react'
@@ -10,7 +9,7 @@ import { cn } from '../lib/cn'
 import { DATE_LOCALES } from '../lib/dateLocale'
 import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
-import { markWaOptIn, TWILIO_JOIN_WORD, waJoinHref } from '../lib/session'
+import { markWaOptIn, TELEGRAM_BOT, telegramStartHref } from '../lib/session'
 import { sessionReportAt } from '../lib/dates'
 import { remindersFor } from '../lib/timeline'
 import { easeOut } from '../lib/motion'
@@ -31,17 +30,21 @@ export function Reminders({
 }) {
   const { t, lang } = useLang()
   const hospital = HOSPITALS[session.hospitalId]
-  const [joinCode, setJoinCode] = useState(TWILIO_JOIN_WORD)
   const { copied, copy } = useCopyToClipboard()
   const report = sessionReportAt(session)
   const items = remindersFor(report)
-  const href = waJoinHref(joinCode)
+  const href = telegramStartHref(session.id)
 
   return (
     <div className="px-5 pb-10 pt-6">
       <ScreenHeader kicker={t('wa.kicker')} title={t('wa.title')} lead={t('wa.lead', { id: session.id })} />
 
       <Card className="mt-5 p-4">
+        <p className="text-[13px] font-semibold text-navy">{t('wa.welcome')}</p>
+        <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">{t('wa.welcomeBody')}</p>
+      </Card>
+
+      <Card className="mt-4 p-4">
         <p className="text-[13px] font-semibold text-navy">{t('wa.times')}</p>
         <ul className="mt-2 divide-y divide-line">
           {items.map((item) => (
@@ -66,17 +69,11 @@ export function Reminders({
       <Card className="mt-4 p-4">
         <p className="text-[13px] font-semibold text-navy">{t('wa.sandbox')}</p>
         <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">{t('wa.sandboxBody')}</p>
-        <label className="mt-3 block text-[12px] font-semibold text-muted" htmlFor="join">
-          {t('wa.joinWord')}
-        </label>
-        <input
-          id="join"
-          value={joinCode}
-          onChange={(e) => setJoinCode(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-line bg-paper px-3 py-2.5 text-[15px]"
-        />
         <p className="mt-3 rounded-xl bg-paper px-3 py-2 font-mono text-[12px] leading-relaxed text-ink">
-          join {joinCode}
+          t.me/{TELEGRAM_BOT}?start={session.id}
+        </p>
+        <p className="mt-3 rounded-xl bg-cream px-3 py-2.5 text-[14px] font-semibold leading-snug text-teal-deep">
+          {t('wa.startHint')}
         </p>
         <a
           href={href}
@@ -86,9 +83,11 @@ export function Reminders({
             void markWaOptIn(session).then(onSession)
           }}
         >
-          <PrimaryButton className="mt-3 bg-whatsapp">{t('wa.open')}</PrimaryButton>
+          <PrimaryButton className="mt-3 bg-telegram">{t('wa.open')}</PrimaryButton>
         </a>
-        <p className="mt-2 text-[11px] leading-relaxed text-muted">{t('wa.sandboxNote')}</p>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted">
+          {t('wa.sandboxNote', { bot: TELEGRAM_BOT, id: session.id })}
+        </p>
       </Card>
 
       {session.waOptIn && (

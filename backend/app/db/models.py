@@ -112,6 +112,10 @@ class Session(Base):
     reporting_time: Mapped[time] = mapped_column(Time, nullable=False)
     first_name: Mapped[Optional[str]] = mapped_column(Text)
     wa_opt_in: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    telegram_chat_id: Mapped[Optional[int]] = mapped_column(BigInteger)
+    reminder_t72_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    reminder_t24_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    reminder_t6_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

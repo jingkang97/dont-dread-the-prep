@@ -5,6 +5,7 @@ import {
   clearSession,
   createSession,
   hydrateSession,
+  screenFromUrl,
   updateAppointment,
   type PrepSession,
   type Screen,
@@ -22,7 +23,7 @@ export function useSession() {
       if (cancelled) return
       if (existing) {
         setSession(existing)
-        setScreen('home')
+        setScreen(screenFromUrl() ?? 'home')
       }
       setReady(true)
     })()

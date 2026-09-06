@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     # Prefer "Session mode" pooler for local uvicorn, or direct connection.
     database_url: str = ""
 
+    # BotFather token. Polls getUpdates locally; set webhook later when public.
+    telegram_bot_token: str = ""
+    telegram_webhook_secret: str = ""
+    # True: send T−72 / T−24 / T−6 one per minute after /start, then stop.
+    telegram_reminder_test: bool = True
+    site_url: str = "http://localhost:5173"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
