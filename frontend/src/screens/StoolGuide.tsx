@@ -1,9 +1,10 @@
 import { Phone } from 'lucide-react'
 import { HOSPITALS, formatPhone, telHref } from '../data/hospitals'
 import { STOOL_STAGES } from '../data/stool'
+import { ScreenHeader } from '../components/ScreenHeader'
 import { Card, PrimaryButton, SectionLabel } from '../components/ui'
+import { hospContactKey, hospCopyKey, stoolStageKey } from '../i18n/keys'
 import { useLang } from '../i18n/LanguageContext'
-import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
 import { cn } from '../lib/cn'
 
@@ -19,11 +20,11 @@ export function StoolGuide({
 
   return (
     <div className="px-5 pb-10 pt-6">
-      <SectionLabel>{t('stool.kicker')}</SectionLabel>
-      <h1 className="font-display mt-1 text-[28px] leading-tight text-navy">{t('stool.title')}</h1>
-      <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
-        {t(`hosp.${hospital.id}.stoolAction` as StringKey)}
-      </p>
+      <ScreenHeader
+        kicker={t('stool.kicker')}
+        title={t('stool.title')}
+        lead={t(hospCopyKey(hospital.id, 'stoolAction'))}
+      />
 
       <div className="mt-5 grid gap-2">
         {STOOL_STAGES.map((stage) => (
@@ -31,9 +32,9 @@ export function StoolGuide({
             <Cup color={stage.color} clear={stage.n >= 5} />
             <div className="flex-1">
               <p className="text-[15px] font-semibold text-ink">
-                {stage.n}. {t(`stool.s${stage.n}n` as StringKey)}
+                {stage.n}. {t(stoolStageKey(stage.n, 'n'))}
               </p>
-              <p className="text-[12px] text-muted">{t(`stool.s${stage.n}l` as StringKey)}</p>
+              <p className="text-[12px] text-muted">{t(stoolStageKey(stage.n, 'l'))}</p>
             </div>
             <span
               className={cn(
@@ -59,18 +60,18 @@ export function StoolGuide({
       <div className="mt-5">
         <SectionLabel>{t('stool.contactFor', { hospital: hospital.short })}</SectionLabel>
       </div>
-      <p className="mt-1 text-[12px] leading-relaxed text-muted">{t(`hosp.${hospital.id}.formGap` as StringKey)}</p>
+      <p className="mt-1 text-[12px] leading-relaxed text-muted">{t(hospCopyKey(hospital.id, 'formGap'))}</p>
 
       <div className="mt-3 grid gap-2.5">
         {hospital.contacts.map((c, i) => (
           <Card key={c.phone} className="p-4">
             <p className="text-[12px] font-semibold tracking-wide text-muted">
-              {t(`hosp.${hospital.id}.c${i}.label` as StringKey)}
+              {t(hospContactKey(hospital.id, i, 'label'))}
             </p>
             <p className="font-display mt-0.5 text-[28px] text-navy">{formatPhone(c.phone)}</p>
-            <p className="text-[12px] text-ink-soft">{t(`hosp.${hospital.id}.c${i}.hours` as StringKey)}</p>
+            <p className="text-[12px] text-ink-soft">{t(hospContactKey(hospital.id, i, 'hours'))}</p>
             <p className="mt-2 text-[12px] leading-relaxed text-muted">
-              {t(`hosp.${hospital.id}.c${i}.note` as StringKey)}
+              {t(hospContactKey(hospital.id, i, 'note'))}
             </p>
             <a href={telHref(c.phone)}>
               <PrimaryButton className="mt-3">

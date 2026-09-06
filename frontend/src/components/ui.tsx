@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react'
 import { type RuleId, type Verdict } from '../data/foods'
 import { useLang } from '../i18n/LanguageContext'
-import type { StringKey } from '../i18n/strings'
+import { ruleTitleKey } from '../i18n/keys'
 import { cn } from '../lib/cn'
 
 export function DraftBanner() {
-  const { t } = useLang()
+  const { tr } = useLang()
   return (
     <div className="flex h-11 shrink-0 items-center bg-ask-bg px-4 text-center text-[11px] leading-[1.35] text-ask">
-      <p className="line-clamp-2 w-full">{t('draft.banner')}</p>
+      <p className="line-clamp-2 w-full">{tr('draft.banner')}</p>
     </div>
   )
 }
@@ -42,7 +42,7 @@ export function SourceLine({ text, rules }: { text: string; rules?: RuleId[] }) 
       <p className="mt-0.5">{text}</p>
       {rules && rules.length > 0 && (
         <p className="mt-1.5 text-[11px] text-muted">
-          {rules.map((r) => `${r} · ${t(`rule.${r}` as StringKey)}`).join(' · ')}
+          {rules.map((r) => `${r} · ${t(ruleTitleKey(r))}`).join(' · ')}
         </p>
       )}
       <p className="mt-1.5 text-[11px] text-muted">{t('source.original')}</p>

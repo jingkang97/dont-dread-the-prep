@@ -5,7 +5,7 @@ import {
   type HospitalId,
   type Slot,
 } from '../data/hospitals'
-import { defaultReporting } from './timeline'
+import { defaultReporting, type SessionInput } from './timeline'
 import { clearFoodChat } from './foodChat'
 import { clearTimelineUi } from './timelineUi'
 import { clearFoodChatUi } from './foodChatUi'
@@ -19,12 +19,8 @@ import {
 
 export type Screen = 'onboarding' | 'home' | 'timeline' | 'food' | 'stool' | 'reminders'
 
-export type PrepSession = {
+export type PrepSession = SessionInput & {
   id: string
-  hospitalId: HospitalId
-  date: string
-  slot: Slot
-  reportingTime: string
   firstName?: string
   createdAt: string
   waOptIn: boolean
@@ -161,7 +157,11 @@ function publishManifest(session: PrepSession | null) {
     background_color: '#f2f2f7',
     start_url: start,
     scope: '/',
-    icons: [{ src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' }],
+    icons: [
+      { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+      { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
+      { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    ],
   }
   const blob = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }))
   let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')

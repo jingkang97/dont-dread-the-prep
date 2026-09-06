@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { inlineMarkdown } from './inlineMarkdown'
 import { LANGS, translate, type Lang, type StringKey } from './strings'
 
 const KEY = 'preppath.lang'
@@ -7,6 +8,7 @@ type Ctx = {
   lang: Lang
   setLang: (lang: Lang) => void
   t: (key: StringKey, vars?: Record<string, string>) => string
+  tr: (key: StringKey, vars?: Record<string, string>) => ReactNode
 }
 
 const LanguageContext = createContext<Ctx | null>(null)
@@ -31,6 +33,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(KEY, next)
       },
       t: (key, vars) => translate(lang, key, vars),
+        tr: (key, vars) => inlineMarkdown(translate(lang, key, vars)),
     }),
     [lang],
   )

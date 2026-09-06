@@ -1,17 +1,20 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { format, isAfter } from 'date-fns'
 import { Check } from 'lucide-react'
 import { motion } from 'motion/react'
 import { HOSPITALS } from '../data/hospitals'
-import { Card, GhostButton, PrimaryButton, SectionLabel } from '../components/ui'
+import { ScreenHeader } from '../components/ScreenHeader'
+import { Card, GhostButton, PrimaryButton } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
 import { cn } from '../lib/cn'
 import { DATE_LOCALES } from '../lib/dateLocale'
 import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
 import { markWaOptIn, TWILIO_JOIN_WORD, waJoinHref } from '../lib/session'
+import { sessionReportAt } from '../lib/dates'
 import { remindersFor } from '../lib/timeline'
 import { easeOut } from '../lib/motion'
+import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 
 const WA_COPY: Record<string, { label: StringKey; blurb: StringKey }> = {
   t72: { label: 'wa.t72', blurb: 'wa.t72b' },
@@ -29,46 +32,14 @@ export function Reminders({
   const { t, lang } = useLang()
   const hospital = HOSPITALS[session.hospitalId]
   const [joinCode, setJoinCode] = useState(TWILIO_JOIN_WORD)
-  const [copied, setCopied] = useState(false)
-  const copyTimer = useRef<number | undefined>(undefined)
-  const report = new Date(`${session.date}T${session.reportingTime}:00`)
+  const { copied, copy } = useCopyToClipboard()
+  const report = sessionReportAt(session)
   const items = remindersFor(report)
   const href = waJoinHref(joinCode)
 
-  useEffect(() => () => window.clearTimeout(copyTimer.current), [])
-
-  function legacyCopy(text: string) {
-    const box = document.createElement('textarea')
-    box.value = text
-    box.setAttribute('readonly', '')
-    box.style.position = 'fixed'
-    box.style.opacity = '0'
-    document.body.appendChild(box)
-    box.select()
-    document.execCommand('copy')
-    document.body.removeChild(box)
-  }
-
-  function copyId() {
-    try {
-      const write = navigator.clipboard?.writeText(session.id)
-      if (write) write.catch(() => legacyCopy(session.id))
-      else legacyCopy(session.id)
-    } catch {
-      legacyCopy(session.id)
-    }
-    setCopied(true)
-    window.clearTimeout(copyTimer.current)
-    copyTimer.current = window.setTimeout(() => setCopied(false), 2000)
-  }
-
   return (
     <div className="px-5 pb-10 pt-6">
-      <SectionLabel>{t('wa.kicker')}</SectionLabel>
-      <h1 className="font-display mt-1 text-[28px] leading-tight text-navy">{t('wa.title')}</h1>
-      <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
-        {t('wa.lead', { id: session.id })}
-      </p>
+      <ScreenHeader kicker={t('wa.kicker')} title={t('wa.title')} lead={t('wa.lead', { id: session.id })} />
 
       <Card className="mt-5 p-4">
         <p className="text-[13px] font-semibold text-navy">{t('wa.times')}</p>
@@ -124,7 +95,7 @@ export function Reminders({
         <p className="mt-3 text-center text-[13px] font-semibold text-yes">{t('wa.optin', { id: session.id })}</p>
       )}
 
-      <GhostButton className={cn('mt-4', copied && 'bg-yes-bg text-yes')} onClick={copyId}>
+      <GhostButton className={cn('mt-4', copied && 'bg-yes-bg text-yes')} onClick={() => copy(session.id)}>
         <span role="status" className="flex items-center justify-center gap-1.5">
           {copied && (
             <motion.span

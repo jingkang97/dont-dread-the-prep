@@ -1,25 +1,15 @@
-import { addMonths, format, startOfMonth } from 'date-fns'
+import { addMonths, startOfMonth } from 'date-fns'
 import { MonthCalendar } from './MonthCalendar'
 import { SegmentedControl } from './SegmentedControl'
 import { Card } from './ui'
 import { useLang } from '../i18n/LanguageContext'
 import { cn } from '../lib/cn'
-import { DATE_LOCALES } from '../lib/dateLocale'
+import { formatHm, formatYmd, parseYmd, toYmd } from '../lib/dates'
 import { defaultReporting } from '../lib/timeline'
 import type { Slot } from '../data/hospitals'
 
 const AM_TIMES = ['07:00', '07:30', '08:00', '08:30', '09:00']
 const PM_TIMES = ['12:30', '13:00', '13:30', '14:00', '14:30']
-
-function parseYmd(s: string) {
-  const [y, m, d] = s.split('-').map(Number)
-  return new Date(y, m - 1, d)
-}
-
-function timeLabel(hm: string) {
-  const [h, min] = hm.split(':').map(Number)
-  return format(new Date(2000, 0, 1, h, min), 'h:mm a')
-}
 
 export function DateSlotPicker({
   date,
@@ -41,11 +31,11 @@ export function DateSlotPicker({
   return (
     <div>
       <p className="text-[13px] font-semibold text-navy">{dateLabel ?? t('on.date')}</p>
-      <p className="font-display mt-1 text-[22px] tracking-tight text-ink">{format(selected, 'EEE d MMM yyyy', { locale: DATE_LOCALES[lang] })}</p>
+      <p className="font-display mt-1 text-[22px] tracking-tight text-ink">{formatYmd(date, lang)}</p>
       <Card className="mt-3 px-1 py-2">
         <MonthCalendar
           selected={selected}
-          onSelect={(day) => onChange({ date: format(day, 'yyyy-MM-dd') })}
+          onSelect={(day) => onChange({ date: toYmd(day) })}
           startMonth={startOfMonth(addMonths(new Date(), -1))}
           endMonth={startOfMonth(addMonths(new Date(), 18))}
         />
@@ -91,7 +81,7 @@ export function DateSlotPicker({
               reportingTime === time ? 'bg-navy text-white' : 'bg-white text-ink',
             )}
           >
-            {timeLabel(time)}
+            {formatHm(time)}
           </button>
         ))}
       </div>

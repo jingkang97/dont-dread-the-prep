@@ -1,27 +1,26 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronDown, ChevronRight, Hospital, Search } from 'lucide-react'
+import { ChevronRight, Hospital } from 'lucide-react'
 import {
-  PICKER_CLUSTERS,
   canStartSession,
-  clustersIn,
   hospitalsFor,
-  matchHospital,
-  type PickerCluster,
   type PickerHospital,
   type PickerSize,
 } from '../data/hospitalPicker'
 import type { HospitalId } from '../data/hospitals'
+import { hospCopyKey } from '../i18n/keys'
 import { useLang } from '../i18n/LanguageContext'
-import type { StringKey } from '../i18n/strings'
 import { cn } from '../lib/cn'
-import { easeOut, fadeY } from '../lib/motion'
-import { SegmentedControl } from './SegmentedControl'
-
-const SIZES: { id: PickerSize; label: StringKey }[] = [
-  { id: 'now', label: 'on.pickerNow' },
-  { id: 'large', label: 'on.pickerLarge' },
-]
+import { fadeY } from '../lib/motion'
+// Restore with Now / Future tabs:
+// import { ChevronDown, Search } from 'lucide-react'
+// import { PICKER_CLUSTERS, clustersIn, matchHospital, type PickerCluster } from '../data/hospitalPicker'
+// import { easeOut } from '../lib/motion'
+// import { SegmentedControl } from './SegmentedControl'
+// const SIZES: { id: PickerSize; label: StringKey }[] = [
+//   { id: 'now', label: 'on.pickerNow' },
+//   { id: 'large', label: 'on.pickerLarge' },
+// ]
 
 export function HospitalPicker({
   selected,
@@ -34,31 +33,31 @@ export function HospitalPicker({
   selectableIds?: HospitalId[] | null
 }) {
   const { t } = useLang()
-  const [size, setSize] = useState<PickerSize>('now')
-  const [query, setQuery] = useState('')
-  const [openClusters, setOpenClusters] = useState<Set<PickerCluster>>(() => new Set(PICKER_CLUSTERS))
+  const size: PickerSize = 'now'
+  // const [size, setSize] = useState<PickerSize>('now')
+  // const [query, setQuery] = useState('')
+  // const [openClusters, setOpenClusters] = useState<Set<PickerCluster>>(() => new Set(PICKER_CLUSTERS))
   const [previewNote, setPreviewNote] = useState(false)
 
   const catalog = useMemo(() => hospitalsFor(size), [size])
-  const clusters = useMemo(() => clustersIn(catalog), [catalog])
+  // const clusters = useMemo(() => clustersIn(catalog), [catalog])
+  // const filtered = catalog.filter((h) => matchHospital(h, query))
 
-  const filtered = catalog.filter((h) => matchHospital(h, query))
+  // function chooseSize(next: PickerSize) {
+  //   setSize(next)
+  //   setQuery('')
+  //   setOpenClusters(new Set(PICKER_CLUSTERS))
+  //   setPreviewNote(false)
+  // }
 
-  function chooseSize(next: PickerSize) {
-    setSize(next)
-    setQuery('')
-    setOpenClusters(new Set(PICKER_CLUSTERS))
-    setPreviewNote(false)
-  }
-
-  function toggleCluster(c: PickerCluster) {
-    setOpenClusters((prev) => {
-      const next = new Set(prev)
-      if (next.has(c)) next.delete(c)
-      else next.add(c)
-      return next
-    })
-  }
+  // function toggleCluster(c: PickerCluster) {
+  //   setOpenClusters((prev) => {
+  //     const next = new Set(prev)
+  //     if (next.has(c)) next.delete(c)
+  //     else next.add(c)
+  //     return next
+  //   })
+  // }
 
   function choose(h: PickerHospital) {
     if (canStartSession(h, selectableIds)) {
@@ -69,10 +68,9 @@ export function HospitalPicker({
     setPreviewNote(true)
   }
 
-  const showSearch = size !== 'now'
-
   return (
     <div>
+      {/* Now / Future size tabs — restore when Future hospitals ship
       <p className="text-[12px] font-semibold text-muted">{t('on.pickerCompare')}</p>
       <SegmentedControl
         group="picker-size"
@@ -82,10 +80,12 @@ export function HospitalPicker({
         buttonClassName="py-1.5"
         options={SIZES.map(({ id, label }) => ({ id, label: t(label) }))}
       />
+      */}
 
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={size} {...fadeY}>
-      {showSearch && (
+      {/* Future search — restore with Future tab
+      {size !== 'now' && (
         <label className="relative mt-3 block">
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input
@@ -101,9 +101,11 @@ export function HospitalPicker({
           />
         </label>
       )}
+      */}
 
       {previewNote && <p className="mt-2.5 text-[12px] leading-snug text-teal-deep">{t('on.pickerPreview')}</p>}
 
+      {/* Future clustered list — restore with Future tab
       {size === 'large' ? (
         filtered.length === 0 ? (
           <p className="mt-3 px-1 text-[13px] text-ink-soft">{t('on.pickerEmpty')}</p>
@@ -146,12 +148,13 @@ export function HospitalPicker({
           </div>
         )
       ) : (
+      */}
         <div className="mt-3 grid gap-2.5">
           {catalog.map((h) => (
             <HospitalRow key={h.key} h={h} selected={h.hospitalId === selected} onClick={() => choose(h)} />
           ))}
         </div>
-      )}
+      {/* )} */}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -168,8 +171,8 @@ function HospitalRow({
   onClick: () => void
 }) {
   const { t } = useLang()
-  const name = h.hospitalId ? t(`hosp.${h.hospitalId}.name` as StringKey) : h.name
-  const prep = h.hospitalId ? t(`hosp.${h.hospitalId}.prep` as StringKey) : h.prep
+  const name = h.hospitalId ? t(hospCopyKey(h.hospitalId, 'name')) : h.name
+  const prep = h.hospitalId ? t(hospCopyKey(h.hospitalId, 'prep')) : h.prep
   return (
     <button
       type="button"
