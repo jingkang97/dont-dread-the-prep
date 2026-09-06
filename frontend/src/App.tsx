@@ -24,7 +24,7 @@ import { SessionBar } from './components/SessionBar'
 import { PitchRail } from './components/PitchRail'
 import { AppointmentChooser, ChangeDatePanel, StartOverSheet } from './components/AppointmentEdit'
 import { ShortcutSheet } from './components/ShortcutSheet'
-import { easeOut } from './lib/motion'
+import { fadeY } from './lib/motion'
 import { DATE_LOCALES } from './lib/dateLocale'
 import { useLang } from './i18n/LanguageContext'
 import { cn } from './lib/cn'
@@ -72,10 +72,7 @@ export default function App() {
           <motion.div
             key="onboarding"
             className="flex min-h-0 flex-1 flex-col overflow-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18, ease: easeOut }}
+            {...fadeY}
           >
           <Onboarding
             onComplete={async (d) => {
@@ -89,10 +86,7 @@ export default function App() {
           <motion.div
             key="session"
             className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18, ease: easeOut }}
+            {...fadeY}
           >
             <SessionBar
               session={session}
@@ -118,10 +112,7 @@ export default function App() {
                     'absolute inset-0 overscroll-y-contain',
                     screen === 'timeline' || screen === 'food' ? 'overflow-hidden' : 'overflow-y-auto',
                   )}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.22, ease: easeOut }}
+                  {...fadeY}
                 >
               {screen === 'home' && (
                 <Home session={session} onOpen={setScreen} onShortcut={setShortcut} />

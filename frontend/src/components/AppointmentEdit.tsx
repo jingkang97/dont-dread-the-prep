@@ -4,7 +4,7 @@ import { HOSPITALS } from '../data/hospitals'
 import { DateSlotPicker } from './DateSlotPicker'
 import { GeneratingPane, PrimaryButton } from './ui'
 import { useLang } from '../i18n/LanguageContext'
-import { easeOut } from '../lib/motion'
+import { easeOut, fadeY } from '../lib/motion'
 import type { PrepSession } from '../lib/session'
 import type { Slot } from '../data/hospitals'
 
@@ -149,19 +149,13 @@ export function ChangeDatePanel({
   return (
     <motion.div
       className="absolute inset-0 z-50 flex flex-col bg-paper"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 8 }}
-      transition={{ duration: 0.2, ease: easeOut }}
+      {...fadeY}
     >
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-5">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={busy ? 'build' : 'form'}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.28, ease: easeOut }}
+            {...fadeY}
           >
             {busy ? (
               <GeneratingPane
@@ -173,12 +167,12 @@ export function ChangeDatePanel({
                 <p className="text-[13px] font-semibold text-muted">
                   {t('app.stayingAt', { hospital: hospital.short })}
                 </p>
-                <h2 className="font-display mt-1 text-[22px] text-ink">{t('app.dateTitle')}</h2>
                 <div className="mt-4">
                   <DateSlotPicker
                     date={date}
                     slot={slot}
                     reportingTime={reportingTime}
+                    dateLabel={t('app.dateTitle')}
                     onChange={(next) => {
                       if (next.date) setDate(next.date)
                       if (next.slot) setSlot(next.slot)

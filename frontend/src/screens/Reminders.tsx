@@ -9,7 +9,7 @@ import { cn } from '../lib/cn'
 import { DATE_LOCALES } from '../lib/dateLocale'
 import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
-import { markWaOptIn, waJoinHref } from '../lib/session'
+import { markWaOptIn, TWILIO_JOIN_WORD, waJoinHref } from '../lib/session'
 import { remindersFor } from '../lib/timeline'
 import { easeOut } from '../lib/motion'
 
@@ -28,12 +28,12 @@ export function Reminders({
 }) {
   const { t, lang } = useLang()
   const hospital = HOSPITALS[session.hospitalId]
-  const [joinCode, setJoinCode] = useState('sandbox')
+  const [joinCode, setJoinCode] = useState(TWILIO_JOIN_WORD)
   const [copied, setCopied] = useState(false)
   const copyTimer = useRef<number | undefined>(undefined)
   const report = new Date(`${session.date}T${session.reportingTime}:00`)
   const items = remindersFor(report)
-  const href = waJoinHref(session.id, joinCode)
+  const href = waJoinHref(joinCode)
 
   useEffect(() => () => window.clearTimeout(copyTimer.current), [])
 
@@ -106,8 +106,6 @@ export function Reminders({
         />
         <p className="mt-3 rounded-xl bg-paper px-3 py-2 font-mono text-[12px] leading-relaxed text-ink">
           join {joinCode}
-          <br />
-          Reminders for session {session.id}
         </p>
         <a
           href={href}

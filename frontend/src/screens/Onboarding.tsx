@@ -19,8 +19,8 @@ import type { Lang, StringKey } from '../i18n/strings'
 import { cn } from '../lib/cn'
 import { DATE_LOCALES } from '../lib/dateLocale'
 import { defaultReporting } from '../lib/timeline'
-import { easeOut } from '../lib/motion'
 import { ApiError, listApiHospitals, type ApiHospital, type ApiProtocolSummary } from '../lib/api'
+import { easeOut, fadeY } from '../lib/motion'
 import yellowForm from '../assets/sgh-yellow-form.jpg'
 
 function prettyTime(hm: string) {
@@ -196,10 +196,7 @@ export function Onboarding({
           <motion.div
             key={busy ? 'build' : step}
             className="absolute inset-0 overflow-y-auto overscroll-y-contain overflow-anchor-none px-5 pb-8"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.28, ease: easeOut }}
+            {...fadeY}
           >
             {busy ? (
               <GeneratingPane

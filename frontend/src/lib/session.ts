@@ -278,9 +278,10 @@ export async function updateAppointment(
   return next
 }
 
-export const TWILIO_SANDBOX = '14155238886'
+/** Twilio Try WhatsApp sender (console → Messaging → Try WhatsApp). */
+export const TWILIO_SANDBOX = '17372508034'
+export const TWILIO_JOIN_WORD = 'twilio-trial'
 
-export function waJoinHref(sessionId: string, sandboxJoin = 'join-code') {
-  const text = `join ${sandboxJoin}\n\nReminders for session ${sessionId}`
-  return `https://wa.me/${TWILIO_SANDBOX}?text=${encodeURIComponent(text)}`
+export function waJoinHref(sandboxJoin = TWILIO_JOIN_WORD) {
+  return `https://wa.me/${TWILIO_SANDBOX}?text=${encodeURIComponent(`join ${sandboxJoin}`)}`
 }
