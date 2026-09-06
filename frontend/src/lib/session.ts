@@ -1,8 +1,21 @@
-import type { HospitalId, Slot } from '../data/hospitals'
+import {
+  API_HOSPITAL_IDS,
+  HOSPITAL_LIST,
+  isMvpHospitalId,
+  type HospitalId,
+  type Slot,
+} from '../data/hospitals'
 import { defaultReporting } from './timeline'
 import { clearFoodChat } from './foodChat'
 import { clearTimelineUi } from './timelineUi'
 import { clearFoodChatUi } from './foodChatUi'
+import {
+  ApiError,
+  createApiSession,
+  getApiSession,
+  patchApiSession,
+  type ApiSession,
+} from './api'
 
 export type Screen = 'onboarding' | 'home' | 'timeline' | 'food' | 'stool' | 'reminders'
 
@@ -15,6 +28,7 @@ export type PrepSession = {
   firstName?: string
   createdAt: string
   waOptIn: boolean
+  protocolName?: string
 }
 
 export function cleanFirstName(raw?: string) {
@@ -26,7 +40,43 @@ export function cleanFirstName(raw?: string) {
 const KEY = 'preppath.session.v1'
 const COOKIE = 'preppath_session'
 const PARAM = 'p'
-const HOSPITAL_IDS: HospitalId[] = ['sgh', 'nccs', 'ttsh', 'skh', 'cgh']
+const HOSPITAL_IDS: HospitalId[] = HOSPITAL_LIST.map((h) => h.id)
+
+export { API_HOSPITAL_IDS }
+
+function normalizeTime(value: string) {
+  return value.length >= 5 ? value.slice(0, 5) : value
+}
+
+function toApiTime(hm: string) {
+  return hm.length === 5 ? `${hm}:00` : hm
+}
+
+function isHospitalId(code: string): code is HospitalId {
+  return (HOSPITAL_IDS as string[]).includes(code)
+}
+
+/** Session create only succeeds for MVP hospitals (same gate as HospitalPicker). */
+export function isSessionHospitalId(code: string): code is HospitalId {
+  return isMvpHospitalId(code)
+}
+
+export function fromApiSession(row: ApiSession): PrepSession {
+  if (!isHospitalId(row.hospital_code)) {
+    throw new Error(`Unsupported hospital_code from API: ${row.hospital_code}`)
+  }
+  return {
+    id: row.public_code,
+    hospitalId: row.hospital_code,
+    date: row.procedure_date,
+    slot: row.slot,
+    reportingTime: normalizeTime(row.reporting_time),
+    firstName: row.first_name ?? undefined,
+    createdAt: row.created_at,
+    waOptIn: row.wa_opt_in,
+    protocolName: row.protocol_name,
+  }
+}
 
 function parseSession(raw: unknown): PrepSession | null {
   if (!raw || typeof raw !== 'object') return null
@@ -39,10 +89,11 @@ function parseSession(raw: unknown): PrepSession | null {
     hospitalId: s.hospitalId,
     date: String(s.date),
     slot: s.slot,
-    reportingTime: String(s.reportingTime),
+    reportingTime: normalizeTime(String(s.reportingTime)),
     firstName: cleanFirstName(s.firstName),
     createdAt: String(s.createdAt),
     waOptIn: Boolean(s.waOptIn),
+    protocolName: s.protocolName ? String(s.protocolName) : undefined,
   }
 }
 
@@ -132,15 +183,6 @@ function persistEverywhere(session: PrepSession | null) {
   publishManifest(session)
 }
 
-export function newSessionId() {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  let id = ''
-  for (let i = 0; i < 4; i += 1) {
-    id += alphabet[Math.floor(Math.random() * alphabet.length)]
-  }
-  return id
-}
-
 export function loadSession(): PrepSession | null {
   try {
     const fromStore = (() => {
@@ -167,38 +209,70 @@ export function clearSession() {
   clearTimelineUi()
 }
 
-export function createSession(partial: {
+/** Refresh from API using cached public_code; keep cache if offline; clear if 404. */
+export async function hydrateSession(): Promise<PrepSession | null> {
+  const cached = loadSession()
+  if (!cached?.id) return null
+
+  try {
+    const fresh = fromApiSession(await getApiSession(cached.id))
+    saveSession(fresh)
+    return fresh
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) {
+      clearSession()
+      return null
+    }
+    return cached
+  }
+}
+
+export async function createSession(partial: {
   hospitalId: HospitalId
   date: string
   slot: Slot
   reportingTime?: string
   firstName?: string
-}): PrepSession {
-  const session: PrepSession = {
-    id: newSessionId(),
-    hospitalId: partial.hospitalId,
-    date: partial.date,
+  protocolName?: string
+}): Promise<PrepSession> {
+  const reportingTime = partial.reportingTime || defaultReporting(partial.slot)
+  const firstName = cleanFirstName(partial.firstName)
+  const row = await createApiSession({
+    hospital_code: partial.hospitalId,
+    procedure_date: partial.date,
     slot: partial.slot,
-    reportingTime: partial.reportingTime || defaultReporting(partial.slot),
-    firstName: cleanFirstName(partial.firstName),
-    createdAt: new Date().toISOString(),
-    waOptIn: false,
-  }
+    reporting_time: toApiTime(reportingTime),
+    first_name: firstName,
+    protocol_name: partial.protocolName,
+  })
+  const session = fromApiSession(row)
   saveSession(session)
   return session
 }
 
-export function markWaOptIn(session: PrepSession): PrepSession {
-  const next = { ...session, waOptIn: true }
-  saveSession(next)
-  return next
+export async function markWaOptIn(session: PrepSession): Promise<PrepSession> {
+  try {
+    const row = await patchApiSession(session.id, { wa_opt_in: true })
+    const next = fromApiSession(row)
+    saveSession(next)
+    return next
+  } catch {
+    const next = { ...session, waOptIn: true }
+    saveSession(next)
+    return next
+  }
 }
 
-export function updateAppointment(
+export async function updateAppointment(
   session: PrepSession,
   patch: { date: string; slot: Slot; reportingTime: string },
-): PrepSession {
-  const next = { ...session, ...patch }
+): Promise<PrepSession> {
+  const row = await patchApiSession(session.id, {
+    procedure_date: patch.date,
+    slot: patch.slot,
+    reporting_time: toApiTime(patch.reportingTime),
+  })
+  const next = fromApiSession(row)
   saveSession(next)
   clearTimelineUi()
   return next

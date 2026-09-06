@@ -13,11 +13,12 @@ import { Reminders } from './screens/Reminders'
 import {
   clearSession,
   createSession,
-  loadSession,
+  hydrateSession,
   updateAppointment,
   type PrepSession,
   type Screen,
 } from './lib/session'
+import { ApiError } from './lib/api'
 import { HOSPITALS } from './data/hospitals'
 import { SessionBar } from './components/SessionBar'
 import { PitchRail } from './components/PitchRail'
@@ -35,14 +36,23 @@ export default function App() {
   const [ready, setReady] = useState(false)
   const [edit, setEdit] = useState<'off' | 'choose' | 'date' | 'restart'>('off')
   const [shortcut, setShortcut] = useState<'off' | 'ios' | 'android'>('off')
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   useEffect(() => {
-    const existing = loadSession()
-    if (existing) {
-      setSession(existing)
-      setScreen('home')
+    let cancelled = false
+    ;(async () => {
+      const existing = await hydrateSession()
+      if (cancelled) return
+      if (existing) {
+        setSession(existing)
+        setScreen('home')
+      }
+      setReady(true)
+    })()
+    return () => {
+      cancelled = true
     }
-    setReady(true)
   }, [])
 
   if (!ready) return null
@@ -65,8 +75,8 @@ export default function App() {
             {...fadeY}
           >
           <Onboarding
-            onComplete={(d) => {
-              const next = createSession(d)
+            onComplete={async (d) => {
+              const next = await createSession(d)
               setSession(next)
               setScreen('home')
             }}
@@ -78,7 +88,13 @@ export default function App() {
             className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
             {...fadeY}
           >
-            <SessionBar session={session} onChange={() => setEdit('choose')} />
+            <SessionBar
+              session={session}
+              onChange={() => {
+                setEditError(null)
+                setEdit('choose')
+              }}
+            />
             <div
               data-app-pane
               className={cn('relative min-h-0 flex-1', screen !== 'timeline' && '[&_[data-tl-fab]]:hidden')}
@@ -119,7 +135,10 @@ export default function App() {
                 when={format(new Date(`${session.date}T${session.reportingTime}:00`), 'd MMM, h:mm a', {
                   locale: DATE_LOCALES[lang],
                 })}
-                onChangeDate={() => setEdit('date')}
+                onChangeDate={() => {
+                  setEditError(null)
+                  setEdit('date')
+                }}
                 onStartOver={() => setEdit('restart')}
                 onKeep={() => setEdit('off')}
               />
@@ -127,11 +146,29 @@ export default function App() {
             {edit === 'date' && (
               <ChangeDatePanel
                 session={session}
-                onCancel={() => setEdit('off')}
-                onSave={(next) => {
-                  setSession(updateAppointment(session, next))
+                error={editError}
+                busy={savingEdit}
+                onCancel={() => {
+                  if (savingEdit) return
+                  setEditError(null)
                   setEdit('off')
-                  setScreen('home')
+                }}
+                onSave={async (next) => {
+                  setSavingEdit(true)
+                  setEditError(null)
+                  try {
+                    setSession(await updateAppointment(session, next))
+                    setEdit('off')
+                    setScreen('home')
+                  } catch (err) {
+                    setEditError(
+                      err instanceof ApiError
+                        ? err.detail
+                        : 'Could not save. Check the API is running.',
+                    )
+                  } finally {
+                    setSavingEdit(false)
+                  }
                 }}
               />
             )}
