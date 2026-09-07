@@ -24,12 +24,6 @@ export function Home({
   const { hospital, now, next, nextWhen, report, started } = usePrepSummary(session)
   const remaining = report ? formatDistanceStrict(report, now, { addSuffix: true, locale }) : ''
   const remindersOn = session.waOptIn || session.pushOptIn
-  const juice =
-    hospital.fruitJuice === 'yes'
-      ? t('home.juiceYes')
-      : hospital.fruitJuice === 'no'
-        ? t('home.juiceNo')
-        : t('home.juiceAsk')
 
   return (
     <div className="px-5 pb-8 pt-6">
@@ -133,23 +127,6 @@ export function Home({
           body={t('home.stoolBody')}
           onClick={() => onOpen('stool')}
         />
-      </Card>
-
-      <Card className="mt-4 p-4">
-        <div className="flex items-start gap-2">
-          <Sparkles size={16} className="mt-0.5 text-teal-deep" />
-          <div>
-            <p className="text-[13px] font-semibold text-navy">{t('home.faithful')}</p>
-            <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
-              {t('home.faithfulBody', {
-                hospital: hospital.short,
-                lastMeal: hospital.lastMeal,
-                milk: hospital.milkInCoffee === 'yes' ? t('home.milkYes') : t('home.milkNo'),
-                juice,
-              })}
-            </p>
-          </div>
-        </div>
       </Card>
 
       <Card data-tour="home-shortcut" className="mt-4 p-4">
