@@ -11,6 +11,7 @@ export type ApiSession = {
   reporting_time: string
   first_name: string | null
   wa_opt_in: boolean
+  push_opt_in: boolean
   created_at: string
 }
 
@@ -46,5 +47,25 @@ export function patchApiSession(publicCode: string, body: ApiSessionUpdate) {
   return apiFetch<ApiSession>(`/api/sessions/${encodeURIComponent(publicCode)}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
+  })
+}
+
+export function getVapidPublicKey() {
+  return apiFetch<{ public_key: string }>('/api/push/vapid-public-key')
+}
+
+export function subscribeApiPush(
+  publicCode: string,
+  body: { endpoint: string; keys: { p256dh: string; auth: string } },
+) {
+  return apiFetch<void>(`/api/sessions/${encodeURIComponent(publicCode)}/push`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function unsubscribeApiPush(publicCode: string) {
+  return apiFetch<void>(`/api/sessions/${encodeURIComponent(publicCode)}/push`, {
+    method: 'DELETE',
   })
 }

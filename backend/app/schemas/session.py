@@ -97,4 +97,5 @@ class SessionOut(BaseModel):
     reporting_time: time
     first_name: Optional[str] = None
     wa_opt_in: bool
+    push_opt_in: bool = False
     created_at: datetime

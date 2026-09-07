@@ -15,6 +15,9 @@ export {
   createApiSession,
   getApiSession,
   patchApiSession,
+  getVapidPublicKey,
+  subscribeApiPush,
+  unsubscribeApiPush,
 } from './sessions'
 export type {
   ApiSession,

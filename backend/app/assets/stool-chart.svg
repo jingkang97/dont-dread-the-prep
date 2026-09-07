@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="860" viewBox="0 0 1200 860">
+  <rect width="1200" height="860" fill="#f2f2f7"/>
+  <text x="56" y="72" fill="#8e8e93" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="600" letter-spacing="1">PREPPATH - PREP CHECK</text>
+  <text x="56" y="118" fill="#1c1c1e" font-family="Helvetica, Arial, sans-serif" font-size="42" font-weight="700">Stool scale</text>
+  <text x="56" y="156" fill="#3a3a3c" font-family="Helvetica, Arial, sans-serif" font-size="22">Adapted from TTSH 6-point scale. Aim for stage 6 before you leave.</text>
+
+  <!-- 1 -->
+  <g transform="translate(40 196)">
+    <rect width="360" height="280" rx="28" fill="#ffffff"/>
+    <path d="M148 36h64l-6 92a11 11 0 0 1-11 10h-30a11 11 0 0 1-11-10L148 36Z" fill="#f7f1e4" stroke="#c9bfa8" stroke-width="3"/>
+    <path d="M155 46h50l-5 76a8 8 0 0 1-8 7h-24a8 8 0 0 1-8-7L155 46Z" fill="#5c3a24"/>
+    <text x="32" y="176" fill="#1c1c1e" font-family="Helvetica, Arial, sans-serif" font-size="26" font-weight="700">1. Solid lumps</text>
+    <text x="32" y="210" fill="#8e8e93" font-family="Helvetica, Arial, sans-serif" font-size="18">Dark, thick, formed</text>
+    <rect x="32" y="228" width="108" height="28" rx="14" fill="#ffeceb"/>
+    <text x="86" y="247" text-anchor="middle" fill="#ff3b30" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">NOT READY</text>
+  </g>
+  <!-- 2 -->
+  <g transform="translate(420 196)">
+    <rect width="360" height="280" rx="28" fill="#ffffff"/>
+    <path d="M148 36h64l-6 92a11 11 0 0 1-11 10h-30a11 11 0 0 1-11-10L148 36Z" fill="#f7f1e4" stroke="#c9bfa8" stroke-width="3"/>
+    <path d="M155 46h50l-5 76a8 8 0 0 1-8 7h-24a8 8 0 0 1-8-7L155 46Z" fill="#7a4a28"/>
+    <text x="32" y="176" fill="#1c1c1e" font-family="Helvetica, Arial, sans-serif" font-size="26" font-weight="700">2. Soft blobs</text>
+    <text x="32" y="210" fill="#8e8e93" font-family="Helvetica, Arial, sans-serif" font-size="18">Brown, still has stool</text>
+    <rect x="32" y="228" width="108" height="28" rx="14" fill="#ffeceb"/>
+    <text x="86" y="247" text-anchor="middle" fill="#ff3b30" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">NOT READY</text>
+  </g>
+  <!-- 3 -->
+  <g transform="translate(800 196)">
+    <rect width="360" height="280" rx="28" fill="#ffffff"/>
+    <path d="M148 36h64l-6 92a11 11 0 0 1-11 10h-30a11 11 0 0 1-11-10L148 36Z" fill="#f7f1e4" stroke="#c9bfa8" stroke-width="3"/>
+    <path d="M155 46h50l-5 76a8 8 0 0 1-8 7h-24a8 8 0 0 1-8-7L155 46Z" fill="#8a5a2a"/>
+    <text x="32" y="176" fill="#1c1c1e" font-family="Helvetica, Arial, sans-serif" font-size="26" font-weight="700">3. Cloudy brown</text>
+    <text x="32" y="210" fill="#8e8e93" font-family="Helvetica, Arial, sans-serif" font-size="18">Dark liquid + particles</text>
+    <rect x="32" y="228" width="108" height="28" rx="14" fill="#ffeceb"/>
+    <text x="86" y="247" text-anchor="middle" fill="#ff3b30" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">NOT READY</text>
+  </g>
+  <!-- 4 -->
+  <g transform="translate(40 500)">
+    <rect width="360" height="280" rx="28" fill="#ffffff"/>
+    <path d="M148 36h64l-6 92a11 11 0 0 1-11 10h-30a11 11 0 0 1-11-10L148 36Z" fill="#f7f1e4" stroke="#c9bfa8" stroke-width="3"/>
+    <path d="M155 46h50l-5 76a8 8 0 0 1-8 7h-24a8 8 0 0 1-8-7L155 46Z" fill="#c47a2b"/>
+    <text x="32" y="176" fill="#1c1c1e" font-family="Helvetica, Arial, sans-serif" font-size="26" font-weight="700">4. Dark liquid</text>
+    <text x="32" y="210" fill="#8e8e93" font-family="Helvetica, Arial, sans-serif" font-size="18">Dark orange, semi-clear</text>
+    <rect x="32" y="228" width="108" height="28" rx="14" fill="#ffeceb"/>
+    <text x="86" y="247" text-anchor="middle" fill="#ff3b30" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">NOT READY</text>
+  </g>
+  <!-- 5 -->
+  <g transform="translate(420 500)">
+    <rect width="360" height="280" rx="28" fill="#ffffff"/>
+    <path d="M148 36h64l-6 92a11 11 0 0 1-11 10h-30a11 11 0 0 1-11-10L148 36Z" fill="#f7f1e4" stroke="#c9bfa8" stroke-width="3"/>
+    <path d="M156 58h48l-4 64a7 7 0 0 1-7 6h-26a7 7 0 0 1-7-6L156 58Z" fill="#e2a04a" opacity=".75"/>
+    <text x="32" y="176" fill="#1c1c1e" font-family="Helvetica, Arial, sans-serif" font-size="26" font-weight="700">5. Light orange</text>
+    <text x="32" y="210" fill="#8e8e93" font-family="Helvetica, Arial, sans-serif" font-size="18">Almost clear</text>
+    <rect x="32" y="228" width="92" height="28" rx="14" fill="#fff1e6"/>
+    <text x="78" y="247" text-anchor="middle" fill="#c93400" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">ALMOST</text>
+  </g>
+  <!-- 6 -->
+  <g transform="translate(800 500)">
+    <rect width="360" height="280" rx="28" fill="#ffffff"/>
+    <path d="M148 36h64l-6 92a11 11 0 0 1-11 10h-30a11 11 0 0 1-11-10L148 36Z" fill="#f7f1e4" stroke="#c9bfa8" stroke-width="3"/>
+    <path d="M156 58h48l-4 64a7 7 0 0 1-7 6h-26a7 7 0 0 1-7-6L156 58Z" fill="#e6c35c" opacity=".75"/>
+    <text x="32" y="176" fill="#1c1c1e" font-family="Helvetica, Arial, sans-serif" font-size="26" font-weight="700">6. Clear yellow</text>
+    <text x="32" y="210" fill="#8e8e93" font-family="Helvetica, Arial, sans-serif" font-size="18">Watery, no particles</text>
+    <rect x="32" y="228" width="84" height="28" rx="14" fill="#e8f8ec"/>
+    <text x="74" y="247" text-anchor="middle" fill="#248a3d" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">READY</text>
+  </g>
+</svg>

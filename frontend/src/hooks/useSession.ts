@@ -5,10 +5,12 @@ import {
   clearSession,
   createSession,
   hydrateSession,
+  screenFromUrl,
   updateAppointment,
   type PrepSession,
   type Screen,
 } from '../lib/session'
+import { queueHomeTour } from '../lib/homeTour'
 
 export function useSession() {
   const [session, setSession] = useState<PrepSession | null>(null)
@@ -22,7 +24,7 @@ export function useSession() {
       if (cancelled) return
       if (existing) {
         setSession(existing)
-        setScreen('home')
+        setScreen(screenFromUrl() ?? 'home')
       }
       setReady(true)
     })()
@@ -33,6 +35,7 @@ export function useSession() {
 
   async function create(draft: OnboardingResult) {
     const next = await createSession(draft)
+    queueHomeTour()
     setSession(next)
     setScreen('home')
     return next

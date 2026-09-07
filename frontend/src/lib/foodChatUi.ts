@@ -4,7 +4,7 @@ type Stored = {
   landed: boolean
 }
 
-/** In-memory: tab switches restore Food scroll; new answers still jump to latest. */
+/** In-memory: first Food visit lands at the top; tab switches restore scroll; new answers jump to latest. */
 let stored: Stored | null = null
 
 export function loadFoodChatUi(sessionId: string): Stored | null {

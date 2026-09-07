@@ -55,7 +55,7 @@ Schema and seed (`backend/sql/mvp.sql`, `mvp.seed.sql`) still run against Supaba
 - **AM/PM timeline** — hospital-faithful; SGH afternoon packet times are flagged as gaps
 - **Food lookup** — retrieval-only classifier (Yes / No / Ask your care team) from Doc 03
 - **Stool + call** — 6-point scale and publicly listed hospital numbers
-- **WhatsApp opt-in** — `wa.me` to the Twilio sandbox with session id
+- **Telegram reminders** — `t.me/Bot?start=SESSION_ID`. Backend stores `chat_id` on `/start` and sends T−72 / T−24 / T−6. Local test mode sends those three one minute apart. Set `TELEGRAM_BOT_TOKEN` and `VITE_TELEGRAM_BOT_USERNAME`.
 - **EN / 中文 / Melayu / தமிழ்** — UI chrome only. Cited hospital wording stays in English.
 
 Draft ruleset. Not medical advice. Not dietitian-approved.

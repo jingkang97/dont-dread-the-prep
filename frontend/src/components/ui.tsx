@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { HTMLAttributes, ReactNode } from 'react'
 import { type RuleId, type Verdict } from '../data/foods'
 import { useLang } from '../i18n/LanguageContext'
 import { ruleTitleKey } from '../i18n/keys'
@@ -53,12 +53,16 @@ export function SourceLine({ text, rules }: { text: string; rules?: RuleId[] }) 
 export function Card({
   children,
   className,
+  ...rest
 }: {
   children: ReactNode
   className?: string
-}) {
+} & HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('rounded-[20px] bg-paper-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]', className)}>
+    <div
+      className={cn('rounded-[20px] bg-paper-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]', className)}
+      {...rest}
+    >
       {children}
     </div>
   )

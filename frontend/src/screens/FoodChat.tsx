@@ -93,7 +93,9 @@ export function FoodChat({ session }: { session: PrepSession }) {
         el.scrollTo({ top: saved.listTop, behavior: 'auto' })
         measure()
       } else {
-        alignTurn('auto')
+        el.scrollTo({ top: 0, behavior: 'auto' })
+        saveFoodChatUi(session.id, { listTop: 0, landed: true })
+        measure()
       }
     }
 

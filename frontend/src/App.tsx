@@ -17,6 +17,7 @@ import { formatSessionWhen } from './lib/dates'
 import { useLang } from './i18n/LanguageContext'
 import { cn } from './lib/cn'
 import { useAppointmentEdit } from './hooks/useAppointmentEdit'
+import { useHomeTour } from './hooks/useHomeTour'
 import { useSession } from './hooks/useSession'
 import { useState } from 'react'
 
@@ -25,6 +26,7 @@ export default function App() {
   const { session, setSession, screen, setScreen, ready, create, clear, update } = useSession()
   const edit = useAppointmentEdit()
   const [shortcut, setShortcut] = useState<'off' | 'ios' | 'android'>('off')
+  useHomeTour(ready && !!session && screen === 'home')
 
   if (!ready) return null
 
@@ -33,7 +35,10 @@ export default function App() {
     <div className="h-full xl:grid xl:grid-cols-[minmax(0,1fr)_430px]">
       <PitchRail session={session} />
 
-      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col overflow-hidden bg-paper xl:border-x xl:border-black/5">
+      <div
+        data-app-column
+        className="relative mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col overflow-hidden bg-paper xl:border-x xl:border-black/5"
+      >
         <DraftBanner />
         <LanguageBar />
         <AnimatePresence mode="wait" initial={false}>
@@ -81,7 +86,9 @@ export default function App() {
               {screen === 'stool' && (
                 <StoolGuide session={session} onReminders={() => setScreen('reminders')} />
               )}
-              {screen === 'reminders' && <Reminders session={session} onSession={setSession} />}
+              {screen === 'reminders' && (
+                <Reminders session={session} onSession={setSession} onShortcut={setShortcut} />
+              )}
                 </motion.div>
               </AnimatePresence>
             </div>

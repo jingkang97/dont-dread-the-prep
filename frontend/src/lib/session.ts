@@ -19,6 +19,7 @@ export type PrepSession = SessionInput & {
   firstName?: string
   createdAt: string
   waOptIn: boolean
+  pushOptIn: boolean
   protocolName?: string
 }
 
@@ -31,6 +32,8 @@ export function cleanFirstName(raw?: string) {
 const KEY = 'preppath.session.v1'
 const COOKIE = 'preppath_session'
 const PARAM = 'p'
+const CODE_PARAM = 's'
+const GO_PARAM = 'go'
 
 function normalizeTime(value: string) {
   return value.length >= 5 ? value.slice(0, 5) : value
@@ -51,6 +54,7 @@ export function fromApiSession(row: ApiSession): PrepSession {
     firstName: row.first_name ?? undefined,
     createdAt: row.created_at,
     waOptIn: row.wa_opt_in,
+    pushOptIn: Boolean(row.push_opt_in),
     protocolName: row.protocol_name,
   }
 }
@@ -71,6 +75,7 @@ function parseSession(raw: unknown): PrepSession | null {
     firstName: cleanFirstName(s.firstName),
     createdAt: String(s.createdAt),
     waOptIn: Boolean(s.waOptIn),
+    pushOptIn: Boolean(s.pushOptIn),
     protocolName: s.protocolName ? String(s.protocolName) : undefined,
   }
 }
@@ -95,6 +100,21 @@ function sessionFromUrl(): PrepSession | null {
   if (query) return decodeSession(query)
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, '')).get(PARAM)
   return hash ? decodeSession(hash) : null
+}
+
+function publicCodeFromUrl(): string | null {
+  const raw = new URLSearchParams(window.location.search).get(CODE_PARAM)
+  if (!raw) return null
+  const code = raw.trim().toUpperCase()
+  return /^[A-Z2-9]{4}$/.test(code) ? code : null
+}
+
+export function screenFromUrl(): Screen | null {
+  const go = new URLSearchParams(window.location.search).get(GO_PARAM)
+  if (go === 'timeline' || go === 'food' || go === 'stool' || go === 'reminders' || go === 'home') {
+    return go
+  }
+  return null
 }
 
 function sessionFromCookie(): PrepSession | null {
@@ -142,6 +162,7 @@ function publishManifest(session: PrepSession | null) {
     icons: [
       { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
       { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
+      { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
     ],
   }
@@ -193,6 +214,19 @@ export function clearSession() {
 
 /** Refresh from API using cached public_code; keep cache if offline; clear if 404. */
 export async function hydrateSession(): Promise<PrepSession | null> {
+  const fromLink = publicCodeFromUrl()
+  if (fromLink) {
+    try {
+      const fresh = fromApiSession(await getApiSession(fromLink))
+      saveSession(fresh)
+      return fresh
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        return loadSession()
+      }
+    }
+  }
+
   const cached = loadSession()
   if (!cached?.id) return null
 
@@ -260,10 +294,11 @@ export async function updateAppointment(
   return next
 }
 
-/** Twilio Try WhatsApp sender (console → Messaging → Try WhatsApp). */
-export const TWILIO_SANDBOX = '17372508034'
-export const TWILIO_JOIN_WORD = 'twilio-trial'
+/** Telegram bot username without @. Set VITE_TELEGRAM_BOT_USERNAME after BotFather. */
+export const TELEGRAM_BOT =
+  (import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined)?.replace(/^@/, '').trim() ||
+  'PrepPathBot'
 
-export function waJoinHref(sandboxJoin = TWILIO_JOIN_WORD) {
-  return `https://wa.me/${TWILIO_SANDBOX}?text=${encodeURIComponent(`join ${sandboxJoin}`)}`
+export function telegramStartHref(sessionId: string) {
+  return `https://t.me/${TELEGRAM_BOT}?start=${encodeURIComponent(sessionId)}`
 }

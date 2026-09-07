@@ -33,6 +33,18 @@ class Settings(BaseSettings):
     # Prefer "Session mode" pooler (port 5432) for Railway and local uvicorn.
     database_url: str = ""
 
+    # BotFather token. Polls getUpdates locally; set webhook later when public.
+    telegram_bot_token: str = ""
+    telegram_webhook_secret: str = ""
+    # True: send T−72 / T−24 / T−6 one per minute after /start, then stop.
+    telegram_reminder_test: bool = True
+    site_url: str = "http://localhost:5173"
+
+    # Web Push (PWA). Public key is served to the browser; keep the private key secret.
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_mailto: str = "mailto:preppath@localhost"
+
     @property
     def cors_origin_list(self) -> list[str]:
         seen: set[str] = set()

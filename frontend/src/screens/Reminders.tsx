@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { format, isAfter } from 'date-fns'
-import { Check } from 'lucide-react'
+import { Bell, Check, Info } from 'lucide-react'
 import { motion } from 'motion/react'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { Card, GhostButton, PrimaryButton } from '../components/ui'
@@ -9,11 +8,12 @@ import { cn } from '../lib/cn'
 import { DATE_LOCALES } from '../lib/dateLocale'
 import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
-import { markWaOptIn, TWILIO_JOIN_WORD, waJoinHref } from '../lib/session'
+import { markWaOptIn, TELEGRAM_BOT, telegramStartHref } from '../lib/session'
 import { sessionReportAt } from '../lib/dates'
 import { remindersFor } from '../lib/timeline'
 import { easeOut } from '../lib/motion'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
+import { usePushReminders } from '../hooks/usePushReminders'
 
 const WA_COPY: Record<string, { label: StringKey; blurb: StringKey }> = {
   t72: { label: 'wa.t72', blurb: 'wa.t72b' },
@@ -24,22 +24,29 @@ const WA_COPY: Record<string, { label: StringKey; blurb: StringKey }> = {
 export function Reminders({
   session,
   onSession,
+  onShortcut,
 }: {
   session: PrepSession
   onSession: (s: PrepSession) => void
+  onShortcut: (os: 'ios' | 'android') => void
 }) {
   const { t, lang } = useLang()
-  const [joinCode, setJoinCode] = useState(TWILIO_JOIN_WORD)
   const { copied, copy } = useCopyToClipboard()
   const report = sessionReportAt(session)
   const items = remindersFor(report)
-  const href = waJoinHref(joinCode)
+  const href = telegramStartHref(session.id)
+  const push = usePushReminders(session, onSession)
 
   return (
     <div className="px-5 pb-10 pt-6">
       <ScreenHeader kicker={t('wa.kicker')} title={t('wa.title')} lead={t('wa.lead', { id: session.id })} />
 
       <Card className="mt-5 p-4">
+        <p className="text-[13px] font-semibold text-navy">{t('wa.welcome')}</p>
+        <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">{t('wa.welcomeBody')}</p>
+      </Card>
+
+      <Card className="mt-4 p-4">
         <p className="text-[13px] font-semibold text-navy">{t('wa.times')}</p>
         <ul className="mt-2 divide-y divide-line">
           {items.map((item) => (
@@ -61,32 +68,79 @@ export function Reminders({
         </p>
       </Card>
 
-      <Card className="mt-4 p-4">
-        <p className="text-[13px] font-semibold text-navy">{t('wa.sandbox')}</p>
-        <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">{t('wa.sandboxBody')}</p>
-        <label className="mt-3 block text-[12px] font-semibold text-muted" htmlFor="join">
-          {t('wa.joinWord')}
-        </label>
-        <input
-          id="join"
-          value={joinCode}
-          onChange={(e) => setJoinCode(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-line bg-paper px-3 py-2.5 text-[15px]"
-        />
-        <p className="mt-3 rounded-xl bg-paper px-3 py-2 font-mono text-[12px] leading-relaxed text-ink">
-          join {joinCode}
-        </p>
-        <a
-          href={href}
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => {
-            void markWaOptIn(session).then(onSession)
-          }}
+      <p className="mt-5 text-[13px] font-semibold text-muted">{t('wa.channels')}</p>
+      <div className="mt-2 grid grid-cols-2 gap-3">
+        <Card className="flex flex-col p-3.5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-teal/15 text-teal-deep">
+            <Bell size={18} />
+          </span>
+          <p className="mt-2.5 text-[15px] font-semibold leading-tight text-ink">{t('wa.pushTitle')}</p>
+          <p className="mt-1 flex-1 text-[12px] leading-relaxed text-ink-soft">{t('wa.pushBody')}</p>
+          {session.pushOptIn ? (
+            <GhostButton className="mt-3 py-2.5 text-[14px]" onClick={() => void push.disable()}>
+              {t('wa.pushOff')}
+            </GhostButton>
+          ) : (
+            <PrimaryButton
+              className="mt-3 py-2.5 text-[14px]"
+              disabled={push.busy}
+              onClick={() => {
+                if (push.needsInstall) onShortcut(push.shortcutOs)
+                else void push.enable()
+              }}
+            >
+              {push.busy ? t('wa.pushBusy') : t('wa.pushAllow')}
+            </PrimaryButton>
+          )}
+        </Card>
+
+        <Card className="flex flex-col p-3.5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-telegram text-white">
+            <TelegramMark />
+          </span>
+          <p className="mt-2.5 text-[15px] font-semibold leading-tight text-ink">{t('wa.sandbox')}</p>
+          <p className="mt-1 flex-1 text-[12px] leading-relaxed text-ink-soft">{t('wa.sandboxBody')}</p>
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3"
+            onClick={() => {
+              void markWaOptIn(session).then(onSession)
+            }}
+          >
+            <PrimaryButton className="bg-telegram py-2.5 text-[14px]">{t('wa.open')}</PrimaryButton>
+          </a>
+        </Card>
+      </div>
+
+      {push.needsInstall && !session.pushOptIn && (
+        <p
+          role="note"
+          className="mt-3 flex items-start gap-2 rounded-xl bg-cream px-3 py-2.5 text-[13px] leading-snug text-teal-deep"
         >
-          <PrimaryButton className="mt-3 bg-whatsapp">{t('wa.open')}</PrimaryButton>
-        </a>
-        <p className="mt-2 text-[11px] leading-relaxed text-muted">{t('wa.sandboxNote')}</p>
+          <Info size={16} className="mt-0.5 shrink-0" aria-hidden />
+          <span>{t('wa.pushNeedInstall')}</span>
+        </p>
+      )}
+      {!push.supported && (
+        <p className="mt-3 text-[13px] leading-relaxed text-muted">{t('wa.pushUnsupported')}</p>
+      )}
+      {push.error && (
+        <p className="mt-3 text-[13px] font-semibold text-no">
+          {t(push.error === 'denied' ? 'wa.pushDenied' : 'wa.pushError')}
+        </p>
+      )}
+      {session.pushOptIn && <p className="mt-3 text-[13px] font-semibold text-yes">{t('wa.pushOn')}</p>}
+
+      <Card className="mt-4 p-4">
+        <p className="text-[13px] font-semibold text-navy">{t('wa.startHint')}</p>
+        <p className="mt-3 rounded-xl bg-paper px-3 py-2 font-mono text-[12px] leading-relaxed text-ink">
+          t.me/{TELEGRAM_BOT}?start={session.id}
+        </p>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted">
+          {t('wa.sandboxNote', { bot: TELEGRAM_BOT, id: session.id })}
+        </p>
       </Card>
 
       {session.waOptIn && (
@@ -109,5 +163,13 @@ export function Reminders({
         </span>
       </GhostButton>
     </div>
+  )
+}
+
+function TelegramMark() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
+      <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
+    </svg>
   )
 }
