@@ -30,8 +30,10 @@ export function DateSlotPicker({
 
   return (
     <div>
-      <p className="text-[13px] font-semibold text-navy">{dateLabel ?? t('on.date')}</p>
-      <p className="font-display mt-1 text-[22px] tracking-tight text-ink">{formatYmd(date, lang)}</p>
+      {dateLabel ? <p className="text-[13px] font-semibold text-navy">{dateLabel}</p> : null}
+      <p className={cn('font-display text-[22px] tracking-tight text-ink', dateLabel && 'mt-1')}>
+        {formatYmd(date, lang)}
+      </p>
       <Card className="mt-3 px-1 py-2">
         <MonthCalendar
           selected={selected}
