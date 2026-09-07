@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getApiTimeline } from './api'
+import { getApiTimeline } from './api/timeline'
 import type { PrepSession } from './session'
 import type { TimelineEvent } from './timeline'
 
