@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Camera } from 'lucide-react'
-import { HOSPITALS } from '../data/hospitals'
 import type { OnboardingResult } from '../data/onboarding'
 import { protocolCopy } from '../lib/api'
 import { DateSlotPicker } from '../components/DateSlotPicker'
 import { HospitalPicker } from '../components/HospitalPicker'
 import { Card, GeneratingPane, GhostButton, PrimaryButton, SectionLabel } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
-import { hospCopyKey } from '../i18n/keys'
+import { hospCopyOr } from '../i18n/keys'
 import { cn } from '../lib/cn'
 import { formatHm, formatYmd } from '../lib/dates'
 import { ApiError } from '../lib/api'
@@ -23,7 +22,7 @@ export function Onboarding({
   onComplete: (d: OnboardingResult) => void | Promise<unknown>
 }) {
   const { t, lang } = useLang()
-  const { apiHospitals, selectableIds, hospitalsError } = useApiHospitals()
+  const { apiHospitals, hospitalsLoading, hospitalsError } = useApiHospitals()
   const {
     step,
     setStep,
@@ -36,7 +35,6 @@ export function Onboarding({
     leaveScan,
   } = useOnboardingDraft()
 
-  const hospital = draft.hospitalId ? HOSPITALS[draft.hospitalId] : null
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -44,6 +42,7 @@ export function Onboarding({
     () => apiHospitals.find((h) => h.code === draft.hospitalId) ?? null,
     [apiHospitals, draft.hospitalId],
   )
+  const hospitalShort = apiHospital?.short_name ?? ''
   const protocols = apiHospital?.protocols ?? []
   const needsProtocolChoice = protocols.length > 1
   const selectedProtocol = protocols.find((p) => p.name === draft.protocolName) ?? null
@@ -79,7 +78,7 @@ export function Onboarding({
 
   const prepDisplay = (() => {
     if (!selectedProtocol) {
-      return hospital ? t(hospCopyKey(hospital.id, 'prep')) : ''
+      return apiHospital?.protocols[0]?.prep_agent_label ?? ''
     }
     const copy = protocolCopy(selectedProtocol.name)
     return copy ? t(copy.label) : selectedProtocol.prep_agent_label
@@ -103,7 +102,7 @@ export function Onboarding({
             {busy ? (
               <GeneratingPane
                 title={t('on.generating')}
-                hint={t('on.generatingHint', { hospital: hospital?.short ?? '' })}
+                hint={t('on.generatingHint', { hospital: hospitalShort })}
               />
             ) : (
               <>
@@ -116,8 +115,9 @@ export function Onboarding({
             ) : null}
             <button
               type="button"
+              disabled={hospitalsLoading || apiHospitals.length === 0}
               onClick={() => runScan(apiHospitals)}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-teal/40 bg-cream px-4 py-3.5 text-[14px] font-semibold text-teal-deep"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-teal/40 bg-cream px-4 py-3.5 text-[14px] font-semibold text-teal-deep disabled:opacity-50"
             >
               <Camera size={18} />
               {t('on.scanCta')}
@@ -126,8 +126,9 @@ export function Onboarding({
             <div className="mt-5">
               <SectionLabel>{t('on.step1')}</SectionLabel>
               <HospitalPicker
+                hospitals={apiHospitals}
                 selected={draft.hospitalId}
-                selectableIds={selectableIds}
+                loading={hospitalsLoading}
                 onPick={(id) => {
                   setError(null)
                   pickHospital(id, apiHospitals)
@@ -192,16 +193,19 @@ export function Onboarding({
           </div>
         )}
 
-        {step === 'confirm' && hospital && draft.slot && (
+        {step === 'confirm' && apiHospital && draft.slot && (
           <div>
             <SectionLabel>{t('on.step3')}</SectionLabel>
             <Card className="mt-3 overflow-hidden">
               <div className="bg-cream px-4 py-3">
                 <p className="text-[12px] font-semibold text-teal-deep">{t('on.formTitle')}</p>
-                <p className="font-display text-[22px] tracking-tight text-ink">{hospital.short}</p>
+                <p className="font-display text-[22px] tracking-tight text-ink">{hospitalShort}</p>
               </div>
               <dl className="divide-y divide-line px-4">
-                <Row k={t('on.hospital')} v={t(hospCopyKey(hospital.id, 'name'))} />
+                <Row
+                  k={t('on.hospital')}
+                  v={hospCopyOr(t, apiHospital.code, 'name', apiHospital.name)}
+                />
                 <Row k={t('on.prep')} v={prepDisplay} />
                 <Row k={t('on.scopeDate')} v={formatYmd(draft.date, lang)} />
                 <Row k={t('on.sessionLabel')} v={draft.slot === 'am' ? t('on.morning') : t('on.afternoon')} />
@@ -224,7 +228,7 @@ export function Onboarding({
             />
             <p className="mt-1.5 text-[12px] text-muted">{t('on.nameHint')}</p>
             <p className="mt-3 text-[12px] leading-relaxed text-muted">
-              {t('on.confirmNote', { hospital: hospital.short })}
+              {t('on.confirmNote', { hospital: hospitalShort })}
             </p>
             {error ? (
               <p className="mt-3 text-[13px] leading-relaxed text-no" role="alert">

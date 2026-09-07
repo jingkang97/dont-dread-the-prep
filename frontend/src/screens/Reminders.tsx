@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { format, isAfter } from 'date-fns'
 import { Check } from 'lucide-react'
 import { motion } from 'motion/react'
-import { HOSPITALS } from '../data/hospitals'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { Card, GhostButton, PrimaryButton } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
@@ -30,7 +29,6 @@ export function Reminders({
   onSession: (s: PrepSession) => void
 }) {
   const { t, lang } = useLang()
-  const hospital = HOSPITALS[session.hospitalId]
   const [joinCode, setJoinCode] = useState(TWILIO_JOIN_WORD)
   const { copied, copy } = useCopyToClipboard()
   const report = sessionReportAt(session)
@@ -59,7 +57,7 @@ export function Reminders({
           ))}
         </ul>
         <p className="mt-2 text-[12px] text-muted">
-          {t('wa.computed', { hospital: hospital.short, time: session.reportingTime })}
+          {t('wa.computed', { hospital: session.hospitalShort, time: session.reportingTime })}
         </p>
       </Card>
 

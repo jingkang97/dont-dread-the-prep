@@ -1,4 +1,3 @@
-import { HOSPITALS } from '../data/hospitals'
 import { useLang } from '../i18n/LanguageContext'
 import { formatSessionWhen } from '../lib/dates'
 import type { PrepSession } from '../lib/session'
@@ -11,7 +10,6 @@ export function SessionBar({
   onChange: () => void
 }) {
   const { t, lang } = useLang()
-  const hospital = HOSPITALS[session.hospitalId]
   const when = formatSessionWhen(session, lang)
   const slot = session.slot === 'am' ? t('on.morning') : t('on.afternoon')
 
@@ -20,7 +18,7 @@ export function SessionBar({
       <div className="min-w-0 flex-1 pl-1">
         <p className="truncate text-[15px] font-semibold leading-tight text-ink">
           {session.firstName ? `${session.firstName} · ` : ''}
-          {hospital.short} · {slot}
+          {session.hospitalShort} · {slot}
         </p>
         <p className="truncate text-[12px] leading-tight text-muted">
           {when} · {session.id}

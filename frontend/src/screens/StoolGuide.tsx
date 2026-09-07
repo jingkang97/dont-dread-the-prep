@@ -1,10 +1,11 @@
 import { Phone } from 'lucide-react'
-import { HOSPITALS, formatPhone, telHref } from '../data/hospitals'
+import { formatPhone, telHref } from '../data/hospitals'
 import { STOOL_STAGES } from '../data/stool'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { Card, PrimaryButton, SectionLabel } from '../components/ui'
-import { hospContactKey, hospCopyKey, stoolStageKey } from '../i18n/keys'
+import { hospContactOr, hospCopyOr, stoolStageKey } from '../i18n/keys'
 import { useLang } from '../i18n/LanguageContext'
+import { useSessionHospital } from '../hooks/useSessionHospital'
 import type { PrepSession } from '../lib/session'
 import { cn } from '../lib/cn'
 
@@ -16,14 +17,15 @@ export function StoolGuide({
   onReminders: () => void
 }) {
   const { t } = useLang()
-  const hospital = HOSPITALS[session.hospitalId]
+  const { hospital, protocol, short } = useSessionHospital(session)
+  const contacts = hospital?.contacts ?? []
 
   return (
     <div className="px-5 pb-10 pt-6">
       <ScreenHeader
         kicker={t('stool.kicker')}
         title={t('stool.title')}
-        lead={t(hospCopyKey(hospital.id, 'stoolAction'))}
+        lead={hospCopyOr(t, session.hospitalId, 'stoolAction', protocol?.form_gap ?? '')}
       />
 
       <div className="mt-5 grid gap-2">
@@ -53,25 +55,29 @@ export function StoolGuide({
       <Card className="mt-4 border-ask/30 bg-ask-bg/40 p-4">
         <p className="text-[14px] font-semibold text-ask">{t('stool.ifNotReady')}</p>
         <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
-          {t('stool.ifNotReadyBody', { hospital: hospital.short })}
+          {t('stool.ifNotReadyBody', { hospital: short })}
         </p>
       </Card>
 
       <div className="mt-5">
-        <SectionLabel>{t('stool.contactFor', { hospital: hospital.short })}</SectionLabel>
+        <SectionLabel>{t('stool.contactFor', { hospital: short })}</SectionLabel>
       </div>
-      <p className="mt-1 text-[12px] leading-relaxed text-muted">{t(hospCopyKey(hospital.id, 'formGap'))}</p>
+      <p className="mt-1 text-[12px] leading-relaxed text-muted">
+        {hospCopyOr(t, session.hospitalId, 'formGap', protocol?.form_gap ?? '')}
+      </p>
 
       <div className="mt-3 grid gap-2.5">
-        {hospital.contacts.map((c, i) => (
+        {contacts.map((c, i) => (
           <Card key={c.phone} className="p-4">
             <p className="text-[12px] font-semibold tracking-wide text-muted">
-              {t(hospContactKey(hospital.id, i, 'label'))}
+              {hospContactOr(t, session.hospitalId, i, 'label', c.label)}
             </p>
             <p className="font-display mt-0.5 text-[28px] text-navy">{formatPhone(c.phone)}</p>
-            <p className="text-[12px] text-ink-soft">{t(hospContactKey(hospital.id, i, 'hours'))}</p>
+            <p className="text-[12px] text-ink-soft">
+              {hospContactOr(t, session.hospitalId, i, 'hours', c.hours ?? '')}
+            </p>
             <p className="mt-2 text-[12px] leading-relaxed text-muted">
-              {t(hospContactKey(hospital.id, i, 'note'))}
+              {hospContactOr(t, session.hospitalId, i, 'note', c.note ?? '')}
             </p>
             <a href={telHref(c.phone)}>
               <PrimaryButton className="mt-3">

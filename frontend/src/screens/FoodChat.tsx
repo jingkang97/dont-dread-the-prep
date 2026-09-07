@@ -2,7 +2,6 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { ArrowDown, Send } from 'lucide-react'
 import { classify, SUGGESTIONS, type ChatAnswer } from '../data/foods'
-import { HOSPITALS } from '../data/hospitals'
 import { BotCard } from '../components/food/BotCard'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { useLang } from '../i18n/LanguageContext'
@@ -43,7 +42,6 @@ function animateScrollTop(el: HTMLElement, ms: number) {
 
 export function FoodChat({ session }: { session: PrepSession }) {
   const { t } = useLang()
-  const hospital = HOSPITALS[session.hospitalId]
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<FoodChatMsg[]>(() => loadFoodChat(session.id))
   const listRef = useRef<HTMLDivElement>(null)
@@ -56,7 +54,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
 
   const intro: ChatAnswer = {
     verdict: 'ask',
-    title: t('food.introTitle', { hospital: hospital.short }),
+    title: t('food.introTitle', { hospital: session.hospitalShort }),
     body: t('food.introBody'),
     source: 'Doc 03 Low-residue ruleset — DRAFT, not dietitian-approved',
     rules: ['HOSP'],
@@ -117,7 +115,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
   function ask(shown: string, query = shown, labelKey?: StringKey) {
     const text = shown.trim()
     if (!text) return
-    const answer = classify(query.trim(), session.hospitalId)
+    const answer = classify(query.trim(), session.hospitalId, session.hospitalShort)
     setMessages((m) => [
       ...m,
       { id: crypto.randomUUID(), role: 'user', text, labelKey },
@@ -159,7 +157,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
         <ScreenHeader
           kicker={t('food.kicker')}
           title={t('food.title')}
-          lead={t('food.lead', { hospital: hospital.short })}
+          lead={t('food.lead', { hospital: session.hospitalShort })}
           leadClassName="mt-1 text-[13px] text-ink-soft"
           trailing={
             messages.length > 0 && !clearing ? (

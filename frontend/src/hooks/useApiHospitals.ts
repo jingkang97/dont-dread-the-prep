@@ -1,35 +1,38 @@
 import { useEffect, useState } from 'react'
-import { isMvpHospitalId, MVP_HOSPITAL_IDS, type HospitalId } from '../data/hospitals'
 import { ApiError, listApiHospitals, type ApiHospital } from '../lib/api'
 
+let cachedHospitals: ApiHospital[] | null = null
+let cachedError: string | null = null
+
 export function useApiHospitals() {
-  const [apiHospitals, setApiHospitals] = useState<ApiHospital[]>([])
-  const [selectableIds, setSelectableIds] = useState<HospitalId[] | null>([...MVP_HOSPITAL_IDS])
-  const [hospitalsError, setHospitalsError] = useState<string | null>(null)
+  const [apiHospitals, setApiHospitals] = useState<ApiHospital[]>(cachedHospitals ?? [])
+  const [hospitalsLoading, setHospitalsLoading] = useState(cachedHospitals == null)
+  const [hospitalsError, setHospitalsError] = useState<string | null>(cachedError)
 
   useEffect(() => {
+    if (cachedHospitals) return
     let cancelled = false
     ;(async () => {
       try {
         const rows = await listApiHospitals()
         if (cancelled) return
+        cachedHospitals = rows
+        cachedError = rows.length
+          ? null
+          : 'No hospitals returned from the API. Check mvp.seed.sql was applied.'
         setApiHospitals(rows)
-        const ids = rows
-          .map((row) => row.code)
-          .filter(isMvpHospitalId)
-        setSelectableIds(ids.length ? ids : [])
-        setHospitalsError(
-          ids.length ? null : 'No hospitals returned from the API. Check mvp.seed.sql was applied.',
-        )
+        setHospitalsError(cachedError)
       } catch (err) {
         if (cancelled) return
-        setApiHospitals([])
-        setSelectableIds([])
-        setHospitalsError(
+        cachedHospitals = []
+        cachedError =
           err instanceof ApiError
             ? err.detail
-            : 'Could not load hospitals. Is the API running on port 8000?',
-        )
+            : 'Could not load hospitals. Is the API running on port 8000?'
+        setApiHospitals([])
+        setHospitalsError(cachedError)
+      } finally {
+        if (!cancelled) setHospitalsLoading(false)
       }
     })()
     return () => {
@@ -37,5 +40,5 @@ export function useApiHospitals() {
     }
   }, [])
 
-  return { apiHospitals, selectableIds, hospitalsError }
+  return { apiHospitals, hospitalsLoading, hospitalsError }
 }

@@ -8,7 +8,6 @@ import { Timeline } from './screens/Timeline'
 import { FoodChat } from './screens/FoodChat'
 import { StoolGuide } from './screens/StoolGuide'
 import { Reminders } from './screens/Reminders'
-import { HOSPITALS } from './data/hospitals'
 import { SessionBar } from './components/SessionBar'
 import { PitchRail } from './components/PitchRail'
 import { AppointmentChooser, ChangeDatePanel, StartOverSheet } from './components/AppointmentEdit'
@@ -28,8 +27,6 @@ export default function App() {
   const [shortcut, setShortcut] = useState<'off' | 'ios' | 'android'>('off')
 
   if (!ready) return null
-
-  const hospital = session ? HOSPITALS[session.hospitalId] : null
 
   return (
     <MotionConfig reducedMotion="user">
@@ -88,10 +85,9 @@ export default function App() {
             </div>
             <BottomNav screen={screen} onChange={setScreen} />
             <AnimatePresence>
-            {edit.edit === 'choose' && hospital && (
+            {edit.edit === 'choose' && session && (
               <AppointmentChooser
-                hospitalShort={hospital.short}
-                slot={session.slot}
+                session={session}
                 when={formatSessionWhen(session, lang)}
                 onChangeDate={edit.openDate}
                 onStartOver={edit.openRestart}

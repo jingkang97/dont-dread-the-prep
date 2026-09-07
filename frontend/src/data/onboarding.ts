@@ -3,8 +3,7 @@ import type { HospitalId, Slot } from './hospitals'
 /**
  * Onboarding wizard types (steps, draft).
  * Protocol names and copy live in `lib/api/onboarding`.
- * Hospital *catalog* UI lives in `hospitalPicker.ts`; hospital *identity*
- * and MVP session gate live in `hospitals.ts` (`MVP_HOSPITAL_IDS`).
+ * Hospital list is loaded from `/api/hospitals`. Accents live in `hospitals.ts`.
  */
 
 /** Wizard steps in Onboarding.tsx */

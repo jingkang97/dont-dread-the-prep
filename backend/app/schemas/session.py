@@ -27,6 +27,9 @@ class ProtocolSummary(BaseModel):
     prep_agent_label: str
     diet_days: int
     last_meal: str
+    milk_in_coffee: str
+    fruit_juice: str
+    form_gap: str = ""
 
 
 class HospitalOut(BaseModel):

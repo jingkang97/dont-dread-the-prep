@@ -1,17 +1,26 @@
 import type { RuleId } from '../data/foods'
-import type { HospitalId } from '../data/hospitals'
 import { isStringKey, type StringKey } from './strings'
 
 export type HospCopyField = 'name' | 'prep' | 'stoolAction' | 'formGap'
 export type ContactField = 'label' | 'hours' | 'note'
 export type StoolStageN = 1 | 2 | 3 | 4 | 5 | 6
 
-/** Compile-fails if `hosp.{id}.{field}` is missing from the EN catalog. */
-export function hospCopyKey<Id extends HospitalId, F extends HospCopyField>(
-  id: Id,
-  field: F,
-): Extract<StringKey, `hosp.${Id}.${F}`> {
-  return `hosp.${id}.${field}` as Extract<StringKey, `hosp.${Id}.${F}`>
+type Translate = (key: StringKey) => string
+
+/** i18n key for a hospital field, or null when that site has no catalog copy. */
+function hospCopyKey(id: string, field: HospCopyField): StringKey | null {
+  const key = `hosp.${id}.${field}`
+  return isStringKey(key) ? key : null
+}
+
+export function hospCopyOr(
+  t: Translate,
+  id: string,
+  field: HospCopyField,
+  fallback: string,
+) {
+  const key = hospCopyKey(id, field)
+  return key ? t(key) : fallback
 }
 
 /** Compile-fails if `rule.{id}` is missing from the EN catalog. */
@@ -27,14 +36,18 @@ export function stoolStageKey<N extends StoolStageN, Kind extends 'n' | 'l'>(
   return `stool.s${n}${kind}` as Extract<StringKey, `stool.s${N}${Kind}`>
 }
 
-/**
- * Contact rows are indexed from `hospital.contacts`. A missing catalog key
- * throws in dev instead of silently rendering the raw key.
- */
-export function hospContactKey(id: HospitalId, index: number, field: ContactField): StringKey {
+function hospContactKey(id: string, index: number, field: ContactField): StringKey | null {
   const key = `hosp.${id}.c${index}.${field}`
-  if (!isStringKey(key)) {
-    throw new Error(`Missing copy key ${key}`)
-  }
-  return key
+  return isStringKey(key) ? key : null
+}
+
+export function hospContactOr(
+  t: Translate,
+  id: string,
+  index: number,
+  field: ContactField,
+  fallback: string,
+) {
+  const key = hospContactKey(id, index, field)
+  return key ? t(key) : fallback
 }

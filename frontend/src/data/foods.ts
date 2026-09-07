@@ -1,4 +1,4 @@
-import { HOSPITALS, type HospitalId } from './hospitals'
+import { type HospitalId } from './hospitals'
 import type { StringKey } from '../i18n/strings'
 
 export type Verdict = 'yes' | 'no' | 'ask'
@@ -820,7 +820,7 @@ function looksLikeFoodQuestion(q: string) {
   )
 }
 
-export function classify(raw: string, hospitalId: HospitalId): ChatAnswer {
+export function classify(raw: string, hospitalId: HospitalId, hospitalShort: string): ChatAnswer {
   const q = norm(raw)
   if (!q) {
     return { ...DEFLECT, bodyKey: 'food.empty' }
@@ -844,7 +844,7 @@ export function classify(raw: string, hospitalId: HospitalId): ChatAnswer {
         verdict: override?.verdict ?? 'ask',
         title: med.name,
         body: override?.why ?? med.why,
-        hospital: HOSPITALS[hospitalId].short,
+        hospital: hospitalShort,
         source: override?.source ?? med.source,
         rules: med.rules,
         matched: med.name,
@@ -890,7 +890,6 @@ export function classify(raw: string, hospitalId: HospitalId): ChatAnswer {
     }
   }
 
-  const hospital = HOSPITALS[hospitalId]
   const override = best.entry.byHospital?.[hospitalId]
   const verdict = override?.verdict ?? best.entry.defaultVerdict
   const body = override?.why ?? best.entry.why
@@ -900,7 +899,7 @@ export function classify(raw: string, hospitalId: HospitalId): ChatAnswer {
     verdict,
     title: best.entry.name,
     body,
-    hospital: hospital.short,
+    hospital: hospitalShort,
     source,
     rules: best.entry.rules,
     matched: best.alias,

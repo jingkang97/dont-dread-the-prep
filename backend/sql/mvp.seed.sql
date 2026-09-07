@@ -89,3 +89,5 @@ VALUES
   (SELECT id FROM hospitals WHERE code = 'ttsh'),
   (SELECT id FROM protocols WHERE name = 'ttsh-picoprep-peg')
 );
+
+-- insert TTSH PEG-2L protocol
