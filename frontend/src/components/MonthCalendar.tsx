@@ -1,4 +1,5 @@
-import { DayPicker } from 'react-day-picker'
+import { startOfDay } from 'date-fns'
+import { DayPicker, type Matcher } from 'react-day-picker'
 import { enGB, ms, ta, zhCN } from 'react-day-picker/locale'
 import { useLang } from '../i18n/LanguageContext'
 import { cn } from '../lib/cn'
@@ -10,6 +11,7 @@ export function MonthCalendar({
   onSelect,
   eventDays,
   procedureDay,
+  disabledBefore,
   disabledAfter,
   startMonth,
   endMonth,
@@ -19,6 +21,8 @@ export function MonthCalendar({
   onSelect: (day: Date) => void
   eventDays?: Date[]
   procedureDay?: Date
+  /** Days before this one are dimmed and unselectable. */
+  disabledBefore?: Date
   /** Days after this one are dimmed and unselectable — nothing is scheduled past the scope. */
   disabledAfter?: Date
   startMonth?: Date
@@ -31,6 +35,10 @@ export function MonthCalendar({
     endMonth &&
     startMonth.getFullYear() === endMonth.getFullYear() &&
     startMonth.getMonth() === endMonth.getMonth()
+
+  const disabled: Matcher[] = []
+  if (disabledBefore) disabled.push({ before: startOfDay(disabledBefore) })
+  if (disabledAfter) disabled.push({ after: disabledAfter })
 
   return (
     <div className={cn('pp-cal', className)}>
@@ -49,7 +57,7 @@ export function MonthCalendar({
         startMonth={startMonth}
         endMonth={endMonth}
         defaultMonth={selected}
-        disabled={disabledAfter ? { after: disabledAfter } : undefined}
+        disabled={disabled.length ? disabled : undefined}
         modifiers={{
           hasEvent: eventDays,
           procedure: procedureDay,

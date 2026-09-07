@@ -1,10 +1,10 @@
-import { addMonths, startOfMonth } from 'date-fns'
+import { addMonths, startOfDay, startOfMonth } from 'date-fns'
 import { MonthCalendar } from './MonthCalendar'
 import { SegmentedControl } from './SegmentedControl'
 import { Card } from './ui'
 import { useLang } from '../i18n/LanguageContext'
 import { cn } from '../lib/cn'
-import { formatHm, formatYmd, parseYmd, toYmd } from '../lib/dates'
+import { formatHm, formatYmd, isBeforeToday, parseYmd, toYmd } from '../lib/dates'
 import { defaultReporting } from '../lib/timeline'
 import type { Slot } from '../data/hospitals'
 
@@ -26,6 +26,7 @@ export function DateSlotPicker({
 }) {
   const { t, lang } = useLang()
   const selected = parseYmd(date)
+  const today = startOfDay(new Date())
   const times = slot === 'pm' ? PM_TIMES : AM_TIMES
 
   return (
@@ -35,9 +36,14 @@ export function DateSlotPicker({
       <Card className="mt-3 px-1 py-2">
         <MonthCalendar
           selected={selected}
-          onSelect={(day) => onChange({ date: toYmd(day) })}
-          startMonth={startOfMonth(addMonths(new Date(), -1))}
-          endMonth={startOfMonth(addMonths(new Date(), 18))}
+          onSelect={(day) => {
+            const next = toYmd(day)
+            if (isBeforeToday(next)) return
+            onChange({ date: next })
+          }}
+          disabledBefore={today}
+          startMonth={startOfMonth(today)}
+          endMonth={startOfMonth(addMonths(today, 18))}
         />
       </Card>
 

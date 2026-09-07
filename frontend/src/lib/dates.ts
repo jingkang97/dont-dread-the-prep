@@ -19,6 +19,10 @@ export function plusDays(n: number) {
   return toYmd(d)
 }
 
+export function isBeforeToday(ymd: string) {
+  return ymd < toYmd(new Date())
+}
+
 export function formatHm(hm: string) {
   const [h, min] = hm.split(':').map(Number)
   return format(new Date(2000, 0, 1, h, min), 'h:mm a')

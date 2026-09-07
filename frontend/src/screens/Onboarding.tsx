@@ -9,7 +9,7 @@ import { Card, GeneratingPane, GhostButton, PrimaryButton, SectionLabel } from '
 import { useLang } from '../i18n/LanguageContext'
 import { hospCopyOr } from '../i18n/keys'
 import { cn } from '../lib/cn'
-import { formatHm, formatYmd } from '../lib/dates'
+import { formatHm, formatYmd, isBeforeToday } from '../lib/dates'
 import { ApiError } from '../lib/api'
 import { easeOut, fadeY } from '../lib/motion'
 import { useApiHospitals } from '../hooks/useApiHospitals'
@@ -49,6 +49,7 @@ export function Onboarding({
   const canFinish = Boolean(
     draft.hospitalId &&
       draft.date &&
+      !isBeforeToday(draft.date) &&
       draft.slot &&
       (!needsProtocolChoice || draft.protocolName),
   )
@@ -183,7 +184,11 @@ export function Onboarding({
             )}
             <div className="mt-5 grid gap-2">
               <PrimaryButton
-                disabled={!draft.slot || (needsProtocolChoice && !draft.protocolName)}
+                disabled={
+                  !draft.slot ||
+                  isBeforeToday(draft.date) ||
+                  (needsProtocolChoice && !draft.protocolName)
+                }
                 onClick={() => setStep('confirm')}
               >
                 {t('on.continue')}
