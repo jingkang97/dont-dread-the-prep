@@ -20,7 +20,7 @@ export function BottomNav({
 }) {
   const { t } = useLang()
   return (
-    <nav className="z-20 shrink-0 border-t border-black/5 bg-white/80 backdrop-blur-xl">
+    <nav data-tour="bottom-nav" className="z-20 shrink-0 border-t border-black/5 bg-white/80 backdrop-blur-xl">
       <div className="grid grid-cols-4 px-1 pb-[max(6px,env(safe-area-inset-bottom))] pt-1">
         {ITEMS.map((item) => {
           const active = screen === item.id || (item.id === 'stool' && screen === 'reminders')

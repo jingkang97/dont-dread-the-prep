@@ -4,7 +4,7 @@
 
 CREATE TABLE sessions (
   id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  public_code     TEXT NOT NULL UNIQUE,          -- 4-char patient-facing id (WhatsApp / share)
+  public_code     TEXT NOT NULL UNIQUE,          -- 4-char patient-facing id (Telegram / share)
   hospital_id     BIGINT NOT NULL REFERENCES hospitals(id),
   protocol_id     BIGINT NOT NULL REFERENCES protocols(id),
   procedure_date  DATE NOT NULL,
