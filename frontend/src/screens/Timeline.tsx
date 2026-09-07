@@ -264,7 +264,7 @@ export function Timeline({
               startMonth={startMonth}
               endMonth={endMonth}
             />
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-2 pb-1 text-[11px] font-semibold text-muted">
+            <div className="mt-3 mx-auto grid w-max max-w-full grid-cols-2 items-center gap-x-6 gap-y-2 px-2 pb-1 text-[11px] font-semibold text-muted">
               <span className="inline-flex items-center gap-1.5">
                 <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-[11px] font-bold text-teal-deep shadow-[0_0_0_2px_#00c7be]">
                   12
@@ -278,17 +278,17 @@ export function Timeline({
                 {t('tl.selected')}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-navy text-[11px] font-bold text-white">
-                  12
-                </span>
-                {t('tl.scopeDay')}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
                 <span className="flex flex-col items-center gap-[3px]">
                   <span className="text-[11px] font-bold leading-none text-ink">12</span>
                   <span className="h-[5px] w-[5px] rounded-full bg-teal" />
                 </span>
                 {t('tl.hasSteps')}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-navy text-[11px] font-bold text-white">
+                  12
+                </span>
+                {t('tl.scopeDay')}
               </span>
             </div>
           </Card>
