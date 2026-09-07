@@ -14,11 +14,51 @@ from app.schemas.session import SessionCreate, SessionOut, SessionUpdate, Slot
 PUBLIC_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 PUBLIC_CODE_LENGTH = 4
 
+TTSH_PICOPREP_AM = "ttsh-picoprep (8am-2pm)"
+TTSH_PICOPREP_PM = "ttsh-picoprep (2pm-5pm)"
+TTSH_PICOPREP_PEG_AM = "ttsh-picoprep-peg (8am-2pm)"
+TTSH_PICOPREP_PEG_PM = "ttsh-picoprep-peg (2pm-5pm)"
+TTSH_PICOPREP_PEG = TTSH_PICOPREP_PEG_AM
+TTSH_AFTERNOON_FROM = time(14, 0)
+
+# Older clients / seeds used un-windowed names.
+PROTOCOL_NAME_ALIASES: dict[str, str] = {
+    "ttsh-picoprep": TTSH_PICOPREP_AM,
+    "ttsh-picoprep-peg": TTSH_PICOPREP_PEG,
+}
+
+# (8am–2pm name, 2pm–5pm name) per TTSH prep agent.
+TTSH_WINDOW_BY_AGENT: dict[str, tuple[str, str]] = {
+    "picoprep": (TTSH_PICOPREP_AM, TTSH_PICOPREP_PM),
+    "picoprep-peg": (TTSH_PICOPREP_PEG_AM, TTSH_PICOPREP_PEG_PM),
+}
+
 # Prefer Picoprep-only when TTSH (or any hospital) has multiple protocols and
 # the client has not chosen yet — matches the current frontend default path.
 DEFAULT_MULTI_PROTOCOL: dict[str, str] = {
-    "ttsh": "ttsh-picoprep",
+    "ttsh": TTSH_PICOPREP_AM,
 }
+
+
+def canonical_protocol_name(name: str) -> str:
+    return PROTOCOL_NAME_ALIASES.get(name, name)
+
+
+def apply_ttsh_time_window(
+    hospital: Hospital, protocol: Protocol, reporting: time
+) -> Protocol:
+    """8am–2pm vs 2pm–5pm sheets are separate protocols, picked by reporting time."""
+    if hospital.code != "ttsh":
+        return protocol
+    windows = TTSH_WINDOW_BY_AGENT.get(protocol.prep_agent)
+    if windows is None:
+        return protocol
+    am_name, pm_name = windows
+    want = pm_name if reporting >= TTSH_AFTERNOON_FROM else am_name
+    for candidate in hospital.protocols:
+        if candidate.name == want:
+            return candidate
+    return protocol
 
 
 def default_reporting_time(slot: Slot) -> time:
@@ -54,7 +94,11 @@ def list_hospitals(db: DbSession) -> list[Hospital]:
     return list(db.scalars(stmt).unique().all())
 
 
-def resolve_protocol(hospital: Hospital, protocol_name: str | None) -> Protocol:
+def resolve_protocol(
+    hospital: Hospital,
+    protocol_name: str | None,
+    reporting: time | None = None,
+) -> Protocol:
     protocols = list(hospital.protocols)
     if not protocols:
         raise HTTPException(
@@ -62,32 +106,40 @@ def resolve_protocol(hospital: Hospital, protocol_name: str | None) -> Protocol:
             detail=f"Hospital '{hospital.code}' has no protocols configured",
         )
 
+    chosen: Protocol | None = None
     if protocol_name:
+        want = canonical_protocol_name(protocol_name)
         for protocol in protocols:
-            if protocol.name == protocol_name:
-                return protocol
-        names = ", ".join(p.name for p in protocols)
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Protocol '{protocol_name}' is not offered by {hospital.code}. "
-            f"Choose one of: {names}",
-        )
+            if protocol.name == want:
+                chosen = protocol
+                break
+        if chosen is None:
+            names = ", ".join(p.name for p in protocols)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Protocol '{protocol_name}' is not offered by {hospital.code}. "
+                f"Choose one of: {names}",
+            )
+    elif len(protocols) == 1:
+        chosen = protocols[0]
+    else:
+        preferred = DEFAULT_MULTI_PROTOCOL.get(hospital.code)
+        if preferred:
+            for protocol in protocols:
+                if protocol.name == preferred:
+                    chosen = protocol
+                    break
+        if chosen is None:
+            names = ", ".join(p.name for p in protocols)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Hospital '{hospital.code}' offers multiple protocols. "
+                f"Pass protocol_name. Options: {names}",
+            )
 
-    if len(protocols) == 1:
-        return protocols[0]
-
-    preferred = DEFAULT_MULTI_PROTOCOL.get(hospital.code)
-    if preferred:
-        for protocol in protocols:
-            if protocol.name == preferred:
-                return protocol
-
-    names = ", ".join(p.name for p in protocols)
-    raise HTTPException(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        detail=f"Hospital '{hospital.code}' offers multiple protocols. "
-        f"Pass protocol_name. Options: {names}",
-    )
+    if reporting is not None:
+        return apply_ttsh_time_window(hospital, chosen, reporting)
+    return chosen
 
 
 def create_session(db: DbSession, body: SessionCreate) -> SessionOut:
@@ -102,8 +154,8 @@ def create_session(db: DbSession, body: SessionCreate) -> SessionOut:
             detail=f"Unknown hospital_code '{body.hospital_code}'",
         )
 
-    protocol = resolve_protocol(hospital, body.protocol_name)
     reporting = body.reporting_time or default_reporting_time(body.slot)
+    protocol = resolve_protocol(hospital, body.protocol_name, reporting)
 
     row: Session | None = None
     for _ in range(8):
@@ -171,10 +223,16 @@ def update_session(db: DbSession, public_code: str, body: SessionUpdate) -> Sess
     for key, value in data.items():
         setattr(row, key, value)
 
-    db.commit()
-    db.refresh(row)
-
-    hospital = db.get(Hospital, row.hospital_id)
+    hospital = db.scalar(
+        select(Hospital)
+        .options(selectinload(Hospital.protocols))
+        .where(Hospital.id == row.hospital_id)
+    )
     protocol = db.get(Protocol, row.protocol_id)
     assert hospital is not None and protocol is not None
-    return session_to_out(row, hospital, protocol)
+    remapped = apply_ttsh_time_window(hospital, protocol, row.reporting_time)
+    row.protocol_id = remapped.id
+
+    db.commit()
+    db.refresh(row)
+    return session_to_out(row, hospital, remapped)

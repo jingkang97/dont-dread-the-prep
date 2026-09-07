@@ -1,12 +1,16 @@
 import { useMemo, useRef, useState } from 'react'
 import { type HospitalId } from '../data/hospitals'
 import {
-  defaultProtocolName,
   type OnboardingDraft,
   type OnboardingStep,
   type ScanPhase,
 } from '../data/onboarding'
-import type { ApiHospital, ApiProtocolSummary } from '../lib/api'
+import {
+  defaultProtocolName,
+  resolveProtocolName,
+  type ApiHospital,
+  type ApiProtocolSummary,
+} from '../lib/api'
 import { plusDays } from '../lib/dates'
 import { defaultReporting } from '../lib/timeline'
 
@@ -26,7 +30,11 @@ export function useOnboardingDraft() {
 
   function pickHospital(hospitalId: HospitalId, apiHospitals: ApiHospital[]) {
     const row = apiHospitals.find((h) => h.code === hospitalId)
-    const protocolName = defaultProtocolName(row?.protocols ?? [], hospitalId)
+    const protocolName = resolveProtocolName(
+      row?.protocols ?? [],
+      defaultProtocolName(row?.protocols ?? [], hospitalId),
+      draft.reportingTime,
+    )
     setDraft((d) => ({ ...d, hospitalId, protocolName }))
     setStep('schedule')
   }

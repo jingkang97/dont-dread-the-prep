@@ -1,7 +1,6 @@
 import { format, isAfter } from 'date-fns'
 import { Bell, Check, Info } from 'lucide-react'
 import { motion } from 'motion/react'
-import { HOSPITALS } from '../data/hospitals'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { Card, GhostButton, PrimaryButton } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
@@ -32,7 +31,6 @@ export function Reminders({
   onShortcut: (os: 'ios' | 'android') => void
 }) {
   const { t, lang } = useLang()
-  const hospital = HOSPITALS[session.hospitalId]
   const { copied, copy } = useCopyToClipboard()
   const report = sessionReportAt(session)
   const items = remindersFor(report)
@@ -66,7 +64,7 @@ export function Reminders({
           ))}
         </ul>
         <p className="mt-2 text-[12px] text-muted">
-          {t('wa.computed', { hospital: hospital.short, time: session.reportingTime })}
+          {t('wa.computed', { hospital: session.hospitalShort, time: session.reportingTime })}
         </p>
       </Card>
 

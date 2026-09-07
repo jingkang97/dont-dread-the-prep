@@ -2,6 +2,16 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+PRODUCTION_FRONTEND_ORIGIN = "https://dont-dread-the-prep.vercel.app"
+# Production plus Vercel preview URLs for this project (git branches, etc.).
+DEFAULT_CORS_ORIGIN_REGEX = (
+    r"https://dont-dread-the-prep(?:-[a-z0-9-]+)?\.vercel\.app"
+)
+
+
+def _normalize_origin(origin: str) -> str:
+    return origin.strip().rstrip("/")
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -11,10 +21,16 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "PrepPath API"
-    debug: bool = True
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    debug: bool = False
+    cors_origins: str = (
+        "http://localhost:5173,"
+        "http://127.0.0.1:5173,"
+        f"{PRODUCTION_FRONTEND_ORIGIN}"
+    )
+    # Set to empty on Railway to allow only CORS_ORIGINS (no preview URLs).
+    cors_origin_regex: str = DEFAULT_CORS_ORIGIN_REGEX
     # Supabase → Project Settings → Database → Connection string (URI)
-    # Prefer "Session mode" pooler for local uvicorn, or direct connection.
+    # Prefer "Session mode" pooler (port 5432) for Railway and local uvicorn.
     database_url: str = ""
 
     # BotFather token. Polls getUpdates locally; set webhook later when public.
@@ -31,7 +47,19 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        seen: set[str] = set()
+        origins: list[str] = []
+        for raw in (*self.cors_origins.split(","), PRODUCTION_FRONTEND_ORIGIN):
+            origin = _normalize_origin(raw)
+            if origin and origin not in seen:
+                seen.add(origin)
+                origins.append(origin)
+        return origins
+
+    @property
+    def cors_origin_regex_or_none(self) -> str | None:
+        pattern = self.cors_origin_regex.strip()
+        return pattern or None
 
     @property
     def sqlalchemy_database_url(self) -> str:

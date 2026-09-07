@@ -21,37 +21,55 @@ export function Home({
 }) {
   const { t, lang } = useLang()
   const locale = DATE_LOCALES[lang]
-  const { hospital, now, next, nextWhen, report, started } = usePrepSummary(session)
+  const { hospital, events, loading, error, now, next, nextWhen, report, started } = usePrepSummary(session)
   const remaining = report ? formatDistanceStrict(report, now, { addSuffix: true, locale }) : ''
   const remindersOn = session.waOptIn || session.pushOptIn
+  const juice =
+    hospital.fruitJuice === 'yes'
+      ? t('home.juiceYes')
+      : hospital.fruitJuice === 'no'
+        ? t('home.juiceNo')
+        : t('home.juiceAsk')
 
   return (
     <div className="px-5 pb-8 pt-6">
       <div data-tour="home-hero">
-      <SectionLabel>{t('home.session', { id: session.id })}</SectionLabel>
-      {session.firstName ? (
-        <>
+        <SectionLabel>{t('home.session', { id: session.id })}</SectionLabel>
+        {session.firstName ? (
+          <>
+            <h1 className="font-display mt-1 text-[32px] leading-[1.1] tracking-tight text-ink">
+              {t('home.hi', { name: session.firstName })}
+            </h1>
+            <p className="mt-1 text-[17px] font-semibold text-ink">
+              {t(session.slot === 'am' ? 'home.morningScope' : 'home.afternoonScope', {
+                hospital: hospital.short,
+              })}
+            </p>
+          </>
+        ) : (
           <h1 className="font-display mt-1 text-[32px] leading-[1.1] tracking-tight text-ink">
-            {t('home.hi', { name: session.firstName })}
-          </h1>
-          <p className="mt-1 text-[17px] font-semibold text-ink">
             {t(session.slot === 'am' ? 'home.morningScope' : 'home.afternoonScope', {
               hospital: hospital.short,
             })}
-          </p>
-        </>
-      ) : (
-        <h1 className="font-display mt-1 text-[32px] leading-[1.1] tracking-tight text-ink">
-          {t(session.slot === 'am' ? 'home.morningScope' : 'home.afternoonScope', {
-            hospital: hospital.short,
-          })}
-        </h1>
-      )}
-      <p className="mt-1 text-[15px] text-ink-soft">
-        {formatYmd(session.date, lang)} · {t('home.report', { time: session.reportingTime })}
-        {report ? ` · ${isAfter(report, now) ? remaining : ''}` : ''}
-      </p>
+          </h1>
+        )}
+        <p className="mt-1 text-[15px] text-ink-soft">
+          {formatYmd(session.date, lang)} · {t('home.report', { time: session.reportingTime })}
+          {report ? ` · ${isAfter(report, now) ? remaining : ''}` : ''}
+        </p>
       </div>
+
+      {loading && events.length === 0 ? (
+        <Card className="mt-5 p-4">
+          <p className="text-[14px] text-muted">{t('app.regenerating')}</p>
+        </Card>
+      ) : null}
+
+      {!loading && error ? (
+        <Card className="mt-5 p-4">
+          <p className="text-[14px] text-no">{error}</p>
+        </Card>
+      ) : null}
 
       {next && (
         <button type="button" onClick={() => onOpen('timeline')} className="mt-5 w-full text-left">
@@ -130,6 +148,22 @@ export function Home({
       </Card>
 
       <Card data-tour="home-shortcut" className="mt-4 p-4">
+        <div className="flex items-start gap-2">
+          <Sparkles size={16} className="mt-0.5 text-teal-deep" />
+          <div>
+            <p className="text-[13px] font-semibold text-navy">{t('home.faithful')}</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
+              {t('home.faithfulBody', {
+                hospital: hospital.short,
+                milk: hospital.milkInCoffee === 'yes' ? t('home.milkYes') : t('home.milkNo'),
+                juice,
+              })}
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="mt-4 p-4">
         <p className="text-[13px] font-semibold text-navy">{t('home.shortcut')}</p>
         <div className="mt-3 grid w-full grid-cols-2 gap-2">
           <button

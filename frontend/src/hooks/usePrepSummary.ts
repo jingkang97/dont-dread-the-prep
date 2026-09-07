@@ -1,14 +1,14 @@
-import { useMemo } from 'react'
 import { isAfter, isBefore } from 'date-fns'
-import { HOSPITALS } from '../data/hospitals'
 import { useLang } from '../i18n/LanguageContext'
 import type { PrepSession } from '../lib/session'
-import { buildTimeline, fromNowDays } from '../lib/timeline'
+import { fromNowDays } from '../lib/timeline'
+import { useSessionTimeline } from '../lib/useSessionTimeline'
+import { useSessionHospital } from './useSessionHospital'
 
 export function usePrepSummary(session: PrepSession) {
   const { t } = useLang()
-  const hospital = HOSPITALS[session.hospitalId]
-  const events = useMemo(() => buildTimeline(session), [session])
+  const { hospital: row, protocol, short } = useSessionHospital(session)
+  const { events, loading, error } = useSessionTimeline(session)
   const now = new Date()
   const nextUpcoming = events.find((e) => isAfter(e.at, now))
   const next = nextUpcoming ?? events[events.length - 1]
@@ -16,5 +16,12 @@ export function usePrepSummary(session: PrepSession) {
   const report = events.find((e) => e.id === 'arrive')?.at
   const started = events[0] ? isBefore(events[0].at, now) : false
 
-  return { hospital, events, now, next, nextUpcoming, nextWhen, report, started }
+  const hospital = {
+    short,
+    name: row?.name ?? short,
+    fruitJuice: protocol?.fruit_juice ?? 'ask',
+    milkInCoffee: protocol?.milk_in_coffee ?? 'no',
+  }
+
+  return { hospital, events, loading, error, now, next, nextUpcoming, nextWhen, report, started }
 }

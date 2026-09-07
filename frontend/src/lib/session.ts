@@ -1,10 +1,4 @@
-import {
-  API_HOSPITAL_IDS,
-  HOSPITAL_LIST,
-  isMvpHospitalId,
-  type HospitalId,
-  type Slot,
-} from '../data/hospitals'
+import type { HospitalId, Slot } from '../data/hospitals'
 import { defaultReporting, type SessionInput } from './timeline'
 import { clearFoodChat } from './foodChat'
 import { clearTimelineUi } from './timelineUi'
@@ -21,6 +15,7 @@ export type Screen = 'onboarding' | 'home' | 'timeline' | 'food' | 'stool' | 're
 
 export type PrepSession = SessionInput & {
   id: string
+  hospitalShort: string
   firstName?: string
   createdAt: string
   waOptIn: boolean
@@ -39,9 +34,6 @@ const COOKIE = 'preppath_session'
 const PARAM = 'p'
 const CODE_PARAM = 's'
 const GO_PARAM = 'go'
-const HOSPITAL_IDS: HospitalId[] = HOSPITAL_LIST.map((h) => h.id)
-
-export { API_HOSPITAL_IDS }
 
 function normalizeTime(value: string) {
   return value.length >= 5 ? value.slice(0, 5) : value
@@ -51,22 +43,11 @@ function toApiTime(hm: string) {
   return hm.length === 5 ? `${hm}:00` : hm
 }
 
-function isHospitalId(code: string): code is HospitalId {
-  return (HOSPITAL_IDS as string[]).includes(code)
-}
-
-/** Session create only succeeds for MVP hospitals (same gate as HospitalPicker). */
-export function isSessionHospitalId(code: string): code is HospitalId {
-  return isMvpHospitalId(code)
-}
-
 export function fromApiSession(row: ApiSession): PrepSession {
-  if (!isHospitalId(row.hospital_code)) {
-    throw new Error(`Unsupported hospital_code from API: ${row.hospital_code}`)
-  }
   return {
     id: row.public_code,
     hospitalId: row.hospital_code,
+    hospitalShort: row.hospital_short_name,
     date: row.procedure_date,
     slot: row.slot,
     reportingTime: normalizeTime(row.reporting_time),
@@ -83,10 +64,11 @@ function parseSession(raw: unknown): PrepSession | null {
   const s = raw as Partial<PrepSession>
   if (!s.id || !s.date || !s.reportingTime || !s.createdAt) return null
   if (s.slot !== 'am' && s.slot !== 'pm') return null
-  if (!s.hospitalId || !HOSPITAL_IDS.includes(s.hospitalId)) return null
+  if (!s.hospitalId) return null
   return {
     id: String(s.id),
-    hospitalId: s.hospitalId,
+    hospitalId: String(s.hospitalId),
+    hospitalShort: s.hospitalShort ? String(s.hospitalShort) : String(s.hospitalId).toUpperCase(),
     date: String(s.date),
     slot: s.slot,
     reportingTime: normalizeTime(String(s.reportingTime)),

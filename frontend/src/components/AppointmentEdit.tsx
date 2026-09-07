@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { HOSPITALS } from '../data/hospitals'
 import { DateSlotPicker } from './DateSlotPicker'
 import { SheetFrame } from './sheets/SheetFrame'
 import { GeneratingPane, PrimaryButton } from './ui'
@@ -10,26 +9,25 @@ import type { PrepSession } from '../lib/session'
 import type { Slot } from '../data/hospitals'
 
 export function AppointmentChooser({
-  hospitalShort,
-  slot,
+  session,
   when,
   onChangeDate,
   onStartOver,
   onKeep,
 }: {
-  hospitalShort: string
-  slot: 'am' | 'pm'
+  session: PrepSession
   when: string
   onChangeDate: () => void
   onStartOver: () => void
   onKeep: () => void
 }) {
   const { t } = useLang()
-  const slotLabel = slot === 'am' ? t('on.morning') : t('on.afternoon')
+  const hospital = session.hospitalShort
+  const slotLabel = session.slot === 'am' ? t('on.morning') : t('on.afternoon')
   return (
     <SheetFrame onDismiss={onKeep} dismissLabel={t('app.keep')}>
       <p className="font-display text-[22px] leading-tight tracking-tight text-ink">
-        {hospitalShort} · {slotLabel}
+        {hospital} · {slotLabel}
       </p>
       <p className="mt-1 text-[15px] text-ink-soft">{when}</p>
       <button
@@ -38,7 +36,7 @@ export function AppointmentChooser({
         className="mt-5 min-h-[56px] w-full rounded-[18px] bg-paper px-4 py-3 text-left"
       >
         <span className="block text-[17px] font-semibold text-ink">{t('app.changeDate')}</span>
-        <span className="mt-0.5 block text-[13px] text-muted">{t('app.changeDateHint', { hospital: hospitalShort })}</span>
+        <span className="mt-0.5 block text-[13px] text-muted">{t('app.changeDateHint', { hospital })}</span>
       </button>
       <button
         type="button"
@@ -88,7 +86,7 @@ export function StartOverSheet({
 export function ChangeDatePanel({
   session,
   error,
-  busy: busyFromParent,
+  busy = false,
   onCancel,
   onSave,
 }: {
@@ -99,22 +97,10 @@ export function ChangeDatePanel({
   onSave: (next: { date: string; slot: Slot; reportingTime: string }) => void | Promise<void>
 }) {
   const { t } = useLang()
-  const hospital = HOSPITALS[session.hospitalId]
+  const hospital = session.hospitalShort
   const [date, setDate] = useState(session.date)
   const [slot, setSlot] = useState<Slot>(session.slot)
   const [reportingTime, setReportingTime] = useState(session.reportingTime)
-  const [localBusy, setLocalBusy] = useState(false)
-  const busy = busyFromParent ?? localBusy
-
-  async function save() {
-    if (busy) return
-    setLocalBusy(true)
-    try {
-      await onSave({ date, slot, reportingTime })
-    } finally {
-      setLocalBusy(false)
-    }
-  }
 
   return (
     <motion.div
@@ -130,12 +116,12 @@ export function ChangeDatePanel({
             {busy ? (
               <GeneratingPane
                 title={t('app.regenerating')}
-                hint={t('app.regeneratingHint', { hospital: hospital.short })}
+                hint={t('app.regeneratingHint', { hospital })}
               />
             ) : (
               <>
                 <p className="text-[13px] font-semibold text-muted">
-                  {t('app.stayingAt', { hospital: hospital.short })}
+                  {t('app.stayingAt', { hospital })}
                 </p>
                 <div className="mt-4">
                   <DateSlotPicker
@@ -156,7 +142,12 @@ export function ChangeDatePanel({
                   </p>
                 ) : null}
                 <div className="mt-5 grid gap-2">
-                  <PrimaryButton onClick={() => void save()}>{t('app.saveDate')}</PrimaryButton>
+                  <PrimaryButton
+                    disabled={busy}
+                    onClick={() => void onSave({ date, slot, reportingTime })}
+                  >
+                    {t('app.saveDate')}
+                  </PrimaryButton>
                   <button
                     type="button"
                     onClick={onCancel}

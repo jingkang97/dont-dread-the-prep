@@ -19,9 +19,28 @@ export function plusDays(n: number) {
   return toYmd(d)
 }
 
+export function isBeforeToday(ymd: string) {
+  return ymd < toYmd(new Date())
+}
+
 export function formatHm(hm: string) {
   const [h, min] = hm.split(':').map(Number)
   return format(new Date(2000, 0, 1, h, min), 'h:mm a')
+}
+
+export function quarterHours(startHm: string, endHm: string, step = 15) {
+  const toMin = (hm: string) => {
+    const [h, m] = hm.split(':').map(Number)
+    return h * 60 + m
+  }
+  const fromMin = (n: number) => {
+    const h = Math.floor(n / 60)
+    const m = n % 60
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+  const out: string[] = []
+  for (let n = toMin(startHm); n <= toMin(endHm); n += step) out.push(fromMin(n))
+  return out
 }
 
 export function formatYmd(ymd: string, lang: Lang) {

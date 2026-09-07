@@ -1,4 +1,3 @@
-import { HOSPITALS } from '../data/hospitals'
 import { useLang } from '../i18n/LanguageContext'
 import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
@@ -14,7 +13,6 @@ const POINTS: { title: StringKey; body: StringKey }[] = [
 
 export function PitchRail({ session }: { session: PrepSession | null }) {
   const { t } = useLang()
-  const hospital = session ? HOSPITALS[session.hospitalId] : null
 
   return (
     <aside className="relative hidden min-h-0 overflow-y-auto bg-black px-12 py-14 text-white xl:flex xl:flex-col">
@@ -43,12 +41,12 @@ export function PitchRail({ session }: { session: PrepSession | null }) {
             className="h-29 w-29 shrink-0 rounded-2xl bg-white p-1.5"
           />
           <div className="min-w-0">
-            {session && hospital ? (
+            {session ? (
               <>
                 <p className="text-[12px] font-medium text-white/45">{t('pitch.live')}</p>
                 <p className="font-display text-[28px] leading-none tracking-tight">{session.id}</p>
                 <p className="mt-1.5 text-[13px] text-white/55">
-                  {hospital.short} · {session.date} · {session.slot.toUpperCase()}
+                  {session.hospitalShort} · {session.date} · {session.slot.toUpperCase()}
                 </p>
                 <p className="mt-3 text-[12px] leading-snug text-white/45">{t('pitch.scan')}</p>
               </>

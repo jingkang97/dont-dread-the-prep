@@ -60,9 +60,15 @@ function jumpToward(scroller: HTMLElement, el: HTMLElement, topPad: number): Jum
   return 'down'
 }
 
-export function Timeline({ session }: { session: PrepSession }) {
+export function Timeline({
+  session,
+  onOpenStool,
+}: {
+  session: PrepSession
+  onOpenStool: () => void
+}) {
   const { t } = useLang()
-  const { hospital, events, now, nextUpcoming } = usePrepSummary(session)
+  const { hospital, events, loading, error, now, nextUpcoming } = usePrepSummary(session)
   const nextId = nextUpcoming?.id
   const days = useMemo(() => groupByDay(events), [events])
   const saved = loadTimelineUi(session.id, session.date)
@@ -181,6 +187,15 @@ export function Timeline({ session }: { session: PrepSession }) {
       </div>
 
       <div data-tl-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 pb-28">
+      {loading && events.length === 0 ? (
+        <p className="mt-6 text-[14px] text-muted">{t('app.regenerating')}</p>
+      ) : null}
+      {!loading && error ? (
+        <p className="mt-6 text-[14px] text-no">{error}</p>
+      ) : null}
+      {!loading && !error && events.length === 0 ? (
+        <p className="mt-6 text-[14px] text-muted">{t('tl.noEvents')}</p>
+      ) : null}
       {view === 'list' ? (
         <div>
           {days.map((group) => (
@@ -225,7 +240,12 @@ export function Timeline({ session }: { session: PrepSession }) {
                       )}
                     />
                     <EventStamp event={event} />
-                    <EventCard event={event} isNext={event.id === nextId} isPast={isBefore(event.at, now)} />
+                    <EventCard
+                      event={event}
+                      isNext={event.id === nextId}
+                      isPast={isBefore(event.at, now)}
+                      onOpenStool={onOpenStool}
+                    />
                   </li>
                 ))}
               </ol>
@@ -244,7 +264,7 @@ export function Timeline({ session }: { session: PrepSession }) {
               startMonth={startMonth}
               endMonth={endMonth}
             />
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-2 pb-1 text-[11px] font-semibold text-muted">
+            <div className="mt-3 mx-auto grid w-max max-w-full grid-cols-2 items-center gap-x-6 gap-y-2 px-2 pb-1 text-[11px] font-semibold text-muted">
               <span className="inline-flex items-center gap-1.5">
                 <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-[11px] font-bold text-teal-deep shadow-[0_0_0_2px_#00c7be]">
                   12
@@ -258,17 +278,17 @@ export function Timeline({ session }: { session: PrepSession }) {
                 {t('tl.selected')}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-navy text-[11px] font-bold text-white">
-                  12
-                </span>
-                {t('tl.scopeDay')}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
                 <span className="flex flex-col items-center gap-[3px]">
                   <span className="text-[11px] font-bold leading-none text-ink">12</span>
                   <span className="h-[5px] w-[5px] rounded-full bg-teal" />
                 </span>
                 {t('tl.hasSteps')}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-navy text-[11px] font-bold text-white">
+                  12
+                </span>
+                {t('tl.scopeDay')}
               </span>
             </div>
           </Card>
@@ -281,7 +301,12 @@ export function Timeline({ session }: { session: PrepSession }) {
                 {dayEvents.map((event) => (
                   <div key={event.id}>
                     <EventStamp event={event} />
-                    <EventCard event={event} isNext={event.id === nextId} isPast={isBefore(event.at, now)} />
+                    <EventCard
+                      event={event}
+                      isNext={event.id === nextId}
+                      isPast={isBefore(event.at, now)}
+                      onOpenStool={onOpenStool}
+                    />
                   </div>
                 ))}
               </div>

@@ -1,15 +1,15 @@
-import { addMonths, startOfMonth } from 'date-fns'
+import { addMonths, startOfDay, startOfMonth } from 'date-fns'
 import { MonthCalendar } from './MonthCalendar'
 import { SegmentedControl } from './SegmentedControl'
+import { TimeScroller } from './TimeScroller'
 import { Card } from './ui'
 import { useLang } from '../i18n/LanguageContext'
-import { cn } from '../lib/cn'
-import { formatHm, formatYmd, parseYmd, toYmd } from '../lib/dates'
+import { isBeforeToday, parseYmd, quarterHours, toYmd } from '../lib/dates'
 import { defaultReporting } from '../lib/timeline'
 import type { Slot } from '../data/hospitals'
 
-const AM_TIMES = ['07:00', '07:30', '08:00', '08:30', '09:00']
-const PM_TIMES = ['12:30', '13:00', '13:30', '14:00', '14:30']
+const AM_TIMES = quarterHours('08:00', '11:45')
+const PM_TIMES = quarterHours('12:00', '17:00')
 
 export function DateSlotPicker({
   date,
@@ -24,22 +24,25 @@ export function DateSlotPicker({
   onChange: (next: { date?: string; slot?: Slot; reportingTime?: string }) => void
   dateLabel?: string
 }) {
-  const { t, lang } = useLang()
+  const { t } = useLang()
   const selected = parseYmd(date)
+  const today = startOfDay(new Date())
   const times = slot === 'pm' ? PM_TIMES : AM_TIMES
 
   return (
     <div>
       {dateLabel ? <p className="text-[13px] font-semibold text-navy">{dateLabel}</p> : null}
-      <p className={cn('font-display text-[22px] tracking-tight text-ink', dateLabel && 'mt-1')}>
-        {formatYmd(date, lang)}
-      </p>
-      <Card className="mt-3 px-1 py-2">
+      <Card className={dateLabel ? 'mt-3 px-1 py-2' : 'px-1 py-2'}>
         <MonthCalendar
           selected={selected}
-          onSelect={(day) => onChange({ date: toYmd(day) })}
-          startMonth={startOfMonth(addMonths(new Date(), -1))}
-          endMonth={startOfMonth(addMonths(new Date(), 18))}
+          onSelect={(day) => {
+            const next = toYmd(day)
+            if (isBeforeToday(next)) return
+            onChange({ date: next })
+          }}
+          disabledBefore={today}
+          startMonth={startOfMonth(today)}
+          endMonth={startOfMonth(addMonths(today, 18))}
         />
       </Card>
 
@@ -72,21 +75,17 @@ export function DateSlotPicker({
       />
 
       <p className="mt-5 text-[13px] font-semibold text-navy">{t('on.report')}</p>
-      <div className="mt-2 grid grid-cols-3 gap-2">
-        {times.map((time) => (
-          <button
-            key={time}
-            type="button"
-            onClick={() => onChange({ reportingTime: time, slot: slot ?? (time < '12:00' ? 'am' : 'pm') })}
-            className={cn(
-              'min-h-[48px] rounded-2xl text-[15px] font-semibold',
-              reportingTime === time ? 'bg-navy text-white' : 'bg-white text-ink',
-            )}
-          >
-            {formatHm(time)}
-          </button>
-        ))}
-      </div>
+      <Card className="mt-2 overflow-hidden py-1">
+        <TimeScroller
+          key={slot ?? 'am'}
+          times={times}
+          value={reportingTime}
+          label={t('on.report')}
+          onChange={(time) =>
+            onChange({ reportingTime: time, slot: slot ?? (time < '12:00' ? 'am' : 'pm') })
+          }
+        />
+      </Card>
     </div>
   )
 }

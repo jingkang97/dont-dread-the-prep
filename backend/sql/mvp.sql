@@ -8,18 +8,14 @@ CREATE TYPE three_way AS ENUM ('yes', 'no', 'ask');
 
 CREATE TABLE protocols (
   id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  name              TEXT NOT NULL UNIQUE,  -- 'sgh-nccs-picoprep' | 'ttsh-picoprep' | 'ttsh-picoprep-peg'
+  name              TEXT NOT NULL UNIQUE,  -- 'sgh-nccs-picoprep' | 'ttsh-picoprep (8am-2pm)' | 'ttsh-picoprep (2pm-5pm)' | 'ttsh-picoprep-peg (8am-2pm)' | 'ttsh-picoprep-peg (2pm-5pm)'
   prep_agent        prep_agent NOT NULL,
   prep_agent_label  TEXT NOT NULL,
   diet_days         INT NOT NULL CHECK (diet_days > 0),
-  last_meal         TEXT NOT NULL,
-  last_meal_note    TEXT NOT NULL DEFAULT '',
-  fluid_stop_hours  INT NOT NULL CHECK (fluid_stop_hours >= 0),
   milk_in_coffee    three_way NOT NULL,
   fruit_juice       three_way NOT NULL,
   rice_cereal       three_way NOT NULL,
   coffee_tea        three_way NOT NULL,
-  form_gap          TEXT NOT NULL DEFAULT '',
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
