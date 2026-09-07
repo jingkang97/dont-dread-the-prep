@@ -32,5 +32,5 @@ def patch_session(
     body: SessionUpdate,
     db: Session = Depends(get_db),
 ) -> SessionOut:
-    """Change date / slot / reporting time (keeps hospital + protocol)."""
+    """Change date / slot / reporting time. TTSH Picoprep-only may switch 8am–2pm vs 2pm–5pm."""
     return sessions_service.update_session(db, public_code, body)

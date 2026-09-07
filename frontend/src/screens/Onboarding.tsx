@@ -2,7 +2,13 @@ import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Camera } from 'lucide-react'
 import type { OnboardingResult } from '../data/onboarding'
-import { protocolCopy } from '../lib/api'
+import {
+  ApiError,
+  protocolChoiceSelected,
+  protocolCopy,
+  resolveProtocolName,
+  selectableProtocols,
+} from '../lib/api'
 import { DateSlotPicker } from '../components/DateSlotPicker'
 import { HospitalPicker } from '../components/HospitalPicker'
 import { Card, GeneratingPane, GhostButton, PrimaryButton, SectionLabel } from '../components/ui'
@@ -10,7 +16,6 @@ import { useLang } from '../i18n/LanguageContext'
 import { hospCopyOr } from '../i18n/keys'
 import { cn } from '../lib/cn'
 import { formatHm, formatYmd, isBeforeToday } from '../lib/dates'
-import { ApiError } from '../lib/api'
 import { easeOut, fadeY } from '../lib/motion'
 import { useApiHospitals } from '../hooks/useApiHospitals'
 import { useOnboardingDraft } from '../hooks/useOnboardingDraft'
@@ -44,7 +49,8 @@ export function Onboarding({
   )
   const hospitalShort = apiHospital?.short_name ?? ''
   const protocols = apiHospital?.protocols ?? []
-  const needsProtocolChoice = protocols.length > 1
+  const pickerProtocols = selectableProtocols(protocols)
+  const needsProtocolChoice = pickerProtocols.length > 1
   const selectedProtocol = protocols.find((p) => p.name === draft.protocolName) ?? null
   const canFinish = Boolean(
     draft.hospitalId &&
@@ -65,7 +71,8 @@ export function Onboarding({
         slot: draft.slot,
         reportingTime: draft.reportingTime,
         firstName: draft.firstName,
-        protocolName: draft.protocolName ?? undefined,
+        protocolName:
+          resolveProtocolName(protocols, draft.protocolName, draft.reportingTime) ?? undefined,
       })
     } catch (err) {
       setBusy(false)
@@ -145,22 +152,38 @@ export function Onboarding({
               slot={draft.slot}
               reportingTime={draft.reportingTime}
               dateLabel={t('on.step2')}
-              onChange={(next) => setDraft((d) => ({ ...d, ...next }))}
+              onChange={(next) =>
+                setDraft((d) => {
+                  const reportingTime = next.reportingTime ?? d.reportingTime
+                  return {
+                    ...d,
+                    ...next,
+                    protocolName: resolveProtocolName(protocols, d.protocolName, reportingTime),
+                  }
+                })
+              }
             />
             {needsProtocolChoice && (
               <div className="mt-5">
                 <p className="text-[13px] font-semibold text-navy">{t('on.protocol')}</p>
                 <p className="mt-1 text-[12px] leading-snug text-muted">{t('on.protocolHint')}</p>
                 <div className="mt-2.5 grid gap-2.5">
-                  {protocols.map((protocol) => {
-                    const selected = draft.protocolName === protocol.name
+                  {pickerProtocols.map((protocol) => {
+                    const selected = protocolChoiceSelected(protocol.name, draft.protocolName)
                     const copy = protocolCopy(protocol.name)
                     return (
                       <button
                         key={protocol.name}
                         type="button"
                         onClick={() =>
-                          setDraft((d) => ({ ...d, protocolName: protocol.name }))
+                          setDraft((d) => ({
+                            ...d,
+                            protocolName: resolveProtocolName(
+                              protocols,
+                              protocol.name,
+                              d.reportingTime,
+                            ),
+                          }))
                         }
                         className={cn(
                           'rounded-[20px] bg-paper-2 px-4 py-3.5 text-left transition',
@@ -170,9 +193,11 @@ export function Onboarding({
                         <span className="block text-[15px] font-semibold text-ink">
                           {copy ? t(copy.label) : protocol.prep_agent_label}
                         </span>
-                        <span className="mt-0.5 block text-[12px] text-muted">
-                          {copy ? t(copy.hint) : protocol.last_meal}
-                        </span>
+                        {copy ? (
+                          <span className="mt-0.5 block text-[12px] text-muted">
+                            {t(copy.hint)}
+                          </span>
+                        ) : null}
                       </button>
                     )
                   })}

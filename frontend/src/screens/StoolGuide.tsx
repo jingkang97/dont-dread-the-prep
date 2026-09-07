@@ -17,7 +17,7 @@ export function StoolGuide({
   onReminders: () => void
 }) {
   const { t } = useLang()
-  const { hospital, protocol, short } = useSessionHospital(session)
+  const { hospital, short } = useSessionHospital(session)
   const contacts = hospital?.contacts ?? []
 
   return (
@@ -25,7 +25,7 @@ export function StoolGuide({
       <ScreenHeader
         kicker={t('stool.kicker')}
         title={t('stool.title')}
-        lead={hospCopyOr(t, session.hospitalId, 'stoolAction', protocol?.form_gap ?? '')}
+        lead={hospCopyOr(t, session.hospitalId, 'stoolAction', '')}
       />
 
       <div className="mt-5 grid gap-2">
@@ -63,7 +63,7 @@ export function StoolGuide({
         <SectionLabel>{t('stool.contactFor', { hospital: short })}</SectionLabel>
       </div>
       <p className="mt-1 text-[12px] leading-relaxed text-muted">
-        {hospCopyOr(t, session.hospitalId, 'formGap', protocol?.form_gap ?? '')}
+        {hospCopyOr(t, session.hospitalId, 'formGap', '')}
       </p>
 
       <div className="mt-3 grid gap-2.5">

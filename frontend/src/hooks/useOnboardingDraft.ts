@@ -7,6 +7,7 @@ import {
 } from '../data/onboarding'
 import {
   defaultProtocolName,
+  resolveProtocolName,
   type ApiHospital,
   type ApiProtocolSummary,
 } from '../lib/api'
@@ -29,7 +30,11 @@ export function useOnboardingDraft() {
 
   function pickHospital(hospitalId: HospitalId, apiHospitals: ApiHospital[]) {
     const row = apiHospitals.find((h) => h.code === hospitalId)
-    const protocolName = defaultProtocolName(row?.protocols ?? [], hospitalId)
+    const protocolName = resolveProtocolName(
+      row?.protocols ?? [],
+      defaultProtocolName(row?.protocols ?? [], hospitalId),
+      draft.reportingTime,
+    )
     setDraft((d) => ({ ...d, hospitalId, protocolName }))
     setStep('schedule')
   }

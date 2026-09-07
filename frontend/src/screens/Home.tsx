@@ -150,7 +150,6 @@ export function Home({
             <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
               {t('home.faithfulBody', {
                 hospital: hospital.short,
-                lastMeal: hospital.lastMeal,
                 milk: hospital.milkInCoffee === 'yes' ? t('home.milkYes') : t('home.milkNo'),
                 juice,
               })}

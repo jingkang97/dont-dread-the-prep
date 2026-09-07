@@ -5,10 +5,8 @@ export type ApiProtocolSummary = {
   prep_agent: string
   prep_agent_label: string
   diet_days: number
-  last_meal: string
   milk_in_coffee?: string
   fruit_juice?: string
-  form_gap?: string
 }
 
 export type ApiHospital = {

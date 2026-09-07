@@ -5,6 +5,12 @@
 ALTER TABLE protocols
   ADD COLUMN IF NOT EXISTS source_label TEXT NOT NULL DEFAULT '';
 
+ALTER TABLE protocols
+  DROP COLUMN IF EXISTS last_meal,
+  DROP COLUMN IF EXISTS last_meal_note,
+  DROP COLUMN IF EXISTS fluid_stop_hours,
+  DROP COLUMN IF EXISTS form_gap;
+
 CREATE TYPE event_kind AS ENUM (
   'diet',
   'dose',

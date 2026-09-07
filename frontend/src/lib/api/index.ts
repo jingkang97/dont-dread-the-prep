@@ -5,7 +5,10 @@ export type { ApiHospital, ApiProtocolSummary } from './hospitals'
 export {
   defaultProtocolName,
   isKnownProtocolName,
+  protocolChoiceSelected,
   protocolCopy,
+  resolveProtocolName,
+  selectableProtocols,
 } from './onboarding'
 export type { KnownProtocolName } from './onboarding'
 export {

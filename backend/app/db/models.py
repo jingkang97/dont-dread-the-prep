@@ -62,14 +62,10 @@ class Protocol(Base):
     prep_agent: Mapped[str] = mapped_column(prep_agent_enum, nullable=False)
     prep_agent_label: Mapped[str] = mapped_column(Text, nullable=False)
     diet_days: Mapped[int] = mapped_column(nullable=False)
-    last_meal: Mapped[str] = mapped_column(Text, nullable=False)
-    last_meal_note: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    fluid_stop_hours: Mapped[int] = mapped_column(nullable=False)
     milk_in_coffee: Mapped[str] = mapped_column(three_way_enum, nullable=False)
     fruit_juice: Mapped[str] = mapped_column(three_way_enum, nullable=False)
     rice_cereal: Mapped[str] = mapped_column(three_way_enum, nullable=False)
     coffee_tea: Mapped[str] = mapped_column(three_way_enum, nullable=False)
-    form_gap: Mapped[str] = mapped_column(Text, nullable=False, default="")
     source_label: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

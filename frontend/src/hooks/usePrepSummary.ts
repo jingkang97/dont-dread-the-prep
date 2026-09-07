@@ -20,7 +20,6 @@ export function usePrepSummary(session: PrepSession) {
     short,
     name: row?.name ?? short,
     fruitJuice: protocol?.fruit_juice ?? 'ask',
-    lastMeal: protocol?.last_meal ?? '',
     milkInCoffee: protocol?.milk_in_coffee ?? 'no',
   }
 

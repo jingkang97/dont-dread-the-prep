@@ -1,40 +1,34 @@
 INSERT INTO protocols (
   name, prep_agent, prep_agent_label, diet_days,
-  last_meal, last_meal_note, fluid_stop_hours,
-  milk_in_coffee, fruit_juice, rice_cereal, coffee_tea, form_gap
+  milk_in_coffee, fruit_juice, rice_cereal, coffee_tea
 ) VALUES
 (
   'sgh-nccs-picoprep',
   'picoprep',
   'Picoprep · 4 sachets',
   3,
-  'No food after dinner on the eve of scope',
-  'SGH/NCCS yellow form. Same prep agent as TTSH Picoprep-only; different dosing (4 sachets, handwritten times). Day-of: 2 plain white bread or 2 plain biscuits, then no food after breakfast. Clear fluids (max 200ml) up to 2h before procedure.',
-  2,
-  'no', 'no', 'no', 'yes',
-  'Times for Picoprep are handwritten blanks. Afternoon slots are not printed.'
+  'no', 'no', 'no', 'yes'
 ),
 (
-  'ttsh-picoprep',
+  'ttsh-picoprep (8am-2pm)',
   'picoprep',
-  'Picoprep · 2 sachets (brochure page 4)',
+  'Picoprep',
   3,
-  'Light dinner until 6:30pm on the eve of scope',
-  'TTSH Picoprep-only path (brochure page 4). Two sachets the day before: mix each with 150 ml warm water (2–3pm and 8–9pm), then drink at least 1 litre of plain water. Light dinner 6–6:30pm; no food after 6:30pm. Stop fluids 2 hours before the procedure.',
-  2,
-  'yes', 'ask', 'no', 'yes',
-  'This protocol follows brochure page 4 (Picoprep only), not pages 5–6 (Picoprep + PEG). Medications to stop are handwritten on the form.'
+  'yes', 'ask', 'no', 'yes'
 ),
 (
-  'ttsh-picoprep-peg',
-  'picoprep-peg',
-  'Picoprep · 2 sachets + PEG (8am–2pm PDF)',
+  'ttsh-picoprep (2pm-5pm)',
+  'picoprep',
+  'Picoprep',
   3,
-  'Light dinner until 7pm on the eve of scope',
-  'TTSH Picoprep+PEG path (brochure pages 5–6, 8am–2pm). Eve Picoprep ~2–3pm and 8–9pm; no food after 7pm. Day-of: mix 1 packet PEG with 1L water, drink 5–6am.',
-  2,
-  'yes', 'ask', 'no', 'yes',
-  'Same TTSH brochure as Picoprep-only; follow pages 5–6. Slot-specific PDF still applies.'
+  'yes', 'ask', 'no', 'yes'
+),
+(
+  'ttsh-picoprep-peg (8am-2pm)',
+  'picoprep-peg',
+  'Picoprep + PEG',
+  3,
+  'yes', 'ask', 'no', 'yes'
 );
 
 INSERT INTO hospitals (code, short_name, name, cluster, contacts)
@@ -83,11 +77,15 @@ VALUES
 ),
 (
   (SELECT id FROM hospitals WHERE code = 'ttsh'),
-  (SELECT id FROM protocols WHERE name = 'ttsh-picoprep')
+  (SELECT id FROM protocols WHERE name = 'ttsh-picoprep (8am-2pm)')
 ),
 (
   (SELECT id FROM hospitals WHERE code = 'ttsh'),
-  (SELECT id FROM protocols WHERE name = 'ttsh-picoprep-peg')
+  (SELECT id FROM protocols WHERE name = 'ttsh-picoprep (2pm-5pm)')
+),
+(
+  (SELECT id FROM hospitals WHERE code = 'ttsh'),
+  (SELECT id FROM protocols WHERE name = 'ttsh-picoprep-peg (8am-2pm)')
 );
 
 -- insert TTSH PEG-2L protocol

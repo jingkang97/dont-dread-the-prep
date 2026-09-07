@@ -26,10 +26,8 @@ class ProtocolSummary(BaseModel):
     prep_agent: str
     prep_agent_label: str
     diet_days: int
-    last_meal: str
     milk_in_coffee: str
     fruit_juice: str
-    form_gap: str = ""
 
 
 class HospitalOut(BaseModel):
@@ -51,8 +49,9 @@ class SessionCreate(BaseModel):
     protocol_name: Optional[str] = Field(
         default=None,
         description="Optional. Auto-picked when the hospital has one protocol "
-        "(SGH/NCCS). For TTSH, defaults to ttsh-picoprep unless you pass "
-        "ttsh-picoprep-peg.",
+        "(SGH/NCCS). For TTSH Picoprep-only, 8am–2pm vs 2pm–5pm is chosen from "
+        "reporting_time (14:00+ uses the afternoon sheet). Pass "
+        "ttsh-picoprep-peg (8am-2pm) for the PEG path.",
     )
     first_name: Optional[str] = Field(default=None, max_length=24)
 

@@ -4,6 +4,7 @@
 -- Resolver: load steps where slot IN ('any', session.slot), then:
 --   day_clock       → procedure_date + day_offset @ clock_time
 --   report_relative → reporting_time − hours_before_report
+-- TTSH Picoprep-only: reporting_time >= 14:00 → 'ttsh-picoprep (2pm-5pm)', else 8am–2pm.
 
 -- Safe if event_kind was created before 'check' existed; no-op on a fresh install.
 ALTER TYPE event_kind ADD VALUE IF NOT EXISTS 'stool';
@@ -15,13 +16,19 @@ UPDATE protocols SET source_label = 'SGH/NCCS yellow form'
 WHERE name = 'sgh-nccs-picoprep';
 
 UPDATE protocols SET
-  source_label = 'TTSH brochure March 2026 · Picoprep-only (page 4)',
-  prep_agent_label = 'Picoprep · 2 sachets (brochure page 4)',
-  last_meal_note = 'TTSH Picoprep-only path (brochure page 4). Two sachets the day before: mix each with 150 ml warm water (2–3pm and 8–9pm), then drink at least 1 litre of plain water. Light dinner 6–6:30pm; no food after 6:30pm. Stop fluids 2 hours before the procedure.'
-WHERE name = 'ttsh-picoprep';
+  source_label = 'Preparing-for-a-Colonoscopy-ICOPREP-8AM-to-2PM',
+  prep_agent_label = 'Picoprep'
+WHERE name = 'ttsh-picoprep (8am-2pm)';
 
-UPDATE protocols SET source_label = 'TTSH brochure March 2026 · Picoprep+PEG (pages 5–6)'
-WHERE name = 'ttsh-picoprep-peg';
+UPDATE protocols SET
+  source_label = 'Preparing-for-a-Colonoscopy-ICOPREP-2PM-to-5PM',
+  prep_agent_label = 'Picoprep'
+WHERE name = 'ttsh-picoprep (2pm-5pm)';
+
+UPDATE protocols SET
+  source_label = 'Preparing-for-a-Colonoscopy-ICOPREP-8AM-to-2PM',
+  prep_agent_label = 'Picoprep + PEG'
+WHERE name = 'ttsh-picoprep-peg (8am-2pm)';
 
 -- ---------------------------------------------------------------------------
 -- Versions
@@ -36,14 +43,21 @@ VALUES
   'SGH/NCCS yellow dietary advice & Picoprep form. Afternoon packet times are not printed (F10).'
 ),
 (
-  (SELECT id FROM protocols WHERE name = 'ttsh-picoprep'),
+  (SELECT id FROM protocols WHERE name = 'ttsh-picoprep (8am-2pm)'),
   1,
   '2026-03',
   DATE '2026-03-01',
-  'TTSH Picoprep-only · brochure page 4. Both sachets the day before (2–3pm and 8–9pm).'
+  'TTSH Picoprep-only · 8am–2pm sheet. Both sachets the day before (2–3pm and 8–9pm).'
 ),
 (
-  (SELECT id FROM protocols WHERE name = 'ttsh-picoprep-peg'),
+  (SELECT id FROM protocols WHERE name = 'ttsh-picoprep (2pm-5pm)'),
+  1,
+  '2026-03',
+  DATE '2026-03-01',
+  'TTSH Picoprep-only · 2pm–5pm sheet. Eve sachet 8–9pm; morning sachet 7–8am after light breakfast.'
+),
+(
+  (SELECT id FROM protocols WHERE name = 'ttsh-picoprep-peg (8am-2pm)'),
   1,
   '2026-03',
   DATE '2026-03-01',
@@ -137,18 +151,18 @@ WHERE p.name = 'sgh-nccs-picoprep'
   AND v.version_id = 1;
 
 -- ---------------------------------------------------------------------------
--- TTSH Picoprep-only (brochure page 4 · 2 sachets, both the day before)
+-- TTSH Picoprep-only · 8am–2pm (brochure page 4 · both sachets the day before)
 -- ---------------------------------------------------------------------------
 UPDATE protocol_versions v
-SET notes = 'TTSH Picoprep-only · brochure page 4. Both sachets the day before (2–3pm and 8–9pm).'
+SET notes = 'TTSH Picoprep-only · 8am–2pm sheet. Both sachets the day before (2–3pm and 8–9pm).'
 FROM protocols p
-WHERE p.id = v.protocol_id AND p.name = 'ttsh-picoprep' AND v.version_id = 1;
+WHERE p.id = v.protocol_id AND p.name = 'ttsh-picoprep (8am-2pm)' AND v.version_id = 1;
 
 DELETE FROM protocol_steps
 WHERE protocol_version_id IN (
   SELECT v.id FROM protocol_versions v
   JOIN protocols p ON p.id = v.protocol_id
-  WHERE p.name = 'ttsh-picoprep' AND v.version_id = 1
+  WHERE p.name = 'ttsh-picoprep (8am-2pm)' AND v.version_id = 1
 );
 
 INSERT INTO protocol_steps (
@@ -217,7 +231,78 @@ CROSS JOIN (
   title, detail, tentative, sort_order,
   dose_label, mix_volume_ml, follow_fluid_ml, agent
 )
-WHERE p.name = 'ttsh-picoprep'
+WHERE p.name = 'ttsh-picoprep (8am-2pm)'
+  AND v.version_id = 1;
+
+-- ---------------------------------------------------------------------------
+-- TTSH Picoprep-only · 2pm–5pm (brochure page 4 · split dose)
+-- ---------------------------------------------------------------------------
+INSERT INTO protocol_steps (
+  protocol_version_id, step_key, kind, slot, timing_mode,
+  day_offset, clock_time, hours_before_report,
+  title, detail, tentative, sort_order,
+  dose_label, mix_volume_ml, follow_fluid_ml, agent
+)
+SELECT
+  v.id,
+  s.step_key, s.kind::event_kind, s.slot::step_slot, s.timing_mode::timing_mode,
+  s.day_offset, s.clock_time::time, s.hours_before_report,
+  s.title, s.detail, s.tentative, s.sort_order,
+  s.dose_label, s.mix_volume_ml, s.follow_fluid_ml, s.agent
+FROM protocol_versions v
+JOIN protocols p ON p.id = v.protocol_id
+CROSS JOIN (
+  VALUES
+  ('diet-start', 'diet', 'any', 'day_clock', -3, '00:00', NULL,
+   'Start low-residue diet (3 days)',
+   'A low-residue diet is a temporary eating plan that limits high-fiber foods and other hard-to-digest items to reduce the amount of undigested material passing through your large intestine.',
+   false, 30, NULL, NULL, NULL, NULL),
+
+  -- 1 DAY BEFORE
+  ('breakfast-eve', 'meal', 'any', 'day_clock', -1, '07:00', NULL,
+   'Light low-fibre breakfast',
+   'Follow the TTSH low-residue diet list.',
+   false, 35, NULL, NULL, NULL, NULL),
+  ('lunch-eve', 'meal', 'any', 'day_clock', -1, '12:00', NULL,
+   'Light low-fibre lunch',
+   'Follow the TTSH low-residue diet list.',
+   false, 40, NULL, NULL, NULL, NULL),
+  ('last-meal-eve', 'meal', 'any', 'day_clock', -1, '18:00', NULL,
+   'Light low-fibre dinner',
+   'Eat between 6pm and 6:30pm.',
+   false, 50, NULL, NULL, NULL, NULL),
+  ('ttsh-p1', 'dose', 'any', 'day_clock', -1, '20:00', NULL,
+   'Picoprep packet 1 (8–9pm)',
+   'Mix 1 packet of powder with 150 ml of warm water and stir for 2 to 3 minutes. Then drink at least 1 litre or 2 cups of plain water (1 cup = 500 ml), using the PICOPREP cup given.',
+   false, 60, '1', 150, 1000, 'picoprep'),
+
+  -- ON THE DAY
+  ('breakfast-am', 'meal', 'any', 'day_clock', 0, '06:00', NULL,
+   'Light low-fibre breakfast',
+   'Eat between 6am and 6:30am. No more food allowed after 6:30am.',
+   false, 80, NULL, NULL, NULL, NULL),
+  ('ttsh-p2', 'dose', 'any', 'day_clock', 0, '07:00', NULL,
+   'Picoprep packet 2 (7–8am)',
+   'Mix 1 packet of powder with 150 ml of warm water and stir for 2 to 3 minutes. Then drink at least 1 litre or 2 cups of plain water (1 cup = 500 ml), using the PICOPREP cup given.',
+   false, 90, '2', 150, 1000, 'picoprep'),
+  ('stool-check', 'stool', 'any', 'report_relative', NULL, NULL, 3.0,
+   'Check your stool against the colour scale',
+   'If stool still looks like stages 1–4, report 2 hours early and call Endo PACE / the endoscopy centre.',
+   false, 100, NULL, NULL, NULL, NULL),
+  ('fast', 'fast', 'any', 'report_relative', NULL, NULL, 2.0,
+   'Stop all fluids',
+   'Stop drinking fluids including plain water. Continue other usual medications at least 2 hours before your colonoscopy, with small amounts of water.',
+   false, 110, NULL, NULL, NULL, NULL),
+  ('arrive', 'arrive', 'any', 'report_relative', NULL, NULL, 0.0,
+   'Report to Endoscopy Centre',
+   'Arrive at the reporting time written on your form.',
+   false, 120, NULL, NULL, NULL, NULL)
+) AS s(
+  step_key, kind, slot, timing_mode, day_offset, clock_time, hours_before_report,
+  title, detail, tentative, sort_order,
+  dose_label, mix_volume_ml, follow_fluid_ml, agent
+)
+WHERE p.name = 'ttsh-picoprep (2pm-5pm)'
   AND v.version_id = 1;
 
 -- ---------------------------------------------------------------------------
@@ -276,5 +361,5 @@ CROSS JOIN (
   title, detail, tentative, sort_order,
   dose_label, mix_volume_ml, follow_fluid_ml, agent
 )
-WHERE p.name = 'ttsh-picoprep-peg'
+WHERE p.name = 'ttsh-picoprep-peg (8am-2pm)'
   AND v.version_id = 1;
