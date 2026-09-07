@@ -16,13 +16,21 @@ PUBLIC_CODE_LENGTH = 4
 
 TTSH_PICOPREP_AM = "ttsh-picoprep (8am-2pm)"
 TTSH_PICOPREP_PM = "ttsh-picoprep (2pm-5pm)"
-TTSH_PICOPREP_PEG = "ttsh-picoprep-peg (8am-2pm)"
+TTSH_PICOPREP_PEG_AM = "ttsh-picoprep-peg (8am-2pm)"
+TTSH_PICOPREP_PEG_PM = "ttsh-picoprep-peg (2pm-5pm)"
+TTSH_PICOPREP_PEG = TTSH_PICOPREP_PEG_AM
 TTSH_AFTERNOON_FROM = time(14, 0)
 
 # Older clients / seeds used un-windowed names.
 PROTOCOL_NAME_ALIASES: dict[str, str] = {
     "ttsh-picoprep": TTSH_PICOPREP_AM,
     "ttsh-picoprep-peg": TTSH_PICOPREP_PEG,
+}
+
+# (8am–2pm name, 2pm–5pm name) per TTSH prep agent.
+TTSH_WINDOW_BY_AGENT: dict[str, tuple[str, str]] = {
+    "picoprep": (TTSH_PICOPREP_AM, TTSH_PICOPREP_PM),
+    "picoprep-peg": (TTSH_PICOPREP_PEG_AM, TTSH_PICOPREP_PEG_PM),
 }
 
 # Prefer Picoprep-only when TTSH (or any hospital) has multiple protocols and
@@ -39,10 +47,14 @@ def canonical_protocol_name(name: str) -> str:
 def apply_ttsh_time_window(
     hospital: Hospital, protocol: Protocol, reporting: time
 ) -> Protocol:
-    """8am–2pm vs 2pm–5pm Picoprep sheets are separate protocols, picked by reporting time."""
-    if hospital.code != "ttsh" or protocol.prep_agent != "picoprep":
+    """8am–2pm vs 2pm–5pm sheets are separate protocols, picked by reporting time."""
+    if hospital.code != "ttsh":
         return protocol
-    want = TTSH_PICOPREP_PM if reporting >= TTSH_AFTERNOON_FROM else TTSH_PICOPREP_AM
+    windows = TTSH_WINDOW_BY_AGENT.get(protocol.prep_agent)
+    if windows is None:
+        return protocol
+    am_name, pm_name = windows
+    want = pm_name if reporting >= TTSH_AFTERNOON_FROM else am_name
     for candidate in hospital.protocols:
         if candidate.name == want:
             return candidate

@@ -8,7 +8,7 @@ CREATE TYPE three_way AS ENUM ('yes', 'no', 'ask');
 
 CREATE TABLE protocols (
   id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  name              TEXT NOT NULL UNIQUE,  -- 'sgh-nccs-picoprep' | 'ttsh-picoprep (8am-2pm)' | 'ttsh-picoprep (2pm-5pm)' | 'ttsh-picoprep-peg (8am-2pm)'
+  name              TEXT NOT NULL UNIQUE,  -- 'sgh-nccs-picoprep' | 'ttsh-picoprep (8am-2pm)' | 'ttsh-picoprep (2pm-5pm)' | 'ttsh-picoprep-peg (8am-2pm)' | 'ttsh-picoprep-peg (2pm-5pm)'
   prep_agent        prep_agent NOT NULL,
   prep_agent_label  TEXT NOT NULL,
   diet_days         INT NOT NULL CHECK (diet_days > 0),

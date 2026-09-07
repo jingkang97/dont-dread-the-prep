@@ -4,7 +4,7 @@
 -- Resolver: load steps where slot IN ('any', session.slot), then:
 --   day_clock       → procedure_date + day_offset @ clock_time
 --   report_relative → reporting_time − hours_before_report
--- TTSH Picoprep-only: reporting_time >= 14:00 → 'ttsh-picoprep (2pm-5pm)', else 8am–2pm.
+-- TTSH Picoprep-only / Picoprep+PEG: reporting_time >= 14:00 → 2pm–5pm sheet, else 8am–2pm.
 
 -- Safe if event_kind was created before 'check' existed; no-op on a fresh install.
 ALTER TYPE event_kind ADD VALUE IF NOT EXISTS 'stool';
@@ -29,6 +29,11 @@ UPDATE protocols SET
   source_label = 'Preparing-for-a-Colonoscopy-ICOPREP-8AM-to-2PM',
   prep_agent_label = 'Picoprep + PEG'
 WHERE name = 'ttsh-picoprep-peg (8am-2pm)';
+
+UPDATE protocols SET
+  source_label = 'Preparing-for-a-Colonoscopy-ICOPREP-2PM-to-5PM',
+  prep_agent_label = 'Picoprep + PEG'
+WHERE name = 'ttsh-picoprep-peg (2pm-5pm)';
 
 -- ---------------------------------------------------------------------------
 -- Versions
@@ -62,6 +67,13 @@ VALUES
   '2026-03',
   DATE '2026-03-01',
   'TTSH Picoprep eve + PEG morning · brochure pages 5–6.'
+),
+(
+  (SELECT id FROM protocols WHERE name = 'ttsh-picoprep-peg (2pm-5pm)'),
+  1,
+  '2026-03',
+  DATE '2026-03-01',
+  'TTSH Picoprep + PEG · 2pm–5pm sheet. Eve sachet 8–9pm; morning sachet 6–7am after light breakfast; PEG 8–9am. Brochure pages 5–6.'
 );
 
 -- ---------------------------------------------------------------------------
@@ -362,4 +374,79 @@ CROSS JOIN (
   dose_label, mix_volume_ml, follow_fluid_ml, agent
 )
 WHERE p.name = 'ttsh-picoprep-peg (8am-2pm)'
+  AND v.version_id = 1;
+
+-- ---------------------------------------------------------------------------
+-- TTSH Picoprep + PEG · 2pm–5pm (brochure pages 5–6 · split Picoprep + morning PEG)
+-- ---------------------------------------------------------------------------
+INSERT INTO protocol_steps (
+  protocol_version_id, step_key, kind, slot, timing_mode,
+  day_offset, clock_time, hours_before_report,
+  title, detail, tentative, sort_order,
+  dose_label, mix_volume_ml, follow_fluid_ml, agent
+)
+SELECT
+  v.id,
+  s.step_key, s.kind::event_kind, s.slot::step_slot, s.timing_mode::timing_mode,
+  s.day_offset, s.clock_time::time, s.hours_before_report,
+  s.title, s.detail, s.tentative, s.sort_order,
+  s.dose_label, s.mix_volume_ml, s.follow_fluid_ml, s.agent
+FROM protocol_versions v
+JOIN protocols p ON p.id = v.protocol_id
+CROSS JOIN (
+  VALUES
+  ('diet-start', 'diet', 'any', 'day_clock', -3, '00:00', NULL,
+   'Start low-residue diet (3 days)',
+   'A low-residue diet is a temporary eating plan that limits high-fiber foods and other hard-to-digest items to reduce the amount of undigested material passing through your large intestine.',
+   false, 30, NULL, NULL, NULL, NULL),
+
+  -- 1 DAY BEFORE
+  ('breakfast-eve', 'meal', 'any', 'day_clock', -1, '07:00', NULL,
+   'Light low-fibre breakfast',
+   'As on brochure pages 5–6. Follow the TTSH low-fibre diet list.',
+   false, 35, NULL, NULL, NULL, NULL),
+  ('lunch-eve', 'meal', 'any', 'day_clock', -1, '12:00', NULL,
+   'Light low-fibre lunch',
+   'As on brochure pages 5–6. Follow the TTSH low-fibre diet list.',
+   false, 40, NULL, NULL, NULL, NULL),
+  ('last-meal-eve', 'meal', 'any', 'day_clock', -1, '18:00', NULL,
+   'Light low-fibre dinner',
+   'Eat between 6pm and 6:30pm.',
+   false, 50, NULL, NULL, NULL, NULL),
+  ('ttsh-p1', 'dose', 'any', 'day_clock', -1, '20:00', NULL,
+   'Picoprep packet 1 (8–9pm)',
+   'Mix 1 packet of powder with 150 ml of warm water and stir for 2 to 3 minutes. Then drink at least 1 litre or 2 cups of plain water (1 cup = 500 ml), using the PICOPREP cup given.',
+   false, 60, '1', 150, 1000, 'picoprep'),
+
+  -- ON THE DAY
+  ('breakfast-am', 'meal', 'any', 'day_clock', 0, '05:00', NULL,
+   'Light low-fibre breakfast',
+   'Eat between 5am and 5:30am. No more food allowed after 5:30am. Continue other usual medications.',
+   false, 80, NULL, NULL, NULL, NULL),
+  ('ttsh-p2', 'dose', 'any', 'day_clock', 0, '06:00', NULL,
+   'Picoprep packet 2 (6–7am)',
+   'Mix 1 packet of powder with 150 ml of warm water and stir for 2 to 3 minutes. Then drink at least 1 litre or 2 cups of plain water (1 cup = 500 ml), using the PICOPREP cup given.',
+   false, 90, '2', 150, 1000, 'picoprep'),
+  ('peg-am', 'dose', 'any', 'day_clock', 0, '08:00', NULL,
+   'PEG morning dose (8–9am)',
+   'Mix 1 packet of PEG powder with 1 litre or 2 cups of plain water (1 cup = 500 ml). Start at 8am and finish by 9am — one cup at 8am and the second at 8:30am. Drink extra plain water to replace fluids lost to the laxative.',
+   false, 95, 'PEG', 1000, NULL, 'peg'),
+  ('stool-check', 'stool', 'any', 'report_relative', NULL, NULL, 3.0,
+   'Check your stool against the colour scale',
+   'If stool still looks like stages 1–4, report 2 hours early and call Endo PACE / the endoscopy centre.',
+   false, 100, NULL, NULL, NULL, NULL),
+  ('fast', 'fast', 'any', 'report_relative', NULL, NULL, 2.0,
+   'Stop all fluids',
+   'Stop drinking fluids including plain water. This is 2 hours before the procedure on brochure pages 5–6. Continue other usual medications at least 2 hours before your colonoscopy, with small amounts of water.',
+   false, 110, NULL, NULL, NULL, NULL),
+  ('arrive', 'arrive', 'any', 'report_relative', NULL, NULL, 0.0,
+   'Report to Endoscopy Centre',
+   'Arrive at the reporting time written on your form.',
+   false, 120, NULL, NULL, NULL, NULL)
+) AS s(
+  step_key, kind, slot, timing_mode, day_offset, clock_time, hours_before_report,
+  title, detail, tentative, sort_order,
+  dose_label, mix_volume_ml, follow_fluid_ml, agent
+)
+WHERE p.name = 'ttsh-picoprep-peg (2pm-5pm)'
   AND v.version_id = 1;

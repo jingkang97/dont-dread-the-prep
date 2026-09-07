@@ -13,15 +13,24 @@ export type KnownProtocolName =
   | 'ttsh-picoprep (2pm-5pm)'
   | 'ttsh-picoprep-peg'
   | 'ttsh-picoprep-peg (8am-2pm)'
+  | 'ttsh-picoprep-peg (2pm-5pm)'
 
 export const TTSH_PICOPREP_AM = 'ttsh-picoprep (8am-2pm)'
 export const TTSH_PICOPREP_PM = 'ttsh-picoprep (2pm-5pm)'
-export const TTSH_PICOPREP_PEG = 'ttsh-picoprep-peg (8am-2pm)'
+export const TTSH_PICOPREP_PEG_AM = 'ttsh-picoprep-peg (8am-2pm)'
+export const TTSH_PICOPREP_PEG_PM = 'ttsh-picoprep-peg (2pm-5pm)'
+export const TTSH_PICOPREP_PEG = TTSH_PICOPREP_PEG_AM
 
 const PICOPREP_ONLY = new Set<string>([
   'ttsh-picoprep',
   TTSH_PICOPREP_AM,
   TTSH_PICOPREP_PM,
+])
+
+const PICOPREP_PEG = new Set<string>([
+  'ttsh-picoprep-peg',
+  TTSH_PICOPREP_PEG_AM,
+  TTSH_PICOPREP_PEG_PM,
 ])
 
 const PROTOCOL_NAME_ALIASES: Record<string, KnownProtocolName> = {
@@ -52,6 +61,10 @@ export const PROTOCOL_COPY: Partial<
     label: 'on.protocol.ttsh-picoprep-peg',
     hint: 'on.protocol.ttsh-picoprep-pegHint',
   },
+  [TTSH_PICOPREP_PEG_PM]: {
+    label: 'on.protocol.ttsh-picoprep-peg',
+    hint: 'on.protocol.ttsh-picoprep-pegHint',
+  },
 }
 
 const DEFAULT_MULTI_PROTOCOL: Record<string, KnownProtocolName> = {
@@ -71,7 +84,7 @@ export function isTtshAfternoonPicoprep(reportingTime: string) {
   return reportingTime >= '14:00'
 }
 
-/** One chip per prep agent so 8am–2pm / 2pm–5pm Picoprep is not a third choice. */
+/** One chip per prep agent so 8am–2pm / 2pm–5pm sheets are not extra choices. */
 export function selectableProtocols<T extends { prep_agent: string }>(protocols: T[]): T[] {
   const seen = new Set<string>()
   const out: T[] = []
@@ -86,6 +99,7 @@ export function selectableProtocols<T extends { prep_agent: string }>(protocols:
 export function protocolChoiceSelected(optionName: string, draftName: string | null) {
   if (!draftName) return false
   if (PICOPREP_ONLY.has(optionName) && PICOPREP_ONLY.has(draftName)) return true
+  if (PICOPREP_PEG.has(optionName) && PICOPREP_PEG.has(draftName)) return true
   return optionName === draftName
 }
 
@@ -101,7 +115,7 @@ export function defaultProtocolName(
   return protocols.find((p) => p.name === preferred)?.name ?? protocols[0].name
 }
 
-/** Map Picoprep-only to the 8am–2pm or 2pm–5pm sheet from reporting time. */
+/** Map TTSH Picoprep / Picoprep+PEG to the 8am–2pm or 2pm–5pm sheet from reporting time. */
 export function resolveProtocolName(
   protocols: Pick<ApiProtocolSummary, 'name' | 'prep_agent'>[],
   chosenName: string | null | undefined,
@@ -114,6 +128,15 @@ export function resolveProtocolName(
     (aliased != null && PICOPREP_ONLY.has(aliased))
   if (isPicoprepOnly) {
     const want = isTtshAfternoonPicoprep(reportingTime) ? TTSH_PICOPREP_PM : TTSH_PICOPREP_AM
+    return protocols.find((p) => p.name === want)?.name ?? selected?.name ?? aliased
+  }
+  const isPeg =
+    (selected?.prep_agent === 'picoprep-peg' && PICOPREP_PEG.has(selected.name)) ||
+    (aliased != null && PICOPREP_PEG.has(aliased))
+  if (isPeg) {
+    const want = isTtshAfternoonPicoprep(reportingTime)
+      ? TTSH_PICOPREP_PEG_PM
+      : TTSH_PICOPREP_PEG_AM
     return protocols.find((p) => p.name === want)?.name ?? selected?.name ?? aliased
   }
   if (selected) return selected.name

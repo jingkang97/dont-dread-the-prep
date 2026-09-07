@@ -29,6 +29,13 @@ INSERT INTO protocols (
   'Picoprep + PEG',
   3,
   'yes', 'ask', 'no', 'yes'
+),
+(
+  'ttsh-picoprep-peg (2pm-5pm)',
+  'picoprep-peg',
+  'Picoprep + PEG',
+  3,
+  'yes', 'ask', 'no', 'yes'
 );
 
 INSERT INTO hospitals (code, short_name, name, cluster, contacts)
@@ -86,6 +93,10 @@ VALUES
 (
   (SELECT id FROM hospitals WHERE code = 'ttsh'),
   (SELECT id FROM protocols WHERE name = 'ttsh-picoprep-peg (8am-2pm)')
+),
+(
+  (SELECT id FROM hospitals WHERE code = 'ttsh'),
+  (SELECT id FROM protocols WHERE name = 'ttsh-picoprep-peg (2pm-5pm)')
 );
 
 -- insert TTSH PEG-2L protocol
