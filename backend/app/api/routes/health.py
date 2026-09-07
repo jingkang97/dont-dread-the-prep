@@ -21,7 +21,7 @@ def health_db() -> JSONResponse:
             content={
                 "status": "error",
                 "database": "not_configured",
-                "detail": "DATABASE_URL is missing in backend/.env",
+                "detail": "DATABASE_URL is not set",
             },
         )
     try:
