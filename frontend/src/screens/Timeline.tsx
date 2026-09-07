@@ -60,7 +60,13 @@ function jumpToward(scroller: HTMLElement, el: HTMLElement, topPad: number): Jum
   return 'down'
 }
 
-export function Timeline({ session }: { session: PrepSession }) {
+export function Timeline({
+  session,
+  onOpenStool,
+}: {
+  session: PrepSession
+  onOpenStool: () => void
+}) {
   const { t } = useLang()
   const { hospital, events, loading, error, now, nextUpcoming } = usePrepSummary(session)
   const nextId = nextUpcoming?.id
@@ -234,7 +240,12 @@ export function Timeline({ session }: { session: PrepSession }) {
                       )}
                     />
                     <EventStamp event={event} />
-                    <EventCard event={event} isNext={event.id === nextId} isPast={isBefore(event.at, now)} />
+                    <EventCard
+                      event={event}
+                      isNext={event.id === nextId}
+                      isPast={isBefore(event.at, now)}
+                      onOpenStool={onOpenStool}
+                    />
                   </li>
                 ))}
               </ol>
@@ -290,7 +301,12 @@ export function Timeline({ session }: { session: PrepSession }) {
                 {dayEvents.map((event) => (
                   <div key={event.id}>
                     <EventStamp event={event} />
-                    <EventCard event={event} isNext={event.id === nextId} isPast={isBefore(event.at, now)} />
+                    <EventCard
+                      event={event}
+                      isNext={event.id === nextId}
+                      isPast={isBefore(event.at, now)}
+                      onOpenStool={onOpenStool}
+                    />
                   </div>
                 ))}
               </div>

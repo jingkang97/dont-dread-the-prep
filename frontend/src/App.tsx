@@ -74,7 +74,9 @@ export default function App() {
               {screen === 'home' && (
                 <Home session={session} onOpen={setScreen} onShortcut={setShortcut} />
               )}
-              {screen === 'timeline' && <Timeline session={session} />}
+              {screen === 'timeline' && (
+                <Timeline session={session} onOpenStool={() => setScreen('stool')} />
+              )}
               {screen === 'food' && <FoodChat session={session} />}
               {screen === 'stool' && (
                 <StoolGuide session={session} onReminders={() => setScreen('reminders')} />

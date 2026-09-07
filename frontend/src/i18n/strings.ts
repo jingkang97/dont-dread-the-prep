@@ -141,6 +141,7 @@ export const EN = {
   'tl.pegMixImg': 'Mix one PEG packet with liquid, then drink four glasses at 15-minute intervals',
   'tl.pegWhy':
     'PEG powder is mixed with water and drunk in four glasses, 15 minutes apart, to empty your colon before colonoscopy.',
+  'tl.openStool': 'Open stool scale',
   'kind.diet': 'Diet',
   'kind.dose': 'Medicine',
   'kind.meal': 'Meal',
@@ -383,6 +384,7 @@ const ZH: Record<StringKey, string> = {
   'tl.pegMixTitle': 'PEG',
   'tl.pegMixImg': '将 1 包 PEG 与液体混合，然后每隔 15 分钟喝一杯，共四杯',
   'tl.pegWhy': 'PEG 粉末与水混合后分四杯、每隔 15 分钟喝完，用于在结肠镜检查前清空大肠。',
+  'tl.openStool': '查看粪便对照',
   'kind.diet': '饮食',
   'kind.dose': '药物',
   'kind.meal': '餐食',
@@ -628,6 +630,7 @@ const MS: Record<StringKey, string> = {
   'tl.pegMixImg': 'Campur satu paket PEG dengan cecair, kemudian minum empat gelas setiap 15 minit',
   'tl.pegWhy':
     'Serbuk PEG dicampur dengan air dan diminum dalam empat gelas, 15 minit sekali, untuk mengosongkan kolon anda sebelum kolonoskopi.',
+  'tl.openStool': 'Buka skala najis',
   'kind.diet': 'Diet',
   'kind.dose': 'Ubat',
   'kind.meal': 'Hidangan',
@@ -875,6 +878,7 @@ const TA: Record<StringKey, string> = {
   'tl.pegMixImg': 'ஒரு PEG பாக்கெட்டை திரவத்துடன் கலந்து, 15 நிமிட இடைவெளியில் நான்கு கிளாஸ் குடிக்கவும்',
   'tl.pegWhy':
     'PEG பொடியை நீரில் கலந்து, 15 நிமிட இடைவெளியில் நான்கு கிளாஸாகக் குடித்து, கொலனோஸ்கோபிக்கு முன் உங்கள் பெருங்குடலை காலி செய்யப் பயன்படுகிறது.',
+  'tl.openStool': 'மல அளவுகோலைத் திற',
   'kind.diet': 'உணவுமுறை',
   'kind.dose': 'மருந்து',
   'kind.meal': 'உணவு',
