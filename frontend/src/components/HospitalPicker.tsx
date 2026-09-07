@@ -149,7 +149,6 @@ function HospitalRow({
 }) {
   const { t } = useLang()
   const name = hospCopyOr(t, h.hospitalId, 'name', h.name)
-  const prep = h.prep || hospCopyOr(t, h.hospitalId, 'prep', '')
   return (
     <button
       type="button"
@@ -167,9 +166,7 @@ function HospitalRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-semibold text-ink">{h.short}</span>
-        <span className="block text-[12px] text-muted">
-          {name} · {prep}
-        </span>
+        <span className="block text-[12px] text-muted">{name}</span>
       </span>
       <ChevronRight size={18} className="shrink-0 text-muted" />
     </button>

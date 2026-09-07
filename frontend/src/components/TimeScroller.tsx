@@ -104,7 +104,7 @@ export function TimeScroller({
     <div className="relative">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-2 top-1/2 z-0 h-12 -translate-y-1/2 rounded-2xl bg-navy"
+        className="pointer-events-none absolute inset-x-2 top-1/2 z-0 h-12 -translate-y-1/2 rounded-2xl bg-cream"
       />
       <div
         ref={scrollerRef}
@@ -147,7 +147,7 @@ export function TimeScroller({
               }}
               className={cn(
                 'flex h-12 w-full shrink-0 snap-center snap-always items-center justify-center border-0 bg-transparent p-0 text-[17px] font-semibold',
-                selected ? 'text-white' : 'text-muted',
+                selected ? 'text-teal-deep' : 'text-muted',
               )}
             >
               {formatHm(time)}

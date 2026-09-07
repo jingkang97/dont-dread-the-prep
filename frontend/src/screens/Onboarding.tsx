@@ -90,7 +90,6 @@ export function Onboarding({
       <header className="shrink-0 px-5 pb-4 pt-8">
         <p className="text-[13px] font-semibold text-teal-deep">{t('on.kicker')}</p>
         <h1 className="font-display mt-1 text-[34px] leading-[1.1] tracking-tight text-ink">{t('on.title')}</h1>
-        <p className="mt-3 text-[15px] leading-snug text-ink-soft">{t('on.lead')}</p>
       </header>
 
       <div className="relative min-h-0 flex-1">
@@ -141,15 +140,13 @@ export function Onboarding({
 
         {step === 'schedule' && (
           <div>
-            <SectionLabel>{t('on.step2')}</SectionLabel>
-            <div className="mt-3">
-              <DateSlotPicker
-                date={draft.date}
-                slot={draft.slot}
-                reportingTime={draft.reportingTime}
-                onChange={(next) => setDraft((d) => ({ ...d, ...next }))}
-              />
-            </div>
+            <DateSlotPicker
+              date={draft.date}
+              slot={draft.slot}
+              reportingTime={draft.reportingTime}
+              dateLabel={t('on.step2')}
+              onChange={(next) => setDraft((d) => ({ ...d, ...next }))}
+            />
             {needsProtocolChoice && (
               <div className="mt-5">
                 <p className="text-[13px] font-semibold text-navy">{t('on.protocol')}</p>

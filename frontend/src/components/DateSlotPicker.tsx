@@ -4,7 +4,7 @@ import { SegmentedControl } from './SegmentedControl'
 import { TimeScroller } from './TimeScroller'
 import { Card } from './ui'
 import { useLang } from '../i18n/LanguageContext'
-import { formatYmd, isBeforeToday, parseYmd, quarterHours, toYmd } from '../lib/dates'
+import { isBeforeToday, parseYmd, quarterHours, toYmd } from '../lib/dates'
 import { defaultReporting } from '../lib/timeline'
 import type { Slot } from '../data/hospitals'
 
@@ -24,16 +24,15 @@ export function DateSlotPicker({
   onChange: (next: { date?: string; slot?: Slot; reportingTime?: string }) => void
   dateLabel?: string
 }) {
-  const { t, lang } = useLang()
+  const { t } = useLang()
   const selected = parseYmd(date)
   const today = startOfDay(new Date())
   const times = slot === 'pm' ? PM_TIMES : AM_TIMES
 
   return (
     <div>
-      <p className="text-[13px] font-semibold text-navy">{dateLabel ?? t('on.date')}</p>
-      <p className="font-display mt-1 text-[22px] tracking-tight text-ink">{formatYmd(date, lang)}</p>
-      <Card className="mt-3 px-1 py-2">
+      {dateLabel ? <p className="text-[13px] font-semibold text-navy">{dateLabel}</p> : null}
+      <Card className={dateLabel ? 'mt-3 px-1 py-2' : 'px-1 py-2'}>
         <MonthCalendar
           selected={selected}
           onSelect={(day) => {
