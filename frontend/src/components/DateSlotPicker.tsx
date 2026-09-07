@@ -1,15 +1,15 @@
 import { addMonths, startOfDay, startOfMonth } from 'date-fns'
 import { MonthCalendar } from './MonthCalendar'
 import { SegmentedControl } from './SegmentedControl'
+import { TimeScroller } from './TimeScroller'
 import { Card } from './ui'
 import { useLang } from '../i18n/LanguageContext'
-import { cn } from '../lib/cn'
-import { formatHm, formatYmd, isBeforeToday, parseYmd, toYmd } from '../lib/dates'
+import { formatYmd, isBeforeToday, parseYmd, quarterHours, toYmd } from '../lib/dates'
 import { defaultReporting } from '../lib/timeline'
 import type { Slot } from '../data/hospitals'
 
-const AM_TIMES = ['07:00', '07:30', '08:00', '08:30', '09:00']
-const PM_TIMES = ['12:30', '13:00', '13:30', '14:00', '14:30']
+const AM_TIMES = quarterHours('08:00', '11:45')
+const PM_TIMES = quarterHours('12:00', '17:00')
 
 export function DateSlotPicker({
   date,
@@ -76,21 +76,17 @@ export function DateSlotPicker({
       />
 
       <p className="mt-5 text-[13px] font-semibold text-navy">{t('on.report')}</p>
-      <div className="mt-2 grid grid-cols-3 gap-2">
-        {times.map((time) => (
-          <button
-            key={time}
-            type="button"
-            onClick={() => onChange({ reportingTime: time, slot: slot ?? (time < '12:00' ? 'am' : 'pm') })}
-            className={cn(
-              'min-h-[48px] rounded-2xl text-[15px] font-semibold',
-              reportingTime === time ? 'bg-navy text-white' : 'bg-white text-ink',
-            )}
-          >
-            {formatHm(time)}
-          </button>
-        ))}
-      </div>
+      <Card className="mt-2 overflow-hidden py-1">
+        <TimeScroller
+          key={slot ?? 'am'}
+          times={times}
+          value={reportingTime}
+          label={t('on.report')}
+          onChange={(time) =>
+            onChange({ reportingTime: time, slot: slot ?? (time < '12:00' ? 'am' : 'pm') })
+          }
+        />
+      </Card>
     </div>
   )
 }
