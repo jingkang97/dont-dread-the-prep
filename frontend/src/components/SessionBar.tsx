@@ -16,7 +16,10 @@ export function SessionBar({
   const slot = session.slot === 'am' ? t('on.morning') : t('on.afternoon')
 
   return (
-    <div className="flex h-14 shrink-0 items-center gap-3 border-b border-black/5 bg-white px-3">
+    <div
+      data-tour="session-bar"
+      className="flex h-14 shrink-0 items-center gap-3 border-b border-black/5 bg-white px-3"
+    >
       <div className="min-w-0 flex-1 pl-1">
         <p className="truncate text-[15px] font-semibold leading-tight text-ink">
           {session.firstName ? `${session.firstName} · ` : ''}

@@ -40,6 +40,7 @@ def session_to_out(row: Session, hospital: Hospital, protocol: Protocol) -> Sess
         reporting_time=row.reporting_time,
         first_name=row.first_name,
         wa_opt_in=row.wa_opt_in,
+        push_opt_in=bool(row.push_endpoint),
         created_at=row.created_at,
     )
 

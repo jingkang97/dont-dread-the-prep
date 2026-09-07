@@ -24,6 +24,7 @@ export type PrepSession = SessionInput & {
   firstName?: string
   createdAt: string
   waOptIn: boolean
+  pushOptIn: boolean
   protocolName?: string
 }
 
@@ -72,6 +73,7 @@ export function fromApiSession(row: ApiSession): PrepSession {
     firstName: row.first_name ?? undefined,
     createdAt: row.created_at,
     waOptIn: row.wa_opt_in,
+    pushOptIn: Boolean(row.push_opt_in),
     protocolName: row.protocol_name,
   }
 }
@@ -91,6 +93,7 @@ function parseSession(raw: unknown): PrepSession | null {
     firstName: cleanFirstName(s.firstName),
     createdAt: String(s.createdAt),
     waOptIn: Boolean(s.waOptIn),
+    pushOptIn: Boolean(s.pushOptIn),
     protocolName: s.protocolName ? String(s.protocolName) : undefined,
   }
 }

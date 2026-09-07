@@ -26,23 +26,6 @@ NEED_CODE = (
 UNKNOWN = (
     "I couldn't find session {code}. Open PrepPath and tap Set reminders again."
 )
-REMINDERS = {
-    "t72": (
-        "<b>T−72 hours</b>\n\n"
-        "Low-residue diet should already be underway."
-    ),
-    "t24": (
-        "<b>T−24 hours</b>\n\n"
-        "Eve of scope. Last meal and first Picoprep doses are close."
-    ),
-    "t6": (
-        "<b>T−6 hours</b>\n\n"
-        "Final doses and fasting cutoff. Check stool colour before you leave.\n\n"
-        "Stages 1–4: not ready — call your hospital or report 2 hours early.\n"
-        "Stage 5: almost. Stage 6: ready."
-    ),
-}
-
 STOOL_CHART = Path(__file__).resolve().parent.parent / "assets" / "stool-chart.png"
 
 

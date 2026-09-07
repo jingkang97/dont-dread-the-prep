@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     telegram_reminder_test: bool = True
     site_url: str = "http://localhost:5173"
 
+    # Web Push (PWA). Public key is served to the browser; keep the private key secret.
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_mailto: str = "mailto:preppath@localhost"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

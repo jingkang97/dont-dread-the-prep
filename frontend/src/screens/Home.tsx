@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { format, formatDistanceStrict, isAfter } from 'date-fns'
-import { ArrowRight, Droplets, EllipsisVertical, Sparkles, Utensils } from 'lucide-react'
+import { ArrowRight, Bell, Droplets, EllipsisVertical, Sparkles, Utensils } from 'lucide-react'
 import { Card, SectionLabel } from '../components/ui'
 import { cn } from '../lib/cn'
 import { useLang } from '../i18n/LanguageContext'
@@ -23,6 +23,7 @@ export function Home({
   const locale = DATE_LOCALES[lang]
   const { hospital, now, next, nextWhen, report, started } = usePrepSummary(session)
   const remaining = report ? formatDistanceStrict(report, now, { addSuffix: true, locale }) : ''
+  const remindersOn = session.waOptIn || session.pushOptIn
   const juice =
     hospital.fruitJuice === 'yes'
       ? t('home.juiceYes')
@@ -32,6 +33,7 @@ export function Home({
 
   return (
     <div className="px-5 pb-8 pt-6">
+      <div data-tour="home-hero">
       <SectionLabel>{t('home.session', { id: session.id })}</SectionLabel>
       {session.firstName ? (
         <>
@@ -55,6 +57,7 @@ export function Home({
         {formatYmd(session.date, lang)} · {t('home.report', { time: session.reportingTime })}
         {report ? ` · ${isAfter(report, now) ? remaining : ''}` : ''}
       </p>
+      </div>
 
       {next && (
         <button type="button" onClick={() => onOpen('timeline')} className="mt-5 w-full text-left">
@@ -83,14 +86,14 @@ export function Home({
         </button>
       )}
 
-      <Card className="mt-4 overflow-hidden">
+      <Card data-tour="home-reminders" className="mt-4 overflow-hidden">
         <div className="flex items-start gap-3 p-4">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-telegram text-white">
-            <TelegramMark />
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-teal/15 text-teal-deep">
+            <Bell size={20} />
           </span>
           <div className="min-w-0 flex-1">
             <p className="font-display text-[20px] leading-tight tracking-tight text-ink">
-              {t(session.waOptIn ? 'home.waOn' : 'home.waTitle')}
+              {t(remindersOn ? 'home.waOn' : 'home.waTitle')}
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {['T−72h', 'T−24h', 'T−6h'].map((label) => (
@@ -108,13 +111,13 @@ export function Home({
               onClick={() => onOpen('reminders')}
               className="mt-3 inline-flex min-h-[40px] items-center rounded-full bg-navy px-4 text-[15px] font-semibold text-white"
             >
-              {t(session.waOptIn ? 'home.waOnCta' : 'home.waCta')}
+              {t(remindersOn ? 'home.waOnCta' : 'home.waCta')}
             </button>
           </div>
         </div>
       </Card>
 
-      <Card className="mt-4 overflow-hidden">
+      <Card data-tour="home-tools" className="mt-4 overflow-hidden">
         <Tile
           icon={<Utensils size={18} />}
           iconClass="bg-[#e8f8ff] text-[#007aff]"
@@ -149,7 +152,7 @@ export function Home({
         </div>
       </Card>
 
-      <Card className="mt-4 p-4">
+      <Card data-tour="home-shortcut" className="mt-4 p-4">
         <p className="text-[13px] font-semibold text-navy">{t('home.shortcut')}</p>
         <div className="mt-3 grid w-full grid-cols-2 gap-2">
           <button
@@ -212,14 +215,6 @@ function Tile({
       </span>
       <ArrowRight size={16} className="mt-1 text-muted" />
     </button>
-  )
-}
-
-function TelegramMark() {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden>
-      <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
-    </svg>
   )
 }
 

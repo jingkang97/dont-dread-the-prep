@@ -3,15 +3,17 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
+from typing import Any
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.core.config import get_settings
 from app.db.models import Session
 from app.db.session import session_scope
+from app.services.push import send_web_push, vapid_configured
+from app.services.reminder_copy import REMINDERS, push_payload
 from app.services.telegram import (
-    REMINDERS,
     STOOL_CHART,
     send_message,
     send_photo,
@@ -49,56 +51,95 @@ def _next_key(row: Session, now: datetime, test: bool) -> str | None:
     return None
 
 
-def _claim_due() -> list[tuple[int, str, str]]:
+def _claim_due() -> list[tuple[int | None, dict[str, Any] | None, str, str]]:
     """Pick at most one unsent reminder per linked session. Marks sent before send."""
     settings = get_settings()
     now = datetime.now(timezone.utc)
-    claimed: list[tuple[int, str, str]] = []
+    claimed: list[tuple[int | None, dict[str, Any] | None, str, str]] = []
     with session_scope() as db:
         rows = list(
-            db.scalars(select(Session).where(Session.telegram_chat_id.is_not(None)))
+            db.scalars(
+                select(Session).where(
+                    or_(
+                        Session.telegram_chat_id.is_not(None),
+                        Session.push_endpoint.is_not(None),
+                    )
+                )
+            )
         )
         for row in rows:
             key = _next_key(row, now, settings.telegram_reminder_test)
-            if key is None or row.telegram_chat_id is None:
+            if key is None:
+                continue
+            if row.telegram_chat_id is None and not row.push_endpoint:
                 continue
             setattr(row, SENT_ATTR[key], now)
-            claimed.append((row.telegram_chat_id, key, row.public_code))
+            subscription = None
+            if row.push_endpoint and row.push_p256dh and row.push_auth:
+                subscription = {
+                    "endpoint": row.push_endpoint,
+                    "keys": {"p256dh": row.push_p256dh, "auth": row.push_auth},
+                }
+            claimed.append((row.telegram_chat_id, subscription, key, row.public_code))
     return claimed
+
+
+async def _send_telegram(chat_id: int, key: str, code: str) -> None:
+    if key == "t6" and STOOL_CHART.is_file():
+        url = stool_url(code)
+        await send_photo(
+            chat_id,
+            STOOL_CHART,
+            with_open_hint(REMINDERS[key], "Open stool guide", url),
+            button=url_button("Open stool guide", url),
+        )
+        return
+    url = timeline_url(code)
+    await send_message(
+        chat_id,
+        with_open_hint(REMINDERS[key], "Open timeline", url),
+        button=url_button("Open timeline", url),
+    )
+
+
+async def _send_push(subscription: dict[str, Any], key: str, code: str) -> None:
+    url = stool_url(code) if key == "t6" else timeline_url(code)
+    await asyncio.to_thread(send_web_push, subscription, push_payload(key, url))
 
 
 async def run_reminder_tick() -> int:
     claimed = await asyncio.to_thread(_claim_due)
     sent = 0
-    for chat_id, key, code in claimed:
-        try:
-            if key == "t6" and STOOL_CHART.is_file():
-                url = stool_url(code)
-                await send_photo(
-                    chat_id,
-                    STOOL_CHART,
-                    with_open_hint(REMINDERS[key], "Open stool guide", url),
-                    button=url_button("Open stool guide", url),
-                )
-            else:
-                url = timeline_url(code)
-                await send_message(
-                    chat_id,
-                    with_open_hint(REMINDERS[key], "Open timeline", url),
-                    button=url_button("Open timeline", url),
-                )
+    for chat_id, subscription, key, code in claimed:
+        delivered = False
+        if chat_id is not None:
+            try:
+                await _send_telegram(chat_id, key, code)
+                delivered = True
+            except Exception:
+                log.exception("Failed sending %s Telegram reminder for session %s", key, code)
+        if subscription is not None:
+            try:
+                await _send_push(subscription, key, code)
+                delivered = True
+            except Exception:
+                log.exception("Failed sending %s push reminder for session %s", key, code)
+        if delivered:
             sent += 1
             log.info("Sent %s reminder for session %s", key, code)
-        except Exception:
-            log.exception("Failed sending %s reminder for session %s", key, code)
     return sent
 
 
+def _reminders_enabled() -> bool:
+    settings = get_settings()
+    return bool(settings.telegram_bot_token.strip() or vapid_configured())
+
+
 async def run_reminder_loop(stop: asyncio.Event) -> None:
-    if not get_settings().telegram_bot_token.strip():
+    if not _reminders_enabled():
         return
     log.info(
-        "Telegram reminder loop every 60s (%s)",
+        "Reminder loop every 60s (%s)",
         "test: 3 messages, one per minute" if get_settings().telegram_reminder_test else "live T−72/24/6",
     )
     while not stop.is_set():
