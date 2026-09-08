@@ -19,15 +19,21 @@ TTSH_PICOPREP_PM = "ttsh-picoprep (2pm-5pm)"
 TTSH_PICOPREP_PEG_AM = "ttsh-picoprep-peg (8am-2pm)"
 TTSH_PICOPREP_PEG_PM = "ttsh-picoprep-peg (2pm-5pm)"
 TTSH_PICOPREP_PEG = TTSH_PICOPREP_PEG_AM
+TTSH_PEG_AM = "ttsh-peg-2l (8am-2pm)"
+TTSH_PEG_3L_AM = "ttsh-peg-3l (8am-2pm)"
 TTSH_AFTERNOON_FROM = time(14, 0)
 
 # Older clients / seeds used un-windowed names.
 PROTOCOL_NAME_ALIASES: dict[str, str] = {
     "ttsh-picoprep": TTSH_PICOPREP_AM,
     "ttsh-picoprep-peg": TTSH_PICOPREP_PEG,
+    "ttsh-peg-2l": TTSH_PEG_AM,
+    "ttsh-peg": TTSH_PEG_AM,
+    "ttsh-peg-3l": TTSH_PEG_3L_AM,
 }
 
 # (8am–2pm name, 2pm–5pm name) per TTSH prep agent.
+# PEG 2L / PEG 3L are 8am–2pm only until 2pm–5pm sheets are added.
 TTSH_WINDOW_BY_AGENT: dict[str, tuple[str, str]] = {
     "picoprep": (TTSH_PICOPREP_AM, TTSH_PICOPREP_PM),
     "picoprep-peg": (TTSH_PICOPREP_PEG_AM, TTSH_PICOPREP_PEG_PM),

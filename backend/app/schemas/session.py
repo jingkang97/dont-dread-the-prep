@@ -51,7 +51,8 @@ class SessionCreate(BaseModel):
         description="Optional. Auto-picked when the hospital has one protocol "
         "(SGH/NCCS). For TTSH Picoprep-only and Picoprep+PEG, 8am–2pm vs 2pm–5pm "
         "is chosen from reporting_time (14:00+ uses the afternoon sheet). Pass "
-        "ttsh-picoprep-peg for the PEG path.",
+        "ttsh-picoprep-peg for Picoprep+PEG, ttsh-peg-2l for PEG 2L, or "
+        "ttsh-peg-3l for PEG 3L (8am–2pm sheets).",
     )
     first_name: Optional[str] = Field(default=None, max_length=24)
 

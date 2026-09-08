@@ -31,6 +31,7 @@ prep_agent_enum = ENUM(
     "picoprep",
     "picoprep-peg",
     "peg",
+    "peg-3l",
     name="prep_agent",
     create_type=False,
 )

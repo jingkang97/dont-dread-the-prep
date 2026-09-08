@@ -1,4 +1,4 @@
--- Timeline step seeds for SGH/NCCS Picoprep and TTSH Picoprep (± PEG).
+-- Timeline step seeds for SGH/NCCS Picoprep and TTSH Picoprep (± PEG) / PEG 2L / PEG 3L.
 -- Depends on: mvp.sql, mvp.seed.sql, protocol_steps.sql.
 --
 -- Resolver: load steps where slot IN ('any', session.slot), then:
@@ -8,6 +8,7 @@
 
 -- Safe if event_kind was created before 'check' existed; no-op on a fresh install.
 ALTER TYPE event_kind ADD VALUE IF NOT EXISTS 'stool';
+ALTER TYPE prep_agent ADD VALUE IF NOT EXISTS 'peg-3l';
 
 -- ---------------------------------------------------------------------------
 -- Protocol metadata extras
@@ -34,6 +35,16 @@ UPDATE protocols SET
   source_label = 'Preparing-for-a-Colonoscopy-ICOPREP-2PM-to-5PM',
   prep_agent_label = 'Picoprep + PEG'
 WHERE name = 'ttsh-picoprep-peg (2pm-5pm)';
+
+UPDATE protocols SET
+  source_label = '2L PEG Solution · 8am–2pm',
+  prep_agent_label = 'PEG 2L'
+WHERE name = 'ttsh-peg-2l (8am-2pm)';
+
+UPDATE protocols SET
+  source_label = '3L PEG Solution · 8am–2pm',
+  prep_agent_label = 'PEG 3L'
+WHERE name = 'ttsh-peg-3l (8am-2pm)';
 
 -- ---------------------------------------------------------------------------
 -- Versions
@@ -449,4 +460,259 @@ CROSS JOIN (
   dose_label, mix_volume_ml, follow_fluid_ml, agent
 )
 WHERE p.name = 'ttsh-picoprep-peg (2pm-5pm)'
+  AND v.version_id = 1;
+
+-- ---------------------------------------------------------------------------
+-- TTSH PEG 2L · 8am–2pm (2L PEG Solution sheet · both packets the day before)
+-- Safe to re-run on DBs that already have mvp.seed.sql without this protocol.
+-- ---------------------------------------------------------------------------
+INSERT INTO protocols (
+  name, prep_agent, prep_agent_label, diet_days,
+  milk_in_coffee, fruit_juice, rice_cereal, coffee_tea
+)
+SELECT
+  'ttsh-peg-2l (8am-2pm)',
+  'peg',
+  'PEG 2L',
+  3,
+  'yes', 'ask', 'no', 'yes'
+WHERE NOT EXISTS (
+  SELECT 1 FROM protocols WHERE name = 'ttsh-peg-2l (8am-2pm)'
+);
+
+INSERT INTO hospital_protocols (hospital_id, protocol_id)
+SELECT
+  (SELECT id FROM hospitals WHERE code = 'ttsh'),
+  (SELECT id FROM protocols WHERE name = 'ttsh-peg-2l (8am-2pm)')
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM hospital_protocols hp
+  JOIN hospitals h ON h.id = hp.hospital_id
+  JOIN protocols p ON p.id = hp.protocol_id
+  WHERE h.code = 'ttsh' AND p.name = 'ttsh-peg-2l (8am-2pm)'
+);
+
+UPDATE protocols SET
+  source_label = '2L PEG Solution · 8am–2pm',
+  prep_agent_label = 'PEG 2L'
+WHERE name = 'ttsh-peg-2l (8am-2pm)';
+
+INSERT INTO protocol_versions (protocol_id, version_id, version_label, effective_from, notes)
+SELECT
+  p.id,
+  1,
+  '2026-03',
+  DATE '2026-03-01',
+  'TTSH PEG 2L · 8am–2pm sheet. Mix 2 packets with 2L; drink 7–9pm the day before.'
+FROM protocols p
+WHERE p.name = 'ttsh-peg-2l (8am-2pm)'
+  AND NOT EXISTS (
+    SELECT 1 FROM protocol_versions v
+    WHERE v.protocol_id = p.id AND v.version_id = 1
+  );
+
+UPDATE protocol_versions v
+SET notes = 'TTSH PEG 2L · 8am–2pm sheet. Mix 2 packets with 2L; drink 7–9pm the day before.'
+FROM protocols p
+WHERE p.id = v.protocol_id AND p.name = 'ttsh-peg-2l (8am-2pm)' AND v.version_id = 1;
+
+DELETE FROM protocol_steps
+WHERE protocol_version_id IN (
+  SELECT v.id FROM protocol_versions v
+  JOIN protocols p ON p.id = v.protocol_id
+  WHERE p.name = 'ttsh-peg-2l (8am-2pm)' AND v.version_id = 1
+);
+
+INSERT INTO protocol_steps (
+  protocol_version_id, step_key, kind, slot, timing_mode,
+  day_offset, clock_time, hours_before_report,
+  title, detail, tentative, sort_order,
+  dose_label, mix_volume_ml, follow_fluid_ml, agent
+)
+SELECT
+  v.id,
+  s.step_key, s.kind::event_kind, s.slot::step_slot, s.timing_mode::timing_mode,
+  s.day_offset, s.clock_time::time, s.hours_before_report,
+  s.title, s.detail, s.tentative, s.sort_order,
+  s.dose_label, s.mix_volume_ml, s.follow_fluid_ml, s.agent
+FROM protocol_versions v
+JOIN protocols p ON p.id = v.protocol_id
+CROSS JOIN (
+  VALUES
+  ('diet-start', 'diet', 'any', 'day_clock', -3, '00:00', NULL,
+   'Start low-residue diet (3 days)',
+   'A low-residue diet is a temporary eating plan that limits high-fiber foods and other hard-to-digest items to reduce the amount of undigested material passing through your large intestine.',
+   false, 30, NULL, NULL, NULL, NULL),
+
+  -- 1 DAY BEFORE
+  ('breakfast-eve', 'meal', 'any', 'day_clock', -1, '07:00', NULL,
+   'Light low-fibre breakfast',
+   'As on the 2L PEG Solution sheet. Follow the TTSH low-fibre diet list.',
+   false, 35, NULL, NULL, NULL, NULL),
+  ('lunch-eve', 'meal', 'any', 'day_clock', -1, '12:00', NULL,
+   'Light low-fibre lunch',
+   'As on the 2L PEG Solution sheet. Follow the TTSH low-fibre diet list.',
+   false, 40, NULL, NULL, NULL, NULL),
+  ('last-meal-eve', 'meal', 'any', 'day_clock', -1, '18:00', NULL,
+   'Light low-fibre dinner',
+   'Eat between 6pm and 6:30pm. No more food allowed after 6:30pm.',
+   false, 50, NULL, NULL, NULL, NULL),
+  ('peg-eve', 'dose', 'any', 'day_clock', -1, '19:00', NULL,
+   'PEG 2L (7–9pm)',
+   'Mix 2 packets of PEG powder with 2 litres or 8 cups of plain water (1 cup = 250 ml). Start at 7pm and finish by 9pm — one cup every 15 minutes (7:00, 7:15, 7:30, 7:45, 8:00, 8:15, 8:30, 8:45). Drink extra plain water to replace fluids lost to the laxative.',
+   false, 60, '2L', 2000, NULL, 'peg'),
+
+  -- ON THE DAY
+  ('no-food-midnight', 'meal', 'any', 'day_clock', 0, '00:00', NULL,
+   'No food from midnight',
+   'No food allowed from 12 midnight onwards.',
+   false, 80, NULL, NULL, NULL, NULL),
+  ('stool-check', 'stool', 'any', 'report_relative', NULL, NULL, 3.0,
+   'Check your stool against the colour scale',
+   'If stool still looks like stages 1–4, report 2 hours early and call Endo PACE / the endoscopy centre.',
+   false, 100, NULL, NULL, NULL, NULL),
+  ('fast', 'fast', 'any', 'report_relative', NULL, NULL, 2.0,
+   'Stop all fluids',
+   'Stop drinking fluids including plain water. This is 2 hours before the procedure on the 2L PEG Solution sheet. Continue other usual medications at least 2 hours before your colonoscopy, with small amounts of water. Do not take medications your care team told you to stop.',
+   false, 110, NULL, NULL, NULL, NULL),
+  ('arrive', 'arrive', 'any', 'report_relative', NULL, NULL, 0.0,
+   'Report to Endoscopy Centre',
+   'Arrive at the reporting time written on your form.',
+   false, 120, NULL, NULL, NULL, NULL)
+) AS s(
+  step_key, kind, slot, timing_mode, day_offset, clock_time, hours_before_report,
+  title, detail, tentative, sort_order,
+  dose_label, mix_volume_ml, follow_fluid_ml, agent
+)
+WHERE p.name = 'ttsh-peg-2l (8am-2pm)'
+  AND v.version_id = 1;
+
+-- ---------------------------------------------------------------------------
+-- TTSH PEG 3L · 8am–2pm (3L PEG Solution sheet · 2L eve + 1L morning)
+-- Safe to re-run on DBs that already have mvp.seed.sql without this protocol.
+-- Requires prep_agent enum value 'peg-3l' (added at top of this file / mvp.sql).
+-- ---------------------------------------------------------------------------
+INSERT INTO protocols (
+  name, prep_agent, prep_agent_label, diet_days,
+  milk_in_coffee, fruit_juice, rice_cereal, coffee_tea
+)
+SELECT
+  'ttsh-peg-3l (8am-2pm)',
+  'peg-3l',
+  'PEG 3L',
+  3,
+  'yes', 'ask', 'no', 'yes'
+WHERE NOT EXISTS (
+  SELECT 1 FROM protocols WHERE name = 'ttsh-peg-3l (8am-2pm)'
+);
+
+INSERT INTO hospital_protocols (hospital_id, protocol_id)
+SELECT
+  (SELECT id FROM hospitals WHERE code = 'ttsh'),
+  (SELECT id FROM protocols WHERE name = 'ttsh-peg-3l (8am-2pm)')
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM hospital_protocols hp
+  JOIN hospitals h ON h.id = hp.hospital_id
+  JOIN protocols p ON p.id = hp.protocol_id
+  WHERE h.code = 'ttsh' AND p.name = 'ttsh-peg-3l (8am-2pm)'
+);
+
+UPDATE protocols SET
+  source_label = '3L PEG Solution · 8am–2pm',
+  prep_agent_label = 'PEG 3L'
+WHERE name = 'ttsh-peg-3l (8am-2pm)';
+
+INSERT INTO protocol_versions (protocol_id, version_id, version_label, effective_from, notes)
+SELECT
+  p.id,
+  1,
+  '2026-03',
+  DATE '2026-03-01',
+  'TTSH PEG 3L · 8am–2pm sheet. Mix 2 packets with 2L at 7–9pm the day before; mix 1 packet with 1L at 5–6am. Stop all fluids from 6am.'
+FROM protocols p
+WHERE p.name = 'ttsh-peg-3l (8am-2pm)'
+  AND NOT EXISTS (
+    SELECT 1 FROM protocol_versions v
+    WHERE v.protocol_id = p.id AND v.version_id = 1
+  );
+
+UPDATE protocol_versions v
+SET notes = 'TTSH PEG 3L · 8am–2pm sheet. Mix 2 packets with 2L at 7–9pm the day before; mix 1 packet with 1L at 5–6am. Stop all fluids from 6am.'
+FROM protocols p
+WHERE p.id = v.protocol_id AND p.name = 'ttsh-peg-3l (8am-2pm)' AND v.version_id = 1;
+
+DELETE FROM protocol_steps
+WHERE protocol_version_id IN (
+  SELECT v.id FROM protocol_versions v
+  JOIN protocols p ON p.id = v.protocol_id
+  WHERE p.name = 'ttsh-peg-3l (8am-2pm)' AND v.version_id = 1
+);
+
+INSERT INTO protocol_steps (
+  protocol_version_id, step_key, kind, slot, timing_mode,
+  day_offset, clock_time, hours_before_report,
+  title, detail, tentative, sort_order,
+  dose_label, mix_volume_ml, follow_fluid_ml, agent
+)
+SELECT
+  v.id,
+  s.step_key, s.kind::event_kind, s.slot::step_slot, s.timing_mode::timing_mode,
+  s.day_offset, s.clock_time::time, s.hours_before_report,
+  s.title, s.detail, s.tentative, s.sort_order,
+  s.dose_label, s.mix_volume_ml, s.follow_fluid_ml, s.agent
+FROM protocol_versions v
+JOIN protocols p ON p.id = v.protocol_id
+CROSS JOIN (
+  VALUES
+  ('diet-start', 'diet', 'any', 'day_clock', -3, '00:00', NULL,
+   'Start low-residue diet (3 days)',
+   'A low-residue diet is a temporary eating plan that limits high-fiber foods and other hard-to-digest items to reduce the amount of undigested material passing through your large intestine.',
+   false, 30, NULL, NULL, NULL, NULL),
+
+  -- 1 DAY BEFORE
+  ('breakfast-eve', 'meal', 'any', 'day_clock', -1, '07:00', NULL,
+   'Light low-fibre breakfast',
+   'As on the 3L PEG Solution sheet. Follow the TTSH low-fibre diet list.',
+   false, 35, NULL, NULL, NULL, NULL),
+  ('lunch-eve', 'meal', 'any', 'day_clock', -1, '12:00', NULL,
+   'Light low-fibre lunch',
+   'As on the 3L PEG Solution sheet. Follow the TTSH low-fibre diet list.',
+   false, 40, NULL, NULL, NULL, NULL),
+  ('last-meal-eve', 'meal', 'any', 'day_clock', -1, '18:00', NULL,
+   'Light low-fibre dinner',
+   'Eat between 6pm and 6:30pm. No more food allowed after 6:30pm.',
+   false, 50, NULL, NULL, NULL, NULL),
+  ('peg-eve', 'dose', 'any', 'day_clock', -1, '19:00', NULL,
+   'PEG 2L (7–9pm)',
+   'Mix 2 packets of PEG powder with 2 litres or 8 cups of plain water (1 cup = 250 ml). Start at 7pm and finish by 9pm — one cup every 15 minutes (7:00, 7:15, 7:30, 7:45, 8:00, 8:15, 8:30, 8:45). Drink extra plain water to replace fluids lost to the laxative.',
+   false, 60, '2L', 2000, NULL, 'peg'),
+
+  -- ON THE DAY
+  ('no-food-midnight', 'meal', 'any', 'day_clock', 0, '00:00', NULL,
+   'No food from midnight',
+   'No food allowed from 12 midnight onwards.',
+   false, 80, NULL, NULL, NULL, NULL),
+  ('peg-am', 'dose', 'any', 'day_clock', 0, '05:00', NULL,
+   'PEG 1L (5–6am)',
+   'Mix 1 packet of PEG powder with 1 litre or 4 cups of plain water (1 cup = 250 ml). Start at 5am and finish by 6am — one cup every 15 minutes (5:00, 5:15, 5:30, 5:45).',
+   false, 90, '1L', 1000, NULL, 'peg'),
+  ('stool-check', 'stool', 'any', 'day_clock', 0, '06:00', NULL,
+   'Check your stool against the colour scale',
+   'If stool still looks like stages 1–4, report 2 hours early and call Endo PACE / the endoscopy centre.',
+   false, 100, NULL, NULL, NULL, NULL),
+  ('fast', 'fast', 'any', 'day_clock', 0, '06:00', NULL,
+   'Stop all fluids',
+   'From 6am onwards, stop drinking fluids including plain water. Continue other usual medications at least 2 hours before your colonoscopy, with small amounts of water. Do not take medications your care team told you to stop.',
+   false, 110, NULL, NULL, NULL, NULL),
+  ('arrive', 'arrive', 'any', 'report_relative', NULL, NULL, 0.0,
+   'Report to Endoscopy Centre',
+   'Arrive at the reporting time written on your form.',
+   false, 120, NULL, NULL, NULL, NULL)
+) AS s(
+  step_key, kind, slot, timing_mode, day_offset, clock_time, hours_before_report,
+  title, detail, tentative, sort_order,
+  dose_label, mix_volume_ml, follow_fluid_ml, agent
+)
+WHERE p.name = 'ttsh-peg-3l (8am-2pm)'
   AND v.version_id = 1;

@@ -34,6 +34,22 @@ WHERE name LIKE 'ttsh-picoprep-peg%';
 
 UPDATE protocols
 SET
+  last_meal = 'Light dinner until 6:30pm on the eve of scope',
+  last_meal_note = 'TTSH PEG 2L path (2L PEG Solution sheet, 8am–2pm). Mix 2 packets with 2L; drink 7–9pm the day before. No food after 6:30pm. Report 2h before procedure.',
+  fluid_stop_hours = 2,
+  form_gap = 'TTSH issues separate PDFs per appointment slot. This protocol is PEG 2L only, not Picoprep.'
+WHERE name = 'ttsh-peg-2l (8am-2pm)';
+
+UPDATE protocols
+SET
+  last_meal = 'Light dinner until 6:30pm on the eve of scope',
+  last_meal_note = 'TTSH PEG 3L path (3L PEG Solution sheet, 8am–2pm). Mix 2 packets with 2L at 7–9pm the day before; mix 1 packet with 1L at 5–6am on the day. No food after 6:30pm. Stop all fluids from 6am.',
+  fluid_stop_hours = 2,
+  form_gap = 'TTSH issues separate PDFs per appointment slot. This protocol is PEG 3L only, not Picoprep or PEG 2L. Fluid stop is 6am on the sheet, not 2h before reporting.'
+WHERE name = 'ttsh-peg-3l (8am-2pm)';
+
+UPDATE protocols
+SET
   last_meal = COALESCE(last_meal, 'Follow the last-meal line on your hospital form.'),
   last_meal_note = COALESCE(last_meal_note, ''),
   fluid_stop_hours = COALESCE(fluid_stop_hours, 2),

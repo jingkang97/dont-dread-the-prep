@@ -2,13 +2,14 @@ CREATE TYPE slot AS ENUM ('am', 'pm');
 CREATE TYPE prep_agent AS ENUM (
   'picoprep',      -- SGH/NCCS and TTSH Picoprep-only (dosing differs by protocol)
   'picoprep-peg',  -- TTSH Picoprep eve + PEG morning
-  'peg'            -- PEG-only paths (e.g. future CGH)
+  'peg',           -- PEG 2L (and other PEG-only paths)
+  'peg-3l'         -- TTSH PEG 3L (2L eve + 1L morning)
 );
 CREATE TYPE three_way AS ENUM ('yes', 'no', 'ask');
 
 CREATE TABLE protocols (
   id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  name              TEXT NOT NULL UNIQUE,  -- 'sgh-nccs-picoprep' | 'ttsh-picoprep (8am-2pm)' | 'ttsh-picoprep (2pm-5pm)' | 'ttsh-picoprep-peg (8am-2pm)' | 'ttsh-picoprep-peg (2pm-5pm)'
+  name              TEXT NOT NULL UNIQUE,  -- 'sgh-nccs-picoprep' | 'ttsh-picoprep (8am-2pm)' | 'ttsh-picoprep (2pm-5pm)' | 'ttsh-picoprep-peg (8am-2pm)' | 'ttsh-picoprep-peg (2pm-5pm)' | 'ttsh-peg-2l (8am-2pm)' | 'ttsh-peg-3l (8am-2pm)'
   prep_agent        prep_agent NOT NULL,
   prep_agent_label  TEXT NOT NULL,
   diet_days         INT NOT NULL CHECK (diet_days > 0),

@@ -14,12 +14,18 @@ export type KnownProtocolName =
   | 'ttsh-picoprep-peg'
   | 'ttsh-picoprep-peg (8am-2pm)'
   | 'ttsh-picoprep-peg (2pm-5pm)'
+  | 'ttsh-peg-2l'
+  | 'ttsh-peg-2l (8am-2pm)'
+  | 'ttsh-peg-3l'
+  | 'ttsh-peg-3l (8am-2pm)'
 
 export const TTSH_PICOPREP_AM = 'ttsh-picoprep (8am-2pm)'
 export const TTSH_PICOPREP_PM = 'ttsh-picoprep (2pm-5pm)'
 export const TTSH_PICOPREP_PEG_AM = 'ttsh-picoprep-peg (8am-2pm)'
 export const TTSH_PICOPREP_PEG_PM = 'ttsh-picoprep-peg (2pm-5pm)'
 export const TTSH_PICOPREP_PEG = TTSH_PICOPREP_PEG_AM
+export const TTSH_PEG_AM = 'ttsh-peg-2l (8am-2pm)'
+export const TTSH_PEG_3L_AM = 'ttsh-peg-3l (8am-2pm)'
 
 const PICOPREP_ONLY = new Set<string>([
   'ttsh-picoprep',
@@ -33,9 +39,15 @@ const PICOPREP_PEG = new Set<string>([
   TTSH_PICOPREP_PEG_PM,
 ])
 
+const PEG_ONLY = new Set<string>(['ttsh-peg-2l', TTSH_PEG_AM])
+const PEG_3L = new Set<string>(['ttsh-peg-3l', TTSH_PEG_3L_AM])
+
 const PROTOCOL_NAME_ALIASES: Record<string, KnownProtocolName> = {
   'ttsh-picoprep': TTSH_PICOPREP_AM,
   'ttsh-picoprep-peg': TTSH_PICOPREP_PEG,
+  'ttsh-peg-2l': TTSH_PEG_AM,
+  'ttsh-peg': TTSH_PEG_AM,
+  'ttsh-peg-3l': TTSH_PEG_3L_AM,
 }
 
 export const PROTOCOL_COPY: Partial<
@@ -65,6 +77,22 @@ export const PROTOCOL_COPY: Partial<
     label: 'on.protocol.ttsh-picoprep-peg',
     hint: 'on.protocol.ttsh-picoprep-pegHint',
   },
+  'ttsh-peg-2l': {
+    label: 'on.protocol.ttsh-peg-2l',
+    hint: 'on.protocol.ttsh-peg-2lHint',
+  },
+  [TTSH_PEG_AM]: {
+    label: 'on.protocol.ttsh-peg-2l',
+    hint: 'on.protocol.ttsh-peg-2lHint',
+  },
+  'ttsh-peg-3l': {
+    label: 'on.protocol.ttsh-peg-3l',
+    hint: 'on.protocol.ttsh-peg-3lHint',
+  },
+  [TTSH_PEG_3L_AM]: {
+    label: 'on.protocol.ttsh-peg-3l',
+    hint: 'on.protocol.ttsh-peg-3lHint',
+  },
 }
 
 const DEFAULT_MULTI_PROTOCOL: Record<string, KnownProtocolName> = {
@@ -84,13 +112,16 @@ export function isTtshAfternoonPicoprep(reportingTime: string) {
   return reportingTime >= '14:00'
 }
 
-/** One chip per prep agent so 8am–2pm / 2pm–5pm sheets are not extra choices. */
-export function selectableProtocols<T extends { prep_agent: string }>(protocols: T[]): T[] {
+/** One chip per prep label so 8am–2pm / 2pm–5pm sheets are not extra choices. */
+export function selectableProtocols<T extends { prep_agent: string; prep_agent_label?: string }>(
+  protocols: T[],
+): T[] {
   const seen = new Set<string>()
   const out: T[] = []
   for (const protocol of protocols) {
-    if (seen.has(protocol.prep_agent)) continue
-    seen.add(protocol.prep_agent)
+    const key = protocol.prep_agent_label || protocol.prep_agent
+    if (seen.has(key)) continue
+    seen.add(key)
     out.push(protocol)
   }
   return out
@@ -100,6 +131,8 @@ export function protocolChoiceSelected(optionName: string, draftName: string | n
   if (!draftName) return false
   if (PICOPREP_ONLY.has(optionName) && PICOPREP_ONLY.has(draftName)) return true
   if (PICOPREP_PEG.has(optionName) && PICOPREP_PEG.has(draftName)) return true
+  if (PEG_ONLY.has(optionName) && PEG_ONLY.has(draftName)) return true
+  if (PEG_3L.has(optionName) && PEG_3L.has(draftName)) return true
   return optionName === draftName
 }
 
@@ -138,6 +171,18 @@ export function resolveProtocolName(
       ? TTSH_PICOPREP_PEG_PM
       : TTSH_PICOPREP_PEG_AM
     return protocols.find((p) => p.name === want)?.name ?? selected?.name ?? aliased
+  }
+  const isPegOnly =
+    (selected?.prep_agent === 'peg' && PEG_ONLY.has(selected.name)) ||
+    (aliased != null && PEG_ONLY.has(aliased))
+  if (isPegOnly) {
+    return protocols.find((p) => p.name === TTSH_PEG_AM)?.name ?? selected?.name ?? aliased
+  }
+  const isPeg3l =
+    (selected?.prep_agent === 'peg-3l' && PEG_3L.has(selected.name)) ||
+    (aliased != null && PEG_3L.has(aliased))
+  if (isPeg3l) {
+    return protocols.find((p) => p.name === TTSH_PEG_3L_AM)?.name ?? selected?.name ?? aliased
   }
   if (selected) return selected.name
   return aliased ?? defaultProtocolName(protocols)
