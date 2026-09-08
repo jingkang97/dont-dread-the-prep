@@ -101,6 +101,7 @@ textarea {
   font-family: inherit;
 }
 
+/* Yellow-form scan demo — commented out
 .scan-line {
   animation: scan 1.8s ease-in-out infinite;
 }
@@ -121,6 +122,7 @@ textarea {
     opacity: 0;
   }
 }
+*/
 
 .pp-cal .rdp-root {
   --rdp-accent-color: #00c7be;

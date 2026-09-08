@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Camera } from 'lucide-react'
+// import { Camera } from 'lucide-react'
 import type { OnboardingResult } from '../data/onboarding'
 import { ApiError } from '../lib/api'
 import {
@@ -16,10 +16,11 @@ import { useLang } from '../i18n/LanguageContext'
 import { hospCopyOr } from '../i18n/keys'
 import { cn } from '../lib/cn'
 import { formatHm, formatYmd, isBeforeToday } from '../lib/dates'
-import { easeOut, fadeY } from '../lib/motion'
+import { fadeY } from '../lib/motion'
+// import { easeOut } from '../lib/motion'
 import { useApiHospitals } from '../hooks/useApiHospitals'
 import { useOnboardingDraft } from '../hooks/useOnboardingDraft'
-import yellowForm from '../assets/sgh-yellow-form.jpg'
+// import yellowForm from '../assets/sgh-yellow-form.jpg'
 
 export function Onboarding({
   onComplete,
@@ -31,13 +32,13 @@ export function Onboarding({
   const {
     step,
     setStep,
-    scanPhase,
+    // scanPhase,
     draft,
     setDraft,
-    demoDate,
+    // demoDate,
     pickHospital,
-    runScan,
-    leaveScan,
+    // runScan,
+    // leaveScan,
   } = useOnboardingDraft()
 
   const [busy, setBusy] = useState(false)
@@ -95,8 +96,8 @@ export function Onboarding({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <header className="shrink-0 px-5 pb-4 pt-8">
-        <p className="text-[13px] font-semibold text-teal-deep">{t('on.kicker')}</p>
-        <h1 className="font-display mt-1 text-[34px] leading-[1.1] tracking-tight text-ink">{t('on.title')}</h1>
+        {/* <p className="text-[13px] font-semibold text-teal-deep">{t('on.kicker')}</p> */}
+        <h1 className="font-display text-[34px] leading-[1.1] tracking-tight text-ink">{t('on.title')}</h1>
       </header>
 
       <div className="relative min-h-0 flex-1">
@@ -120,6 +121,7 @@ export function Onboarding({
                         {hospitalsError}
                       </p>
                     ) : null}
+                    {/* Yellow-form scan demo — commented out
                     <button
                       type="button"
                       disabled={hospitalsLoading || apiHospitals.length === 0}
@@ -130,7 +132,8 @@ export function Onboarding({
                       {t('on.scanCta')}
                     </button>
                     <p className="mt-2 text-center text-[11px] text-muted">{t('on.scanNote')}</p>
-                    <div className="mt-5">
+                    */}
+                    <div className="mt-3">
                       <SectionLabel>{t('on.step1')}</SectionLabel>
                       <HospitalPicker
                         hospitals={apiHospitals}
@@ -274,6 +277,7 @@ export function Onboarding({
                   </div>
                 )}
 
+                {/* Yellow-form scan demo — commented out
                 {step === 'scan' && (
                   <div>
                     <SectionLabel>{t('on.scanLabel')}</SectionLabel>
@@ -322,6 +326,7 @@ export function Onboarding({
                     )}
                   </div>
                 )}
+                */}
               </>
             )}
           </motion.div>
