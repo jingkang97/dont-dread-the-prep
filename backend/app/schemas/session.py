@@ -28,6 +28,9 @@ class ProtocolSummary(BaseModel):
     diet_days: int
     milk_in_coffee: str
     fruit_juice: str
+    listed: bool = True
+    reporting_from: Optional[time] = None
+    reporting_until: Optional[time] = None
 
 
 class HospitalOut(BaseModel):
@@ -48,11 +51,10 @@ class SessionCreate(BaseModel):
     reporting_time: Optional[time] = None
     protocol_name: Optional[str] = Field(
         default=None,
-        description="Optional. Auto-picked when the hospital has one protocol "
-        "(SGH/NCCS). For TTSH Picoprep-only and Picoprep+PEG, 8am–2pm vs 2pm–5pm "
-        "is chosen from reporting_time (14:00+ uses the afternoon sheet). Pass "
-        "ttsh-picoprep-peg for Picoprep+PEG, ttsh-peg-2l for PEG 2L, or "
-        "ttsh-peg-3l for PEG 3L (8am–2pm sheets).",
+        description="Optional. Pass the listed chip name from GET /hospitals. "
+        "The server remaps to the sheet whose reporting_from/until contains "
+        "reporting_time among protocols that share the same prep_agent. "
+        "Auto-picked when the hospital has one listed protocol (SGH/NCCS).",
     )
     first_name: Optional[str] = Field(default=None, max_length=24)
 

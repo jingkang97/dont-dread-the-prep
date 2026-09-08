@@ -8,7 +8,6 @@
 
 -- Safe if event_kind was created before 'check' existed; no-op on a fresh install.
 ALTER TYPE event_kind ADD VALUE IF NOT EXISTS 'stool';
-ALTER TYPE prep_agent ADD VALUE IF NOT EXISTS 'peg-3l';
 
 -- ---------------------------------------------------------------------------
 -- Protocol metadata extras
@@ -468,14 +467,16 @@ WHERE p.name = 'ttsh-picoprep-peg (2pm-5pm)'
 -- ---------------------------------------------------------------------------
 INSERT INTO protocols (
   name, prep_agent, prep_agent_label, diet_days,
-  milk_in_coffee, fruit_juice, rice_cereal, coffee_tea
+  milk_in_coffee, fruit_juice, rice_cereal, coffee_tea,
+  listed, reporting_from, reporting_until
 )
 SELECT
   'ttsh-peg-2l (8am-2pm)',
   'peg',
   'PEG 2L',
   3,
-  'yes', 'ask', 'no', 'yes'
+  'yes', 'ask', 'no', 'yes',
+  true, NULL, TIME '14:00'
 WHERE NOT EXISTS (
   SELECT 1 FROM protocols WHERE name = 'ttsh-peg-2l (8am-2pm)'
 );
@@ -590,18 +591,19 @@ WHERE p.name = 'ttsh-peg-2l (8am-2pm)'
 -- ---------------------------------------------------------------------------
 -- TTSH PEG 3L · 8am–2pm (3L PEG Solution sheet · 2L eve + 1L morning)
 -- Safe to re-run on DBs that already have mvp.seed.sql without this protocol.
--- Requires prep_agent enum value 'peg-3l' (added at top of this file / mvp.sql).
 -- ---------------------------------------------------------------------------
 INSERT INTO protocols (
   name, prep_agent, prep_agent_label, diet_days,
-  milk_in_coffee, fruit_juice, rice_cereal, coffee_tea
+  milk_in_coffee, fruit_juice, rice_cereal, coffee_tea,
+  listed, reporting_from, reporting_until
 )
 SELECT
   'ttsh-peg-3l (8am-2pm)',
   'peg-3l',
   'PEG 3L',
   3,
-  'yes', 'ask', 'no', 'yes'
+  'yes', 'ask', 'no', 'yes',
+  true, NULL, TIME '14:00'
 WHERE NOT EXISTS (
   SELECT 1 FROM protocols WHERE name = 'ttsh-peg-3l (8am-2pm)'
 );

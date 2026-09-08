@@ -7,7 +7,6 @@ import {
 } from '../data/onboarding'
 import {
   defaultProtocolName,
-  resolveProtocolName,
   type ApiHospital,
   type ApiProtocolSummary,
 } from '../lib/api'
@@ -30,12 +29,11 @@ export function useOnboardingDraft() {
 
   function pickHospital(hospitalId: HospitalId, apiHospitals: ApiHospital[]) {
     const row = apiHospitals.find((h) => h.code === hospitalId)
-    const protocolName = resolveProtocolName(
-      row?.protocols ?? [],
-      defaultProtocolName(row?.protocols ?? [], hospitalId),
-      draft.reportingTime,
-    )
-    setDraft((d) => ({ ...d, hospitalId, protocolName }))
+    setDraft((d) => ({
+      ...d,
+      hospitalId,
+      protocolName: defaultProtocolName(row?.protocols ?? [], hospitalId),
+    }))
     setStep('schedule')
   }
 
@@ -57,7 +55,6 @@ export function useOnboardingDraft() {
         firstName: '',
       })
       setScanPhase('done')
-      scanTimer.current = null
     }, 2200)
   }
 

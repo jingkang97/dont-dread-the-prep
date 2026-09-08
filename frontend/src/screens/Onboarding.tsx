@@ -3,12 +3,6 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Camera } from 'lucide-react'
 import type { OnboardingResult } from '../data/onboarding'
 import { ApiError } from '../lib/api'
-import {
-  protocolChoiceSelected,
-  protocolCopy,
-  resolveProtocolName,
-  selectableProtocols,
-} from '../lib/api/onboarding'
 import { DateSlotPicker } from '../components/DateSlotPicker'
 import { HospitalPicker } from '../components/HospitalPicker'
 import { Card, GeneratingPane, GhostButton, PrimaryButton, SectionLabel } from '../components/ui'
@@ -49,8 +43,7 @@ export function Onboarding({
   )
   const hospitalShort = apiHospital?.short_name ?? ''
   const protocols = apiHospital?.protocols ?? []
-  const pickerProtocols = selectableProtocols(protocols)
-  const needsProtocolChoice = pickerProtocols.length > 1
+  const needsProtocolChoice = protocols.length > 1
   const selectedProtocol = protocols.find((p) => p.name === draft.protocolName) ?? null
   const canFinish = Boolean(
     draft.hospitalId &&
@@ -71,8 +64,8 @@ export function Onboarding({
         slot: draft.slot,
         reportingTime: draft.reportingTime,
         firstName: draft.firstName,
-        protocolName:
-          resolveProtocolName(protocols, draft.protocolName, draft.reportingTime) ?? undefined,
+        // Listed chip name only — server remaps to the sheet for reporting_time.
+        protocolName: draft.protocolName ?? undefined,
       })
     } catch (err) {
       setBusy(false)
@@ -84,13 +77,8 @@ export function Onboarding({
     }
   }
 
-  const prepDisplay = (() => {
-    if (!selectedProtocol) {
-      return apiHospital?.protocols[0]?.prep_agent_label ?? ''
-    }
-    const copy = protocolCopy(selectedProtocol.name)
-    return copy ? t(copy.label) : selectedProtocol.prep_agent_label
-  })()
+  const prepDisplay =
+    selectedProtocol?.prep_agent_label ?? apiHospital?.protocols[0]?.prep_agent_label ?? ''
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -152,25 +140,15 @@ export function Onboarding({
                       slot={draft.slot}
                       reportingTime={draft.reportingTime}
                       dateLabel={t('on.step2')}
-                      onChange={(next) =>
-                        setDraft((d) => {
-                          const reportingTime = next.reportingTime ?? d.reportingTime
-                          return {
-                            ...d,
-                            ...next,
-                            protocolName: resolveProtocolName(protocols, d.protocolName, reportingTime),
-                          }
-                        })
-                      }
+                      onChange={(next) => setDraft((d) => ({ ...d, ...next }))}
                     />
                     {needsProtocolChoice && (
                       <div className="mt-5">
                         <p className="text-[13px] font-semibold text-navy">{t('on.protocol')}</p>
                         <p className="mt-1 text-[12px] leading-snug text-muted">{t('on.protocolHint')}</p>
                         <div className="mt-2.5 grid gap-2.5">
-                          {pickerProtocols.map((protocol) => {
-                            const selected = protocolChoiceSelected(protocol.name, draft.protocolName)
-                            const copy = protocolCopy(protocol.name)
+                          {protocols.map((protocol) => {
+                            const selected = protocol.name === draft.protocolName
                             return (
                               <button
                                 key={protocol.name}
@@ -178,11 +156,7 @@ export function Onboarding({
                                 onClick={() =>
                                   setDraft((d) => ({
                                     ...d,
-                                    protocolName: resolveProtocolName(
-                                      protocols,
-                                      protocol.name,
-                                      d.reportingTime,
-                                    ),
+                                    protocolName: protocol.name,
                                   }))
                                 }
                                 className={cn(
@@ -191,13 +165,8 @@ export function Onboarding({
                                 )}
                               >
                                 <span className="block text-[15px] font-semibold text-ink">
-                                  {copy ? t(copy.label) : protocol.prep_agent_label}
+                                  {protocol.prep_agent_label}
                                 </span>
-                                {copy ? (
-                                  <span className="mt-0.5 block text-[12px] text-muted">
-                                    {t(copy.hint)}
-                                  </span>
-                                ) : null}
                               </button>
                             )
                           })}
