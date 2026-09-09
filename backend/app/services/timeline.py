@@ -108,6 +108,7 @@ def get_timeline(db: DbSession, public_code: str) -> TimelineOut:
                 mix_volume_ml=step.mix_volume_ml,
                 follow_fluid_ml=step.follow_fluid_ml,
                 agent=step.agent,
+                prep_image_label=step.prep_image_label,
                 sort_order=step.sort_order,
             )
         )

@@ -27,6 +27,7 @@ export function useSessionTimeline(session: PrepSession) {
             source: data.source_label,
             tentative: e.tentative,
             agent: e.agent,
+            prepImageLabel: e.prep_image_label,
           })),
         )
       } catch (err) {

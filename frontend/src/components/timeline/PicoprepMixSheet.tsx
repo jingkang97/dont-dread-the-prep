@@ -1,8 +1,6 @@
 import { PrimaryButton } from '../ui'
 import { SheetFrame } from '../sheets/SheetFrame'
 import { useLang } from '../../i18n/LanguageContext'
-import picoprepReadiness from '../../assets/timeline/picoprep-readiness.png'
-
 export function PicoprepMixSheet({ onClose }: { onClose: () => void }) {
   const { t } = useLang()
   return (
@@ -10,7 +8,7 @@ export function PicoprepMixSheet({ onClose }: { onClose: () => void }) {
       <p className="font-display text-[22px] leading-tight tracking-tight text-ink">{t('tl.mixTitle')}</p>
       <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">{t('tl.picoprepWhy')}</p>
       <img
-        src={picoprepReadiness}
+        src="/timeline/picoprep-readiness.png"
         alt={t('tl.mixImg')}
         className="mt-3 w-full rounded-2xl bg-navy-2"
       />
