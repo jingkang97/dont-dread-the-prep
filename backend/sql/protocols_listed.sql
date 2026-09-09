@@ -100,7 +100,19 @@ UPDATE protocols SET
 WHERE name = 'ttsh-peg-2l (8am-2pm)';
 
 UPDATE protocols SET
+  listed = false,
+  reporting_from = TIME '14:00',
+  reporting_until = NULL
+WHERE name = 'ttsh-peg-2l (2pm-5pm)';
+
+UPDATE protocols SET
   listed = true,
   reporting_from = NULL,
   reporting_until = TIME '14:00'
 WHERE name = 'ttsh-peg-3l (8am-2pm)';
+
+UPDATE protocols SET
+  listed = false,
+  reporting_from = TIME '14:00',
+  reporting_until = NULL
+WHERE name = 'ttsh-peg-3l (2pm-5pm)';

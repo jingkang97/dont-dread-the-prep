@@ -5,7 +5,7 @@ CREATE TYPE three_way AS ENUM ('yes', 'no', 'ask');
 CREATE TABLE protocols (
   id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   name              TEXT NOT NULL UNIQUE,
-  prep_agent        TEXT NOT NULL,           -- family key: 'picoprep' | 'picoprep-peg' | 'peg' | 'peg-3l' | …
+  prep_agent        TEXT NOT NULL,           -- family key: 'picoprep' | 'picoprep-peg' | 'peg-2l' | 'peg-3l' | …
   prep_agent_label  TEXT NOT NULL,           -- picker chip label
   diet_days         INT NOT NULL CHECK (diet_days > 0),
   milk_in_coffee    three_way NOT NULL,

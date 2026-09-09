@@ -45,11 +45,19 @@ INSERT INTO protocols (
 ),
 (
   'ttsh-peg-2l (8am-2pm)',
-  'peg',
+  'peg-2l',
   'PEG 2L',
   3,
   'yes', 'ask', 'no', 'yes',
   true, NULL, TIME '14:00'
+),
+(
+  'ttsh-peg-2l (2pm-5pm)',
+  'peg-2l',
+  'PEG 2L',
+  3,
+  'yes', 'ask', 'no', 'yes',
+  false, TIME '14:00', NULL
 ),
 (
   'ttsh-peg-3l (8am-2pm)',
@@ -58,6 +66,14 @@ INSERT INTO protocols (
   3,
   'yes', 'ask', 'no', 'yes',
   true, NULL, TIME '14:00'
+),
+(
+  'ttsh-peg-3l (2pm-5pm)',
+  'peg-3l',
+  'PEG 3L',
+  3,
+  'yes', 'ask', 'no', 'yes',
+  false, TIME '14:00', NULL
 );
 
 INSERT INTO hospitals (code, short_name, name, cluster, contacts)
@@ -126,5 +142,13 @@ VALUES
 ),
 (
   (SELECT id FROM hospitals WHERE code = 'ttsh'),
+  (SELECT id FROM protocols WHERE name = 'ttsh-peg-2l (2pm-5pm)')
+),
+(
+  (SELECT id FROM hospitals WHERE code = 'ttsh'),
   (SELECT id FROM protocols WHERE name = 'ttsh-peg-3l (8am-2pm)')
+),
+(
+  (SELECT id FROM hospitals WHERE code = 'ttsh'),
+  (SELECT id FROM protocols WHERE name = 'ttsh-peg-3l (2pm-5pm)')
 );

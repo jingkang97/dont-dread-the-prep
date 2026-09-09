@@ -42,11 +42,27 @@ WHERE name = 'ttsh-peg-2l (8am-2pm)';
 
 UPDATE protocols
 SET
+  last_meal = 'Light breakfast until 6:30am on the day of scope',
+  last_meal_note = 'TTSH PEG 2L path (2L PEG Solution sheet, 2pm–5pm). Eve: light meals only. Day-of: light breakfast 6–6:30am, then no food. Mix 2 packets with 2L; drink 7–9am. Stop fluids 2h before procedure.',
+  fluid_stop_hours = 2,
+  form_gap = 'TTSH issues separate PDFs per appointment slot. This protocol is PEG 2L only, not Picoprep. Morning PEG sheet for afternoon appointments.'
+WHERE name = 'ttsh-peg-2l (2pm-5pm)';
+
+UPDATE protocols
+SET
   last_meal = 'Light dinner until 6:30pm on the eve of scope',
   last_meal_note = 'TTSH PEG 3L path (3L PEG Solution sheet, 8am–2pm). Mix 2 packets with 2L at 7–9pm the day before; mix 1 packet with 1L at 5–6am on the day. No food after 6:30pm. Stop all fluids from 6am.',
   fluid_stop_hours = 2,
   form_gap = 'TTSH issues separate PDFs per appointment slot. This protocol is PEG 3L only, not Picoprep or PEG 2L. Fluid stop is 6am on the sheet, not 2h before reporting.'
 WHERE name = 'ttsh-peg-3l (8am-2pm)';
+
+UPDATE protocols
+SET
+  last_meal = 'Light breakfast until 5:30am on the day of scope',
+  last_meal_note = 'TTSH PEG 3L path (3L PEG Solution sheet, 2pm–5pm). Eve: light meals only. Day-of: light breakfast 5–5:30am, then no food. Mix 3 packets with 3L; drink 6–9am. Stop fluids 2h before procedure.',
+  fluid_stop_hours = 2,
+  form_gap = 'TTSH issues separate PDFs per appointment slot. This protocol is PEG 3L only. Morning 3L sheet for afternoon appointments.'
+WHERE name = 'ttsh-peg-3l (2pm-5pm)';
 
 UPDATE protocols
 SET
