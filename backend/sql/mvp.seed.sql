@@ -1,41 +1,79 @@
 INSERT INTO protocols (
   name, prep_agent, prep_agent_label, diet_days,
-  milk_in_coffee, fruit_juice, rice_cereal, coffee_tea
+  milk_in_coffee, fruit_juice, rice_cereal, coffee_tea,
+  listed, reporting_from, reporting_until
 ) VALUES
 (
   'sgh-nccs-picoprep',
   'picoprep',
   'Picoprep · 4 sachets',
   3,
-  'no', 'no', 'no', 'yes'
+  'no', 'no', 'no', 'yes',
+  true, NULL, NULL
 ),
 (
   'ttsh-picoprep (8am-2pm)',
   'picoprep',
   'Picoprep',
   3,
-  'yes', 'ask', 'no', 'yes'
+  'yes', 'ask', 'no', 'yes',
+  true, NULL, TIME '14:00'
 ),
 (
   'ttsh-picoprep (2pm-5pm)',
   'picoprep',
   'Picoprep',
   3,
-  'yes', 'ask', 'no', 'yes'
+  'yes', 'ask', 'no', 'yes',
+  false, TIME '14:00', NULL
 ),
 (
   'ttsh-picoprep-peg (8am-2pm)',
   'picoprep-peg',
   'Picoprep + PEG',
   3,
-  'yes', 'ask', 'no', 'yes'
+  'yes', 'ask', 'no', 'yes',
+  true, NULL, TIME '14:00'
 ),
 (
   'ttsh-picoprep-peg (2pm-5pm)',
   'picoprep-peg',
   'Picoprep + PEG',
   3,
-  'yes', 'ask', 'no', 'yes'
+  'yes', 'ask', 'no', 'yes',
+  false, TIME '14:00', NULL
+),
+(
+  'ttsh-peg-2l (8am-2pm)',
+  'peg-2l',
+  'PEG 2L',
+  3,
+  'yes', 'ask', 'no', 'yes',
+  true, NULL, TIME '14:00'
+),
+(
+  'ttsh-peg-2l (2pm-5pm)',
+  'peg-2l',
+  'PEG 2L',
+  3,
+  'yes', 'ask', 'no', 'yes',
+  false, TIME '14:00', NULL
+),
+(
+  'ttsh-peg-3l (8am-2pm)',
+  'peg-3l',
+  'PEG 3L',
+  3,
+  'yes', 'ask', 'no', 'yes',
+  true, NULL, TIME '14:00'
+),
+(
+  'ttsh-peg-3l (2pm-5pm)',
+  'peg-3l',
+  'PEG 3L',
+  3,
+  'yes', 'ask', 'no', 'yes',
+  false, TIME '14:00', NULL
 );
 
 INSERT INTO hospitals (code, short_name, name, cluster, contacts)
@@ -97,6 +135,20 @@ VALUES
 (
   (SELECT id FROM hospitals WHERE code = 'ttsh'),
   (SELECT id FROM protocols WHERE name = 'ttsh-picoprep-peg (2pm-5pm)')
+),
+(
+  (SELECT id FROM hospitals WHERE code = 'ttsh'),
+  (SELECT id FROM protocols WHERE name = 'ttsh-peg-2l (8am-2pm)')
+),
+(
+  (SELECT id FROM hospitals WHERE code = 'ttsh'),
+  (SELECT id FROM protocols WHERE name = 'ttsh-peg-2l (2pm-5pm)')
+),
+(
+  (SELECT id FROM hospitals WHERE code = 'ttsh'),
+  (SELECT id FROM protocols WHERE name = 'ttsh-peg-3l (8am-2pm)')
+),
+(
+  (SELECT id FROM hospitals WHERE code = 'ttsh'),
+  (SELECT id FROM protocols WHERE name = 'ttsh-peg-3l (2pm-5pm)')
 );
-
--- insert TTSH PEG-2L protocol

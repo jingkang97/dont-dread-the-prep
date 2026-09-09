@@ -9,34 +9,18 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DbSession, selectinload
 
 from app.db.models import Hospital, Protocol, Session
-from app.schemas.session import SessionCreate, SessionOut, SessionUpdate, Slot
+from app.schemas.session import HospitalOut, SessionCreate, SessionOut, SessionUpdate, Slot
 
 PUBLIC_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 PUBLIC_CODE_LENGTH = 4
 
-TTSH_PICOPREP_AM = "ttsh-picoprep (8am-2pm)"
-TTSH_PICOPREP_PM = "ttsh-picoprep (2pm-5pm)"
-TTSH_PICOPREP_PEG_AM = "ttsh-picoprep-peg (8am-2pm)"
-TTSH_PICOPREP_PEG_PM = "ttsh-picoprep-peg (2pm-5pm)"
-TTSH_PICOPREP_PEG = TTSH_PICOPREP_PEG_AM
-TTSH_AFTERNOON_FROM = time(14, 0)
-
-# Older clients / seeds used un-windowed names.
+# Older clients / seeds used un-windowed names → map to the listed sheet.
 PROTOCOL_NAME_ALIASES: dict[str, str] = {
-    "ttsh-picoprep": TTSH_PICOPREP_AM,
-    "ttsh-picoprep-peg": TTSH_PICOPREP_PEG,
-}
-
-# (8am–2pm name, 2pm–5pm name) per TTSH prep agent.
-TTSH_WINDOW_BY_AGENT: dict[str, tuple[str, str]] = {
-    "picoprep": (TTSH_PICOPREP_AM, TTSH_PICOPREP_PM),
-    "picoprep-peg": (TTSH_PICOPREP_PEG_AM, TTSH_PICOPREP_PEG_PM),
-}
-
-# Prefer Picoprep-only when TTSH (or any hospital) has multiple protocols and
-# the client has not chosen yet — matches the current frontend default path.
-DEFAULT_MULTI_PROTOCOL: dict[str, str] = {
-    "ttsh": TTSH_PICOPREP_AM,
+    "ttsh-picoprep": "ttsh-picoprep (8am-2pm)",
+    "ttsh-picoprep-peg": "ttsh-picoprep-peg (8am-2pm)",
+    "ttsh-peg-2l": "ttsh-peg-2l (8am-2pm)",
+    "ttsh-peg": "ttsh-peg-2l (8am-2pm)",
+    "ttsh-peg-3l": "ttsh-peg-3l (8am-2pm)",
 }
 
 
@@ -44,19 +28,24 @@ def canonical_protocol_name(name: str) -> str:
     return PROTOCOL_NAME_ALIASES.get(name, name)
 
 
-def apply_ttsh_time_window(
+def reporting_in_window(protocol: Protocol, reporting: time) -> bool:
+    """reporting_from inclusive, reporting_until exclusive; both null = any time."""
+    if protocol.reporting_from is not None and reporting < protocol.reporting_from:
+        return False
+    if protocol.reporting_until is not None and reporting >= protocol.reporting_until:
+        return False
+    return True
+
+
+def apply_reporting_window(
     hospital: Hospital, protocol: Protocol, reporting: time
 ) -> Protocol:
-    """8am–2pm vs 2pm–5pm sheets are separate protocols, picked by reporting time."""
-    if hospital.code != "ttsh":
+    """Pick the sheet for this prep_agent whose reporting window contains reporting."""
+    siblings = [p for p in hospital.protocols if p.prep_agent == protocol.prep_agent]
+    if len(siblings) <= 1:
         return protocol
-    windows = TTSH_WINDOW_BY_AGENT.get(protocol.prep_agent)
-    if windows is None:
-        return protocol
-    am_name, pm_name = windows
-    want = pm_name if reporting >= TTSH_AFTERNOON_FROM else am_name
-    for candidate in hospital.protocols:
-        if candidate.name == want:
+    for candidate in siblings:
+        if reporting_in_window(candidate, reporting):
             return candidate
     return protocol
 
@@ -94,6 +83,21 @@ def list_hospitals(db: DbSession) -> list[Hospital]:
     return list(db.scalars(stmt).unique().all())
 
 
+def hospital_to_out(hospital: Hospital) -> HospitalOut:
+    """Picker payload: only listed protocol chips (AM/PM sheets stay server-side)."""
+    out = HospitalOut.model_validate(hospital)
+    out.protocols = [p for p in out.protocols if p.listed]
+    return out
+
+
+def list_hospitals_out(db: DbSession) -> list[HospitalOut]:
+    return [hospital_to_out(row) for row in list_hospitals(db)]
+
+
+def listed_protocols(hospital: Hospital) -> list[Protocol]:
+    return [p for p in hospital.protocols if p.listed]
+
+
 def resolve_protocol(
     hospital: Hospital,
     protocol_name: str | None,
@@ -120,15 +124,13 @@ def resolve_protocol(
                 detail=f"Protocol '{protocol_name}' is not offered by {hospital.code}. "
                 f"Choose one of: {names}",
             )
-    elif len(protocols) == 1:
-        chosen = protocols[0]
     else:
-        preferred = DEFAULT_MULTI_PROTOCOL.get(hospital.code)
-        if preferred:
-            for protocol in protocols:
-                if protocol.name == preferred:
-                    chosen = protocol
-                    break
+        options = listed_protocols(hospital) or protocols
+        if len(options) == 1:
+            chosen = options[0]
+        else:
+            # Prefer the first listed row (stable by Protocol.id order from relationship).
+            chosen = options[0] if options else None
         if chosen is None:
             names = ", ".join(p.name for p in protocols)
             raise HTTPException(
@@ -138,7 +140,7 @@ def resolve_protocol(
             )
 
     if reporting is not None:
-        return apply_ttsh_time_window(hospital, chosen, reporting)
+        return apply_reporting_window(hospital, chosen, reporting)
     return chosen
 
 
@@ -230,7 +232,7 @@ def update_session(db: DbSession, public_code: str, body: SessionUpdate) -> Sess
     )
     protocol = db.get(Protocol, row.protocol_id)
     assert hospital is not None and protocol is not None
-    remapped = apply_ttsh_time_window(hospital, protocol, row.reporting_time)
+    remapped = apply_reporting_window(hospital, protocol, row.reporting_time)
     row.protocol_id = remapped.id
 
     db.commit()

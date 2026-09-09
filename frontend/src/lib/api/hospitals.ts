@@ -7,6 +7,9 @@ export type ApiProtocolSummary = {
   diet_days: number
   milk_in_coffee?: string
   fruit_juice?: string
+  listed?: boolean
+  reporting_from?: string | null
+  reporting_until?: string | null
 }
 
 export type ApiHospital = {

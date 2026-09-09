@@ -10,9 +10,8 @@ router = APIRouter(tags=["onboarding"])
 
 @router.get("/hospitals", response_model=list[HospitalOut])
 def get_hospitals(db: Session = Depends(get_db)) -> list[HospitalOut]:
-    """Step 1: pick SGH, NCCS, or TTSH (with offered protocols)."""
-    rows = sessions_service.list_hospitals(db)
-    return [HospitalOut.model_validate(row) for row in rows]
+    """Step 1: pick SGH, NCCS, or TTSH. Protocols are listed chips only."""
+    return sessions_service.list_hospitals_out(db)
 
 
 @router.post("/sessions", response_model=SessionOut, status_code=201)
@@ -32,5 +31,5 @@ def patch_session(
     body: SessionUpdate,
     db: Session = Depends(get_db),
 ) -> SessionOut:
-    """Change date / slot / reporting time. TTSH Picoprep-only may switch 8am–2pm vs 2pm–5pm."""
+    """Change date / slot / reporting time. May remap to another sheet via reporting windows."""
     return sessions_service.update_session(db, public_code, body)
