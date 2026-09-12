@@ -19,6 +19,7 @@ import { cn } from './lib/cn'
 import { useAppointmentEdit } from './hooks/useAppointmentEdit'
 import { useHomeTour } from './hooks/useHomeTour'
 import { useSession } from './hooks/useSession'
+import { startHomeTour } from './lib/homeTour'
 import { isStandaloneDisplay } from './lib/push'
 import { useState } from 'react'
 
@@ -62,7 +63,11 @@ export default function App() {
             className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
             {...fadeY}
           >
-            <SessionBar session={session} onChange={edit.openChooser} />
+            <SessionBar
+              session={session}
+              onChange={edit.openChooser}
+              onReplayTour={screen === 'home' ? () => startHomeTour({ t }) : undefined}
+            />
             <div
               data-app-pane
               className={cn('relative min-h-0 flex-1', screen !== 'timeline' && '**:data-tl-fab:hidden')}
