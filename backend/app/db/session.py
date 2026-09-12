@@ -24,11 +24,14 @@ def get_engine() -> Engine:
                 "DATABASE_URL is not set. Copy backend/.env.example to backend/.env "
                 "and paste your Supabase Postgres connection string."
             )
+        # Supabase's pooler (PgBouncer) cannot reuse psycopg3 prepared names
+        # across checkouts. The reminder tick hits this as DuplicatePreparedStatement.
         _engine = create_engine(
             url,
             pool_pre_ping=True,
             pool_size=5,
             max_overflow=5,
+            connect_args={"prepare_threshold": None},
         )
         _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False)
     return _engine

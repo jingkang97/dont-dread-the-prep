@@ -27,6 +27,7 @@ function destUrl(raw) {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const dest = destUrl(event.notification.data && event.notification.data.url)
+  const go = dest.searchParams.get('go') || ''
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windows) => {
       for (const client of windows) {
@@ -41,8 +42,11 @@ self.addEventListener('notificationclick', (event) => {
           try {
             await client.navigate(dest.pathname + dest.search + dest.hash)
           } catch {
-            /* keep focusing the existing app window */
+            /* iOS often blocks navigate; tell the open window which tab to show */
           }
+        }
+        if ('postMessage' in client) {
+          client.postMessage({ type: 'preppath-open', go })
         }
         if ('focus' in client) return client.focus()
       }

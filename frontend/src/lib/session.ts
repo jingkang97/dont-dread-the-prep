@@ -107,14 +107,17 @@ function parseSession(raw: unknown): PrepSession | null {
 }
 
 function encodeSession(session: PrepSession) {
-  const json = JSON.stringify(session)
-  return btoa(json).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  const bytes = new TextEncoder().encode(JSON.stringify(session))
+  let bin = ''
+  for (const byte of bytes) bin += String.fromCharCode(byte)
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
 function decodeSession(token: string): PrepSession | null {
   try {
     const pad = token.length % 4 === 0 ? '' : '='.repeat(4 - (token.length % 4))
-    const json = atob(token.replace(/-/g, '+').replace(/_/g, '/') + pad)
+    const bin = atob(token.replace(/-/g, '+').replace(/_/g, '/') + pad)
+    const json = new TextDecoder().decode(Uint8Array.from(bin, (ch) => ch.charCodeAt(0)))
     return parseSession(JSON.parse(json))
   } catch {
     return null
@@ -135,12 +138,15 @@ function publicCodeFromUrl(): string | null {
   return /^[A-Z2-9]{4}$/.test(code) ? code : null
 }
 
-export function screenFromUrl(): Screen | null {
-  const go = new URLSearchParams(window.location.search).get(GO_PARAM)
+export function screenFromGo(go: unknown): Screen | null {
   if (go === 'timeline' || go === 'food' || go === 'stool' || go === 'reminders' || go === 'home') {
     return go
   }
   return null
+}
+
+export function screenFromUrl(): Screen | null {
+  return screenFromGo(new URLSearchParams(window.location.search).get(GO_PARAM))
 }
 
 function sessionFromCookie(): PrepSession | null {

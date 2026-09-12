@@ -5,6 +5,7 @@ import {
   clearSession,
   createSession,
   hydrateSession,
+  screenFromGo,
   screenFromUrl,
   updateAppointment,
   type PrepSession,
@@ -30,6 +31,26 @@ export function useSession() {
     })()
     return () => {
       cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const applyUrl = () => {
+      const go = screenFromUrl()
+      if (go) setScreen(go)
+    }
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type !== 'preppath-open') return
+      const go = screenFromGo(event.data.go)
+      if (go) setScreen(go)
+    }
+    window.addEventListener('popstate', applyUrl)
+    window.addEventListener('pageshow', applyUrl)
+    navigator.serviceWorker?.addEventListener('message', onMessage)
+    return () => {
+      window.removeEventListener('popstate', applyUrl)
+      window.removeEventListener('pageshow', applyUrl)
+      navigator.serviceWorker?.removeEventListener('message', onMessage)
     }
   }, [])
 
