@@ -205,7 +205,7 @@ export const EN = {
   'stool.s6l': 'Yellow, light, watery, no particles',
   'wa.kicker': 'Reminder pipe only',
   'wa.title': 'Reminders',
-  'wa.welcome': 'Welcome',
+  'wa.welcome': 'How alerts work',
   'wa.welcomeBody':
     'Pick this phone, Telegram, or both. Same three alerts before your colonoscopy: T−72, T−24, and T−6.',
   'wa.welcomeBodyDemo':
@@ -486,7 +486,7 @@ const ZH: Record<StringKey, string> = {
   'stool.s6l': '黄色、清澈、水状、无颗粒',
   'wa.kicker': '只负责提醒',
   'wa.title': '提醒',
-  'wa.welcome': '欢迎',
+  'wa.welcome': '提醒如何运作',
   'wa.welcomeBody': '可选用本机通知、Telegram，或两者都开。检查前同样会收到提前 72、24、6 小时的提醒。',
   'wa.welcomeBodyDemo': '演示节奏：现在、+1 分钟、+2 分钟各 1 条，然后每小时 3 条，再每天 3 条 — Telegram 和本机。',
   'wa.lead': '提醒不回答食物问题。每条提醒都会打开会话 {id}。',
@@ -766,7 +766,7 @@ const MS: Record<StringKey, string> = {
   'stool.s6l': 'Kuning, cair, berair, tiada zarah',
   'wa.kicker': 'Paip peringatan sahaja',
   'wa.title': 'Peringatan',
-  'wa.welcome': 'Selamat datang',
+  'wa.welcome': 'Cara amaran berfungsi',
   'wa.welcomeBody':
     'Pilih telefon ini, Telegram, atau kedua-dua. Tiga amaran yang sama sebelum kolonoskopi: T−72, T−24, dan T−6.',
   'wa.welcomeBodyDemo':
@@ -1052,7 +1052,7 @@ const TA: Record<StringKey, string> = {
   'stool.s6l': 'மஞ்சள், நீர்த்த, துகள்கள் இல்லை',
   'wa.kicker': 'நினைவூட்டல் குழாய் மட்டும்',
   'wa.title': 'நினைவூட்டல்கள்',
-  'wa.welcome': 'வரவேற்பு',
+  'wa.welcome': 'அறிவிப்புகள் எப்படி வேலை செய்யும்',
   'wa.welcomeBody':
     'இந்த தொலைபேசி, Telegram, அல்லது இரண்டும். கொலோனோஸ்கோபிக்கு முன் அதே மூன்று அறிவிப்புகள்: T−72, T−24, T−6.',
   'wa.welcomeBodyDemo':
