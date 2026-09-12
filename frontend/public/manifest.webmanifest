@@ -1,12 +1,17 @@
 {
   "name": "PrepPath",
   "short_name": "PrepPath",
+  "id": "/",
   "description": "No-install colonoscopy prep companion.",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#f2f2f7",
   "background_color": "#f2f2f7",
   "start_url": ".",
+  "scope": "/",
+  "launch_handler": {
+    "client_mode": ["focus-existing", "navigate-existing", "auto"]
+  },
   "icons": [
     {
       "src": "/apple-touch-icon.png",

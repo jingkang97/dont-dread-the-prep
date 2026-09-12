@@ -19,10 +19,11 @@ import { cn } from './lib/cn'
 import { useAppointmentEdit } from './hooks/useAppointmentEdit'
 import { useHomeTour } from './hooks/useHomeTour'
 import { useSession } from './hooks/useSession'
+import { isStandaloneDisplay } from './lib/push'
 import { useState } from 'react'
 
 export default function App() {
-  const { lang } = useLang()
+  const { lang, t } = useLang()
   const { session, setSession, screen, setScreen, ready, create, clear, update } = useSession()
   const edit = useAppointmentEdit()
   const [shortcut, setShortcut] = useState<'off' | 'ios' | 'android'>('off')
@@ -41,6 +42,11 @@ export default function App() {
       >
         <DraftBanner />
         <LanguageBar />
+        {session && !isStandaloneDisplay() && openedFromExternalLink() && (
+          <p className="shrink-0 bg-cream px-4 py-2 text-[13px] leading-snug text-teal-deep">
+            {t('app.homescreenHint')}
+          </p>
+        )}
         <AnimatePresence mode="wait" initial={false}>
         {!session || screen === 'onboarding' ? (
           <motion.div
@@ -61,36 +67,27 @@ export default function App() {
               data-app-pane
               className={cn('relative min-h-0 flex-1', screen !== 'timeline' && '**:data-tl-fab:hidden')}
             >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={
-                    screen === 'home'
-                      ? `home-${session.date}-${session.slot}-${session.reportingTime}`
-                      : screen === 'timeline'
-                        ? `timeline-${session.date}-${session.slot}-${session.reportingTime}`
-                        : screen
-                  }
+              {(
+                [
+                  ['home', <Home session={session} onOpen={setScreen} onShortcut={setShortcut} />],
+                  ['timeline', <Timeline session={session} onOpenStool={() => setScreen('stool')} />],
+                  ['food', <FoodChat session={session} />],
+                  ['stool', <StoolGuide session={session} onReminders={() => setScreen('reminders')} />],
+                  ['reminders', <Reminders session={session} onSession={setSession} onShortcut={setShortcut} />],
+                ] as const
+              ).map(([id, node]) => (
+                <div
+                  key={id}
+                  aria-hidden={screen !== id}
                   className={cn(
                     'absolute inset-0 overscroll-y-contain',
-                    screen === 'timeline' || screen === 'food' ? 'overflow-hidden' : 'overflow-y-auto',
+                    screen !== id && 'invisible pointer-events-none',
+                    id === 'timeline' || id === 'food' ? 'overflow-hidden' : 'overflow-y-auto',
                   )}
-                  {...fadeY}
                 >
-              {screen === 'home' && (
-                <Home session={session} onOpen={setScreen} onShortcut={setShortcut} />
-              )}
-              {screen === 'timeline' && (
-                <Timeline session={session} onOpenStool={() => setScreen('stool')} />
-              )}
-              {screen === 'food' && <FoodChat session={session} />}
-              {screen === 'stool' && (
-                <StoolGuide session={session} onReminders={() => setScreen('reminders')} />
-              )}
-              {screen === 'reminders' && (
-                <Reminders session={session} onSession={setSession} onShortcut={setShortcut} />
-              )}
-                </motion.div>
-              </AnimatePresence>
+                  {node}
+                </div>
+              ))}
             </div>
             <BottomNav screen={screen} onChange={setScreen} />
             <AnimatePresence>
@@ -136,4 +133,9 @@ export default function App() {
     </div>
     </MotionConfig>
   )
+}
+
+function openedFromExternalLink() {
+  const query = new URLSearchParams(window.location.search)
+  return Boolean(query.get('s') || query.get('go'))
 }

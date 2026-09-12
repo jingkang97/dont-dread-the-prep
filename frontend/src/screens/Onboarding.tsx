@@ -125,7 +125,6 @@ export function Onboarding({
                       <SectionLabel>{t('on.step1')}</SectionLabel>
                       <HospitalPicker
                         hospitals={apiHospitals}
-                        selected={draft.hospitalId}
                         loading={hospitalsLoading}
                         onPick={(id) => {
                           setError(null)

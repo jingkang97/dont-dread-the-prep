@@ -18,12 +18,10 @@ import { easeOut, fadeY } from '../lib/motion'
 
 export function HospitalPicker({
   hospitals,
-  selected,
   onPick,
   loading = false,
 }: {
   hospitals: ApiHospital[]
-  selected: HospitalId | null
   onPick: (id: HospitalId) => void
   loading?: boolean
 }) {
@@ -94,6 +92,7 @@ export function HospitalPicker({
                         <button
                           type="button"
                           onClick={() => toggleCluster(c)}
+                          onPointerUp={(e) => e.currentTarget.blur()}
                           className="mb-1.5 flex w-full items-center gap-1 px-1 text-left outline-none focus:outline-none focus-visible:outline-none"
                         >
                           <span className="flex-1 text-[13px] font-bold text-ink">{c}</span>
@@ -117,7 +116,6 @@ export function HospitalPicker({
                                   <HospitalRow
                                     key={h.key}
                                     h={h}
-                                    selected={h.hospitalId === selected}
                                     onClick={() => onPick(h.hospitalId)}
                                   />
                                 ))}
@@ -140,11 +138,9 @@ export function HospitalPicker({
 
 function HospitalRow({
   h,
-  selected,
   onClick,
 }: {
   h: PickerHospital
-  selected: boolean
   onClick: () => void
 }) {
   const { t } = useLang()
@@ -153,10 +149,8 @@ function HospitalRow({
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        'flex items-center gap-3 rounded-[20px] bg-paper-2 px-4 py-3.5 text-left outline-none transition',
-        selected ? 'ring-2 ring-teal/40' : '',
-      )}
+      onPointerUp={(e) => e.currentTarget.blur()}
+      className="flex items-center gap-3 overflow-hidden rounded-[20px] bg-paper-2 px-4 py-3.5 text-left outline-none transition [-webkit-tap-highlight-color:transparent] focus:outline-none focus-visible:outline-none focus:ring-0"
     >
       <span
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"

@@ -1,6 +1,7 @@
 import type { HospitalId, Slot } from '../data/hospitals'
 import { defaultReporting, type SessionInput } from './timeline'
 import { clearFoodChat } from './foodChat'
+import { clearTimelineCache } from './timelineCache'
 import { clearTimelineUi } from './timelineUi'
 import { clearFoodChatUi } from './foodChatUi'
 import {
@@ -171,12 +172,11 @@ function writeUrl(session: PrepSession | null) {
 }
 
 function publishManifest(session: PrepSession | null) {
-  const start = session
-    ? `${window.location.pathname}?${PARAM}=${encodeSession(session)}`
-    : window.location.pathname || '/'
+  const start = session ? `/?s=${encodeURIComponent(session.id)}` : '/'
   const manifest = {
     name: 'PrepPath',
     short_name: 'PrepPath',
+    id: '/',
     description: 'No-install colonoscopy prep companion.',
     display: 'standalone',
     orientation: 'portrait',
@@ -184,6 +184,7 @@ function publishManifest(session: PrepSession | null) {
     background_color: '#f2f2f7',
     start_url: start,
     scope: '/',
+    launch_handler: { client_mode: ['focus-existing', 'navigate-existing', 'auto'] },
     icons: [
       { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
       { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
@@ -234,6 +235,7 @@ export function clearSession() {
   clearFoodChat()
   clearFoodChatUi()
   clearTimelineUi()
+  clearTimelineCache()
 }
 
 /** Refresh from API using cached public_code; keep cache if offline; clear if 404. */
@@ -315,6 +317,7 @@ export async function updateAppointment(
   const next = fromApiSession(row)
   saveSession(next)
   clearTimelineUi()
+  clearTimelineCache(session.id)
   return next
 }
 
