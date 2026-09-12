@@ -26,6 +26,7 @@ from app.services.reminder_schedule import (
 )
 from app.services.telegram import (
     STOOL_CHART,
+    app_path,
     send_message,
     send_photo,
     stool_url,
@@ -157,13 +158,13 @@ async def _send_push(
     code: str,
     extra: dict[str, Any],
 ) -> None:
-    url = stool_url(code) if copy_key == "t6" else timeline_url(code)
+    path = app_path(code, "stool" if copy_key == "t6" else "timeline")
     if claim_key == "late":
-        payload = late_notice_push(extra.get("skipped") or [], extra.get("next"), timeline_url(code))
+        payload = late_notice_push(extra.get("skipped") or [], extra.get("next"), path)
         await asyncio.to_thread(send_web_push, subscription, payload)
         return
     step = _step_for(claim_key)
-    payload = demo_push_payload(step, url) if step else push_payload(copy_key, url)
+    payload = demo_push_payload(step, path) if step else push_payload(copy_key, path)
     await asyncio.to_thread(send_web_push, subscription, payload)
 
 

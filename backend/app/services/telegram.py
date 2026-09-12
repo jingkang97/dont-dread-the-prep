@@ -43,16 +43,26 @@ def _token() -> str:
     return get_settings().telegram_bot_token.strip()
 
 
+HOME_HINT = (
+    "If you added PrepPath to your Home Screen, open that icon. "
+    "Your session is already saved on this phone."
+)
+
+
 def _site_base() -> str:
     return get_settings().resolved_site_url
 
 
+def app_path(code: str, go: str = "timeline") -> str:
+    return f"/?s={code}&go={go}"
+
+
 def timeline_url(code: str) -> str:
-    return f"{_site_base()}/?s={code}&go=timeline"
+    return f"{_site_base()}{app_path(code, 'timeline')}"
 
 
 def stool_url(code: str) -> str:
-    return f"{_site_base()}/?s={code}&go=stool"
+    return f"{_site_base()}{app_path(code, 'stool')}"
 
 
 def can_use_url_button(url: str) -> bool:
@@ -63,10 +73,8 @@ def can_use_url_button(url: str) -> bool:
     return host not in {"localhost", "127.0.0.1", "::1"}
 
 
-def with_open_hint(text: str, label: str, url: str) -> str:
-    if can_use_url_button(url):
-        return text
-    return f"{text}\n\n{html.escape(label)}:\n<code>{html.escape(url)}</code>"
+def with_open_hint(text: str, label: str = "", url: str = "") -> str:
+    return f"{text}\n\n{HOME_HINT}"
 
 
 def url_button(label: str, url: str) -> tuple[str, str] | None:

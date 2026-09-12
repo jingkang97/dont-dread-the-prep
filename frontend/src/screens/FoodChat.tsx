@@ -244,7 +244,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={t('food.placeholder')}
-            className="flex-1 rounded-2xl border border-line bg-paper px-3.5 py-3 text-[15px] outline-none focus:border-navy"
+            className="flex-1 rounded-2xl border border-line bg-paper px-3.5 py-3 text-[16px] outline-none focus:border-navy"
           />
           <button
             type="submit"
