@@ -23,7 +23,7 @@ export function Home({
   const locale = DATE_LOCALES[lang]
   const { hospital, events, loading, error, now, next, nextWhen, report, started } = usePrepSummary(session)
   const remaining = report ? formatDistanceStrict(report, now, { addSuffix: true, locale }) : ''
-  const remindersOn = session.waOptIn || session.pushOptIn
+  const remindersOn = session.telegramLinked || session.pushOptIn
   const juice =
     hospital.fruitJuice === 'yes'
       ? t('home.juiceYes')

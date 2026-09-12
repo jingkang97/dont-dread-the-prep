@@ -137,6 +137,9 @@ class Session(Base):
     reminder_t72_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     reminder_t24_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     reminder_t6_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    reminder_anchor_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    reminder_demo_sent: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    reminder_late_notice_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

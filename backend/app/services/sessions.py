@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import secrets
-from datetime import time
+from datetime import datetime, time
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -10,6 +11,9 @@ from sqlalchemy.orm import Session as DbSession, selectinload
 
 from app.db.models import Hospital, Protocol, Session
 from app.schemas.session import HospitalOut, SessionCreate, SessionOut, SessionUpdate, Slot
+from app.services.reminder_schedule import demo_mode, reminder_plan, reset_reminder_clock
+
+SG = ZoneInfo("Asia/Singapore")
 
 PUBLIC_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 PUBLIC_CODE_LENGTH = 4
@@ -70,6 +74,12 @@ def session_to_out(row: Session, hospital: Hospital, protocol: Protocol) -> Sess
         first_name=row.first_name,
         wa_opt_in=row.wa_opt_in,
         push_opt_in=bool(row.push_endpoint),
+        telegram_linked=row.telegram_chat_id is not None,
+        reminder_mode="demo" if demo_mode() else "live",
+        reminder_plan=reminder_plan(
+            row,
+            datetime.combine(row.procedure_date, row.reporting_time, tzinfo=SG),
+        ),
         created_at=row.created_at,
     )
 
@@ -222,8 +232,11 @@ def update_session(db: DbSession, public_code: str, body: SessionUpdate) -> Sess
         if "reporting_time" not in data:
             data["reporting_time"] = default_reporting_time(Slot(data["slot"]))
 
+    reset_reminders = bool({"procedure_date", "slot", "reporting_time"} & data.keys())
     for key, value in data.items():
         setattr(row, key, value)
+    if reset_reminders:
+        reset_reminder_clock(row)
 
     hospital = db.scalar(
         select(Hospital)

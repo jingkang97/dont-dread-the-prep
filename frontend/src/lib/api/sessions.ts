@@ -1,6 +1,15 @@
 import { apiFetch } from './client'
 import type { ApiSlot } from './types'
 
+export type ApiReminderPlanItem = {
+  key: string
+  title: string
+  copy_key: string
+  delay_label: string
+  at: string | null
+  sent: boolean
+}
+
 export type ApiSession = {
   public_code: string
   hospital_code: string
@@ -12,6 +21,9 @@ export type ApiSession = {
   first_name: string | null
   wa_opt_in: boolean
   push_opt_in: boolean
+  telegram_linked?: boolean
+  reminder_mode?: 'demo' | 'live'
+  reminder_plan?: ApiReminderPlanItem[]
   created_at: string
 }
 

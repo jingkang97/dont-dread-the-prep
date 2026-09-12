@@ -1,6 +1,7 @@
-import { format, isAfter } from 'date-fns'
+import { format, isAfter, parseISO } from 'date-fns'
 import { Bell, Check, Info } from 'lucide-react'
 import { motion } from 'motion/react'
+import { useEffect } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { Card, GhostButton, PrimaryButton } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
@@ -8,12 +9,14 @@ import { cn } from '../lib/cn'
 import { DATE_LOCALES } from '../lib/dateLocale'
 import type { StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
-import { markWaOptIn, TELEGRAM_BOT, telegramStartHref } from '../lib/session'
+import { fromApiSession, saveSession, TELEGRAM_BOT, telegramStartHref } from '../lib/session'
+import { getApiSession } from '../lib/api'
 import { sessionReportAt } from '../lib/dates'
 import { remindersFor } from '../lib/timeline'
 import { easeOut } from '../lib/motion'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import { usePushReminders } from '../hooks/usePushReminders'
+import { useTelegramLink } from '../hooks/useTelegramLink'
 
 const WA_COPY: Record<string, { label: StringKey; blurb: StringKey }> = {
   t72: { label: 'wa.t72', blurb: 'wa.t72b' },
@@ -33,9 +36,42 @@ export function Reminders({
   const { t, lang } = useLang()
   const { copied, copy } = useCopyToClipboard()
   const report = sessionReportAt(session)
-  const items = remindersFor(report)
+  const demo = session.reminderMode === 'demo'
+  const plan = session.reminderPlan
+  const items = plan?.length
+    ? plan.map((item) => ({
+        key: item.key,
+        copy: item.copyKey,
+        title: item.title,
+        at: item.at ? parseISO(item.at) : null,
+        delayLabel: item.delayLabel,
+        sent: item.sent,
+      }))
+    : remindersFor(report).map((item) => ({
+        key: item.key,
+        copy: item.key,
+        title: t(WA_COPY[item.key].label),
+        at: item.at,
+        delayLabel: '',
+        sent: false,
+      }))
   const href = telegramStartHref(session.id)
   const push = usePushReminders(session, onSession)
+  const telegram = useTelegramLink(session, onSession)
+
+  useEffect(() => {
+    if (!demo || (!session.telegramLinked && !session.pushOptIn)) return
+    const timer = window.setInterval(() => {
+      void getApiSession(session.id)
+        .then((row) => {
+          const next = fromApiSession(row)
+          saveSession(next)
+          onSession(next)
+        })
+        .catch(() => undefined)
+    }, 10_000)
+    return () => window.clearInterval(timer)
+  }, [demo, session.id, session.telegramLinked, session.pushOptIn, onSession])
 
   return (
     <div className="px-5 pb-10 pt-6">
@@ -43,7 +79,9 @@ export function Reminders({
 
       <Card className="mt-5 p-4">
         <p className="text-[13px] font-semibold text-navy">{t('wa.welcome')}</p>
-        <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">{t('wa.welcomeBody')}</p>
+        <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">
+          {t(demo ? 'wa.welcomeBodyDemo' : 'wa.welcomeBody')}
+        </p>
       </Card>
 
       <Card className="mt-4 p-4">
@@ -52,19 +90,27 @@ export function Reminders({
           {items.map((item) => (
             <li key={item.key} className="py-2.5">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[14px] font-semibold text-ink">{t(WA_COPY[item.key].label)}</span>
+                <span className="text-[14px] font-semibold text-ink">
+                  {item.title}
+                </span>
                 <span className="text-[12px] text-muted">
-                  {isAfter(item.at, new Date())
-                    ? format(item.at, 'd MMM, h:mm a', { locale: DATE_LOCALES[lang] })
-                    : t('wa.passed')}
+                  {item.at && !isAfter(item.at, new Date())
+                    ? t('wa.passed')
+                    : item.sent
+                      ? t('wa.sent')
+                      : item.at
+                        ? format(item.at, 'd MMM, h:mm a', { locale: DATE_LOCALES[lang] })
+                        : item.delayLabel}
                 </span>
               </div>
-              <p className="text-[12px] text-ink-soft">{t(WA_COPY[item.key].blurb)}</p>
+              <p className="text-[12px] text-ink-soft">{t(WA_COPY[item.copy].blurb)}</p>
             </li>
           ))}
         </ul>
         <p className="mt-2 text-[12px] text-muted">
-          {t('wa.computed', { hospital: session.hospitalShort, time: session.reportingTime })}
+          {demo
+            ? t('wa.computedDemo')
+            : t('wa.computed', { hospital: session.hospitalShort, time: session.reportingTime })}
         </p>
       </Card>
 
@@ -106,10 +152,12 @@ export function Reminders({
             rel="noreferrer"
             className="mt-3"
             onClick={() => {
-              void markWaOptIn(session).then(onSession)
+              void telegram.startLink()
             }}
           >
-            <PrimaryButton className="bg-telegram py-2.5 text-[14px]">{t('wa.open')}</PrimaryButton>
+            <PrimaryButton className="bg-telegram py-2.5 text-[14px]">
+              {telegram.waiting ? t('wa.waiting') : t('wa.open')}
+            </PrimaryButton>
           </a>
         </Card>
       </div>
@@ -143,8 +191,11 @@ export function Reminders({
         </p>
       </Card>
 
-      {session.waOptIn && (
+      {session.telegramLinked && (
         <p className="mt-3 text-center text-[13px] font-semibold text-yes">{t('wa.optin', { id: session.id })}</p>
+      )}
+      {telegram.timedOut && !session.telegramLinked && (
+        <p className="mt-3 text-center text-[13px] font-semibold text-no">{t('wa.waitingTimeout')}</p>
       )}
 
       <GhostButton className={cn('mt-4', copied && 'bg-yes-bg text-yes')} onClick={() => copy(session.id)}>

@@ -10,6 +10,16 @@ from sqlalchemy import select
 from app.core.config import get_settings
 from app.db.models import Session
 from app.db.session import session_scope
+from datetime import datetime, timezone
+
+from app.services.reminder_schedule import (
+    demo_mode,
+    late_notice_push,
+    skip_late_windows,
+    start_demo_clock,
+    upcoming_live,
+)
+from app.services.telegram import timeline_url
 
 log = logging.getLogger(__name__)
 
@@ -33,6 +43,8 @@ def _subscription(row: Session) -> dict[str, Any] | None:
 
 
 def save_subscription(code: str, endpoint: str, p256dh: str, auth: str) -> bool:
+    notice: dict[str, str] | None = None
+    subscription: dict[str, Any] | None = None
     with session_scope() as db:
         row = db.scalar(select(Session).where(Session.public_code == code.upper()))
         if row is None:
@@ -40,7 +52,24 @@ def save_subscription(code: str, endpoint: str, p256dh: str, auth: str) -> bool:
         row.push_endpoint = endpoint.strip()
         row.push_p256dh = p256dh.strip()
         row.push_auth = auth.strip()
-        return True
+        if demo_mode():
+            start_demo_clock(row)
+        else:
+            now = datetime.now(timezone.utc)
+            skipped = skip_late_windows(row, now)
+            if skipped and row.reminder_late_notice_sent_at is None:
+                row.reminder_late_notice_sent_at = now
+                notice = late_notice_push(skipped, upcoming_live(row, now), timeline_url(row.public_code))
+                subscription = {
+                    "endpoint": row.push_endpoint,
+                    "keys": {"p256dh": row.push_p256dh, "auth": row.push_auth},
+                }
+    if notice and subscription:
+        try:
+            send_web_push(subscription, notice)
+        except Exception:
+            log.exception("Failed sending late-join push notice for session %s", code)
+    return True
 
 
 def clear_subscription(code: str) -> bool:
