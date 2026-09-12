@@ -4,6 +4,7 @@ import asyncio
 import html
 import json
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -14,12 +15,21 @@ from sqlalchemy import select
 from app.core.config import get_settings
 from app.db.models import Session
 from app.db.session import session_scope
+from app.services.reminder_schedule import (
+    demo_mode,
+    late_notice_html,
+    skip_late_windows,
+    start_demo_clock,
+    upcoming_live,
+)
 
 log = logging.getLogger(__name__)
 
 API = "https://api.telegram.org/bot{token}/{method}"
 
-WELCOME_TEST = "Test mode: they will arrive about a minute apart, then stop."
+WELCOME_TEST = (
+    "Demo clock: 3 alerts at now, +1 min, and +2 min, then 3 hourly, then 3 daily."
+)
 NEED_CODE = (
     "Open PrepPath and tap Set reminders so I can attach this chat to your session."
 )
@@ -34,7 +44,7 @@ def _token() -> str:
 
 
 def _site_base() -> str:
-    return get_settings().site_url.strip().rstrip("/") or "http://localhost:5173"
+    return get_settings().resolved_site_url
 
 
 def timeline_url(code: str) -> str:
@@ -137,7 +147,7 @@ def _show_session_debug() -> bool:
     settings = get_settings()
     if settings.telegram_reminder_test:
         return True
-    return not can_use_url_button(settings.site_url.strip() or "http://localhost")
+    return not can_use_url_button(settings.resolved_site_url)
 
 
 def welcome_text(code: str, first_name: str | None) -> str:
@@ -145,27 +155,46 @@ def welcome_text(code: str, first_name: str | None) -> str:
     headline = f"You're set for reminders, {name}." if name else "You're set for reminders."
     bits: list[str] = []
     if get_settings().telegram_reminder_test:
-        bits.append(WELCOME_TEST)
+        cadence = WELCOME_TEST
+    else:
+        cadence = (
+            "You'll get three alerts before your colonoscopy: "
+            "<b>T−72h</b>, <b>T−24h</b>, and <b>T−6h</b>."
+        )
     if _show_session_debug():
         bits.append(f"Session {html.escape(code)}.")
     tail = f"\n\n{' '.join(bits)}" if bits else ""
     return (
         f"<b>{headline}</b>\n\n"
-        "You'll get three alerts before your colonoscopy: "
-        "<b>T−72h</b>, <b>T−24h</b>, and <b>T−6h</b>.\n\n"
+        f"{cadence}\n\n"
         "Food questions stay in PrepPath — Telegram is reminders only."
         f"{tail}"
     )
 
 
-def _link_session(chat_id: int, code: str) -> tuple[str, str | None] | None:
+def _link_session(chat_id: int, code: str) -> dict[str, Any] | None:
     with session_scope() as db:
         row = db.scalar(select(Session).where(Session.public_code == code))
         if row is None:
             return None
         row.telegram_chat_id = chat_id
         row.wa_opt_in = True
-        return row.public_code, row.first_name
+        skipped: list[str] = []
+        nxt = None
+        if demo_mode():
+            start_demo_clock(row, restart=True)
+        else:
+            now = datetime.now(timezone.utc)
+            skipped = skip_late_windows(row, now)
+            nxt = upcoming_live(row, now)
+            if skipped:
+                row.reminder_late_notice_sent_at = now
+        return {
+            "public_code": row.public_code,
+            "first_name": row.first_name,
+            "skipped": skipped,
+            "next": nxt,
+        }
 
 
 def _code_for_chat(chat_id: int) -> str | None:
@@ -187,14 +216,38 @@ async def handle_start(chat_id: int, text: str) -> None:
         await send_message(chat_id, UNKNOWN.format(code=code))
         return
 
-    public_code, first_name = linked
+    public_code = str(linked["public_code"])
+    first_name = linked.get("first_name")
     url = timeline_url(public_code)
     await send_message(
         chat_id,
-        with_open_hint(welcome_text(public_code, first_name), "Open timeline", url),
+        with_open_hint(welcome_text(public_code, first_name if isinstance(first_name, str) else None), "Open timeline", url),
         button=url_button("Open timeline", url),
     )
+    skipped = list(linked.get("skipped") or [])
+    if skipped:
+        try:
+            await send_message(
+                chat_id,
+                with_open_hint(
+                    late_notice_html(skipped, linked.get("next")),
+                    "Open timeline",
+                    url,
+                ),
+                button=url_button("Open timeline", url),
+            )
+        except Exception:
+            log.exception("Failed sending late-join notice for session %s", public_code)
+            await asyncio.to_thread(_clear_late_notice, public_code)
     log.info("Linked Telegram chat to session %s", public_code)
+
+
+def _clear_late_notice(code: str) -> None:
+    with session_scope() as db:
+        row = db.scalar(select(Session).where(Session.public_code == code.upper()))
+        if row is None:
+            return
+        row.reminder_late_notice_sent_at = None
 
 
 async def handle_update(update: dict[str, Any]) -> None:
@@ -207,6 +260,18 @@ async def handle_update(update: dict[str, Any]) -> None:
     if chat_id is None or not text.startswith("/start"):
         return
     await handle_start(int(chat_id), text)
+
+
+async def set_webhook(url: str) -> None:
+    payload: dict[str, Any] = {
+        "url": url,
+        "allowed_updates": ["message"],
+        "drop_pending_updates": False,
+    }
+    secret = get_settings().resolved_webhook_secret
+    if secret:
+        payload["secret_token"] = secret
+    await telegram_call("setWebhook", payload)
 
 
 async def poll_updates(stop: asyncio.Event) -> None:
@@ -240,3 +305,29 @@ async def poll_updates(stop: asyncio.Event) -> None:
                 await asyncio.wait_for(stop.wait(), timeout=5)
             except asyncio.TimeoutError:
                 continue
+
+
+async def start_telegram_listener(stop: asyncio.Event) -> None:
+    if not _token():
+        return
+
+    settings = get_settings()
+    origin = settings.resolved_public_api_url
+    webhook_url = f"{origin}/api/telegram/webhook" if origin.startswith("https://") else ""
+    if webhook_url and not settings.telegram_poll:
+        try:
+            await set_webhook(webhook_url)
+            log.info("Telegram webhook registered at %s", webhook_url)
+            await stop.wait()
+            return
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("Could not set Telegram webhook; falling back to polling")
+
+    if not settings.telegram_poll and settings.debug:
+        log.info("Telegram poll off (set TELEGRAM_POLL=true to getUpdates locally)")
+        await stop.wait()
+        return
+
+    await poll_updates(stop)

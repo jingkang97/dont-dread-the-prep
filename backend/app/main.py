@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,8 +9,9 @@ from app.api.routes import api_router
 from app.core.config import get_settings
 from app.services.push import vapid_configured
 from app.services.reminders import run_reminder_loop
-from app.services.telegram import poll_updates
+from app.services.telegram import start_telegram_listener
 
+log = logging.getLogger(__name__)
 settings = get_settings()
 docs_enabled = settings.debug
 
@@ -18,10 +20,23 @@ docs_enabled = settings.debug
 async def lifespan(_app: FastAPI):
     stop = asyncio.Event()
     tasks: list[asyncio.Task] = []
-    if settings.telegram_bot_token.strip():
-        tasks.append(asyncio.create_task(poll_updates(stop), name="telegram-poll"))
-    if settings.telegram_bot_token.strip() or vapid_configured():
+    token = bool(settings.telegram_bot_token.strip())
+    public_https = settings.resolved_public_api_url.startswith("https://")
+    if token and (settings.telegram_poll or public_https):
+        tasks.append(asyncio.create_task(start_telegram_listener(stop), name="telegram-listener"))
+    if (token or vapid_configured()) and (
+        not settings.debug or settings.telegram_poll or settings.telegram_reminder_test
+    ):
         tasks.append(asyncio.create_task(run_reminder_loop(stop), name="telegram-reminders"))
+    log.info(
+        "Reminders telegram=%s push=%s test=%s poll=%s site=%s api=%s",
+        token,
+        vapid_configured(),
+        settings.telegram_reminder_test,
+        settings.telegram_poll,
+        settings.resolved_site_url,
+        settings.resolved_public_api_url or "idle",
+    )
     yield
     stop.set()
     for task in tasks:

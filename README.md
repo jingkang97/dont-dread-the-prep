@@ -42,11 +42,18 @@ Frontend is on Vercel at [dont-dread-the-prep.vercel.app](https://dont-dread-the
    | `DATABASE_URL` | Supabase **Session** pooler URI (port 5432) with `?sslmode=require` |
    | `CORS_ORIGINS` | `https://dont-dread-the-prep.vercel.app` |
    | `DEBUG` | `false` |
+   | `SITE_URL` | `https://dont-dread-the-prep.vercel.app` (Telegram buttons; defaults to this when `DEBUG=false`) |
+   | `TELEGRAM_BOT_TOKEN` | BotFather token |
+   | `TELEGRAM_REMINDER_TEST` | `true` for the demo ladder (now / +1 min / +2 min, then 3 hourly, then 3 daily). `false` = live T−72 / T−24 / T−6 |
+   | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Web Push pair (`npx web-push generate-vapid-keys`) |
+   | `VAPID_MAILTO` | `mailto:you@example.com` |
+
+   Railway injects `RAILWAY_PUBLIC_DOMAIN`; on boot the API registers a Telegram webhook at `/api/telegram/webhook`. Set `PUBLIC_API_URL` only if that domain is missing. Keep **Serverless / App Sleeping off** and **replicas = 1** so the reminder loop can run. Leave `TELEGRAM_POLL` unset on Railway. Local uvicorn should not poll the same bot (it would drop the webhook).
 
    Preview deploys are allowed by default via `CORS_ORIGIN_REGEX`. Set that variable empty to lock CORS to `CORS_ORIGINS` only.
-4. On Vercel, set `VITE_API_URL` to the Railway HTTPS origin (`https://….up.railway.app`, no trailing slash) and **redeploy**. Vite bakes this in at build time.
+4. On Vercel, set `VITE_API_URL` to the Railway HTTPS origin (`https://….up.railway.app`, no trailing slash) and `VITE_TELEGRAM_BOT_USERNAME` (no `@`), then **redeploy**. Vite bakes these in at build time.
 
-Schema and seed (`backend/sql/mvp.sql`, `mvp.seed.sql`) still run against Supabase; Railway will not apply them.
+Schema and seed (`backend/sql/mvp.sql`, `mvp.seed.sql`, `telegram.sql`, `push.sql`) still run against Supabase; Railway will not apply them. `telegram.sql` and `push.sql` are required for reminders.
 
 ## What is in the MVP
 
@@ -55,7 +62,7 @@ Schema and seed (`backend/sql/mvp.sql`, `mvp.seed.sql`) still run against Supaba
 - **AM/PM timeline** — hospital-faithful; SGH afternoon packet times are flagged as gaps
 - **Food lookup** — retrieval-only classifier (Yes / No / Ask your care team) from Doc 03
 - **Stool + call** — 6-point scale and publicly listed hospital numbers
-- **Telegram reminders** — `t.me/Bot?start=SESSION_ID`. Backend stores `chat_id` on `/start` and sends T−72 / T−24 / T−6. Local test mode sends those three one minute apart. Set `TELEGRAM_BOT_TOKEN` and `VITE_TELEGRAM_BOT_USERNAME`.
+- **Telegram + phone reminders** — `t.me/Bot?start=SESSION_ID` links the chat; Add to Home Screen enables the same T−72 / T−24 / T−6 as a notification. Live schedule is T−72 / T−24 / T−6. Demo mode (`TELEGRAM_REMINDER_TEST=true`) sends now / +1 min / +2 min, then 3 hourly, then 3 daily. Set `TELEGRAM_BOT_TOKEN`, VAPID keys, and `VITE_TELEGRAM_BOT_USERNAME`.
 - **EN / 中文 / Melayu / தமிழ்** — UI chrome only. Cited hospital wording stays in English.
 
 Draft ruleset. Not medical advice. Not dietitian-approved.

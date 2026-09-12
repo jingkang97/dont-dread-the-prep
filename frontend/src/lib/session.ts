@@ -13,6 +13,15 @@ import {
 
 export type Screen = 'onboarding' | 'home' | 'timeline' | 'food' | 'stool' | 'reminders'
 
+export type ReminderPlanItem = {
+  key: string
+  title: string
+  copyKey: string
+  delayLabel: string
+  at: string | null
+  sent: boolean
+}
+
 export type PrepSession = SessionInput & {
   id: string
   hospitalShort: string
@@ -20,6 +29,9 @@ export type PrepSession = SessionInput & {
   createdAt: string
   waOptIn: boolean
   pushOptIn: boolean
+  telegramLinked: boolean
+  reminderMode?: 'demo' | 'live'
+  reminderPlan?: ReminderPlanItem[]
   protocolName?: string
 }
 
@@ -55,6 +67,16 @@ export function fromApiSession(row: ApiSession): PrepSession {
     createdAt: row.created_at,
     waOptIn: row.wa_opt_in,
     pushOptIn: Boolean(row.push_opt_in),
+    telegramLinked: Boolean(row.telegram_linked),
+    reminderMode: row.reminder_mode === 'demo' ? 'demo' : 'live',
+    reminderPlan: (row.reminder_plan ?? []).map((item) => ({
+      key: item.key,
+      title: item.title,
+      copyKey: item.copy_key,
+      delayLabel: item.delay_label,
+      at: item.at,
+      sent: Boolean(item.sent),
+    })),
     protocolName: row.protocol_name,
   }
 }
@@ -76,6 +98,9 @@ function parseSession(raw: unknown): PrepSession | null {
     createdAt: String(s.createdAt),
     waOptIn: Boolean(s.waOptIn),
     pushOptIn: Boolean(s.pushOptIn),
+    telegramLinked: Boolean(s.telegramLinked),
+    reminderMode: s.reminderMode === 'demo' ? 'demo' : 'live',
+    reminderPlan: Array.isArray(s.reminderPlan) ? s.reminderPlan : undefined,
     protocolName: s.protocolName ? String(s.protocolName) : undefined,
   }
 }
@@ -295,7 +320,7 @@ export async function updateAppointment(
 
 /** Telegram bot username without @. Set VITE_TELEGRAM_BOT_USERNAME after BotFather. */
 export const TELEGRAM_BOT =
-  (import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined)?.replace(/^@/, '').trim() ||
+  import.meta.env.VITE_TELEGRAM_BOT_USERNAME?.replace(/^@/, '').trim() ||
   'PrepPathBot'
 
 export function telegramStartHref(sessionId: string) {

@@ -208,11 +208,15 @@ export const EN = {
   'wa.welcome': 'Welcome',
   'wa.welcomeBody':
     'Pick this phone, Telegram, or both. Same three alerts before your colonoscopy: T−72, T−24, and T−6.',
+  'wa.welcomeBodyDemo':
+    'Demo clock: 3 alerts at now, +1 min, and +2 min, then 3 hourly, then 3 daily — Telegram and this phone.',
   'wa.lead':
     'Reminders do not answer food questions. Each alert opens session {id} here.',
   'wa.times': 'Your alert times',
   'wa.passed': 'passed',
+  'wa.sent': 'sent',
   'wa.computed': 'Computed from {hospital} reporting time {time}.',
+  'wa.computedDemo': 'Times start when you tap Start in Telegram or Allow notifications.',
   'wa.sandbox': 'Telegram',
   'wa.sandboxBody':
     "Opens the bot with this session. Tap 'start' once so we can send T−72 / T−24 / T−6.",
@@ -221,7 +225,9 @@ export const EN = {
   'wa.sandboxNote':
     "Opens t.me/{bot}?start={id}. Then tap 'start'. Food questions stay in this site.",
   'wa.startHint': "In Telegram, tap 'start' to start reminders.",
-  'wa.optin': 'Opt-in recorded on this phone for session {id}.',
+  'wa.waiting': 'Waiting for Telegram…',
+  'wa.waitingTimeout': "Didn't see Start yet. Open Telegram and tap Start.",
+  'wa.optin': 'Telegram reminders are on for session {id}.',
   'wa.copy': 'Copy session id {id}',
   'wa.copied': 'Copied {id}',
   'wa.t72': 'T−72 hours',
@@ -480,17 +486,22 @@ const ZH: Record<StringKey, string> = {
   'wa.title': '提醒',
   'wa.welcome': '欢迎',
   'wa.welcomeBody': '可选用本机通知、Telegram，或两者都开。检查前同样会收到提前 72、24、6 小时的提醒。',
+  'wa.welcomeBodyDemo': '演示节奏：现在、+1 分钟、+2 分钟各 1 条，然后每小时 3 条，再每天 3 条 — Telegram 和本机。',
   'wa.lead': '提醒不回答食物问题。每条提醒都会打开会话 {id}。',
   'wa.times': '提醒时间',
   'wa.passed': '已过',
+  'wa.sent': '已发送',
   'wa.computed': '根据 {hospital} 报到时间 {time} 计算。',
+  'wa.computedDemo': '在 Telegram 点 Start，或允许本机通知后开始计时。',
   'wa.sandbox': 'Telegram',
   'wa.sandboxBody': "会带着此会话打开机器人。点一次 'start'，就能发送提前 72 / 24 / 6 小时的提醒。",
   'wa.joinWord': '机器人',
   'wa.open': '打开 Telegram',
   'wa.sandboxNote': "将打开 t.me/{bot}?start={id}。然后点 'start'。食物问题仍在本站回答。",
   'wa.startHint': "在 Telegram 里点 'start'，提醒才会开始。",
-  'wa.optin': '已在此手机记录会话 {id} 的同意。',
+  'wa.waiting': '正在等待 Telegram 确认…',
+  'wa.waitingTimeout': '还没收到 Start。请打开 Telegram 再点一次 Start。',
+  'wa.optin': '会话 {id} 的 Telegram 提醒已开启。',
   'wa.copy': '复制会话编号 {id}',
   'wa.copied': '已复制 {id}',
   'wa.t72': '提前 72 小时',
@@ -754,11 +765,15 @@ const MS: Record<StringKey, string> = {
   'wa.welcome': 'Selamat datang',
   'wa.welcomeBody':
     'Pilih telefon ini, Telegram, atau kedua-dua. Tiga amaran yang sama sebelum kolonoskopi: T−72, T−24, dan T−6.',
+  'wa.welcomeBodyDemo':
+    'Jam demo: 3 amaran pada sekarang, +1 min, dan +2 min, kemudian 3 setiap jam, kemudian 3 setiap hari — Telegram dan telefon ini.',
   'wa.lead':
     'Peringatan tidak jawab soalan makanan. Setiap amaran membuka sesi {id} di sini.',
   'wa.times': 'Masa amaran anda',
   'wa.passed': 'sudah berlalu',
+  'wa.sent': 'dihantar',
   'wa.computed': 'Dikira dari masa daftar {hospital} {time}.',
+  'wa.computedDemo': 'Masa bermula selepas Start di Telegram atau Benarkan notifikasi.',
   'wa.sandbox': 'Telegram',
   'wa.sandboxBody':
     "Membuka bot dengan sesi ini. Ketik 'start' sekali supaya kami boleh hantar T−72 / T−24 / T−6.",
@@ -767,7 +782,9 @@ const MS: Record<StringKey, string> = {
   'wa.sandboxNote':
     "Membuka t.me/{bot}?start={id}. Kemudian ketik 'start'. Soalan makanan kekal di tapak ini.",
   'wa.startHint': "Dalam Telegram, ketik 'start' untuk mulakan peringatan.",
-  'wa.optin': 'Keizinan direkod pada telefon ini untuk sesi {id}.',
+  'wa.waiting': 'Menunggu pengesahan Telegram…',
+  'wa.waitingTimeout': 'Belum nampak Start. Buka Telegram dan ketik Start.',
+  'wa.optin': 'Peringatan Telegram dihidupkan untuk sesi {id}.',
   'wa.copy': 'Salin id sesi {id}',
   'wa.copied': '{id} disalin',
   'wa.t72': 'T−72 jam',
@@ -1032,11 +1049,15 @@ const TA: Record<StringKey, string> = {
   'wa.welcome': 'வரவேற்பு',
   'wa.welcomeBody':
     'இந்த தொலைபேசி, Telegram, அல்லது இரண்டும். கொலோனோஸ்கோபிக்கு முன் அதே மூன்று அறிவிப்புகள்: T−72, T−24, T−6.',
+  'wa.welcomeBodyDemo':
+    'டெமோ கடிகாரம்: இப்போது, +1 நிமி, +2 நிமி, பிறகு மணிக்கு 3, பிறகு நாளுக்கு 3 — Telegram மற்றும் இந்த தொலைபேசி.',
   'wa.lead':
     'நினைவூட்டல்கள் உணவு கேள்விகளுக்கு பதிலளிக்காது. ஒவ்வொரு அறிவிப்பும் அமர்வு {id} ஐ இங்கே திறக்கும்.',
   'wa.times': 'உங்கள் அறிவிப்பு நேரங்கள்',
   'wa.passed': 'கடந்துவிட்டது',
+  'wa.sent': 'அனுப்பப்பட்டது',
   'wa.computed': '{hospital} வருகை நேரம் {time} இலிருந்து கணக்கிடப்பட்டது.',
+  'wa.computedDemo': 'Telegram-ல் Start அல்லது அறிவிப்புகளை அனுமதித்ததும் நேரம் தொடங்கும்.',
   'wa.sandbox': 'Telegram',
   'wa.sandboxBody':
     "இந்த அமர்வுடன் போட்டைத் திறக்கும். 'start'-ஐ ஒரு முறை தட்டினால் T−72 / T−24 / T−6 அனுப்பலாம்.",
@@ -1045,7 +1066,9 @@ const TA: Record<StringKey, string> = {
   'wa.sandboxNote':
     "t.me/{bot}?start={id} திறக்கும். பிறகு 'start'-ஐத் தட்டவும். உணவு கேள்விகள் இந்த தளத்திலேயே.",
   'wa.startHint': "Telegram-ல் 'start'-ஐத் தட்டி நினைவூட்டல்களைத் தொடங்குங்கள்.",
-  'wa.optin': 'அமர்வு {id} க்கு இந்த தொலைபேசியில் ஒப்புதல் பதிவு செய்யப்பட்டது.',
+  'wa.waiting': 'Telegram உறுதிப்படுத்தலைக் காத்திருக்கிறது…',
+  'wa.waitingTimeout': 'Start இன்னும் வரவில்லை. Telegram-ஐத் திறந்து Start-ஐத் தட்டவும்.',
+  'wa.optin': 'அமர்வு {id} க்கு Telegram நினைவூட்டல்கள் இயக்கப்பட்டுள்ளன.',
   'wa.copy': 'அமர்வு எண் {id} நகலெடு',
   'wa.copied': '{id} நகலெடுக்கப்பட்டது',
   'wa.t72': 'T−72 மணி',

@@ -88,6 +88,15 @@ class SessionUpdate(BaseModel):
         return cleaned[:24] or None
 
 
+class ReminderPlanItem(BaseModel):
+    key: str
+    title: str
+    copy_key: str
+    delay_label: str
+    at: Optional[datetime] = None
+    sent: bool = False
+
+
 class SessionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -101,4 +110,7 @@ class SessionOut(BaseModel):
     first_name: Optional[str] = None
     wa_opt_in: bool
     push_opt_in: bool = False
+    telegram_linked: bool = False
+    reminder_mode: str = "live"
+    reminder_plan: list[ReminderPlanItem] = Field(default_factory=list)
     created_at: datetime
