@@ -38,13 +38,13 @@ def telegram_html(key: str) -> str:
     return text
 
 
+def tap_hint(url: str) -> str:
+    return "Tap to open the stool guide." if "go=stool" in url else "Tap to open your timeline."
+
+
 def push_payload(key: str, url: str) -> dict[str, str]:
     item = ITEMS[key]
-    body = item["body"]
-    extra = item.get("extra")
-    if extra:
-        body = f"{body}\n\n{extra}"
-    return {"title": item["title"], "body": body, "url": url}
+    return {"title": item["title"], "body": f"{item['body']}\n\n{tap_hint(url)}", "url": url}
 
 
 REMINDERS = {key: telegram_html(key) for key in ITEMS}

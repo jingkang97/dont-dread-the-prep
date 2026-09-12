@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
 
 from app.core.config import get_settings
-from app.services.reminder_copy import ITEMS
+from app.services.reminder_copy import ITEMS, tap_hint
 
 SG = ZoneInfo("Asia/Singapore")
 SENT_ATTR = {
@@ -56,11 +56,11 @@ def demo_html(step: dict[str, Any]) -> str:
 
 def demo_push_payload(step: dict[str, Any], url: str) -> dict[str, str]:
     item = ITEMS[step["copy"]]
-    body = item["body"]
-    extra = item.get("extra")
-    if extra:
-        body = f"{body}\n\n{extra}"
-    return {"title": demo_title(step), "body": body, "url": url}
+    return {
+        "title": demo_title(step),
+        "body": f"{item['body']}\n\n{tap_hint(url)}",
+        "url": url,
+    }
 
 
 def start_demo_clock(row: Session, *, restart: bool = False) -> None:
