@@ -94,10 +94,10 @@ export function Reminders({
                   {item.title}
                 </span>
                 <span className="text-[12px] text-muted">
-                  {item.at && !isAfter(item.at, new Date())
-                    ? t('wa.passed')
-                    : item.sent
-                      ? t('wa.sent')
+                  {item.sent
+                    ? t('wa.sent')
+                    : item.at && !isAfter(item.at, new Date())
+                      ? t('wa.passed')
                       : item.at
                         ? format(item.at, 'd MMM, h:mm a', { locale: DATE_LOCALES[lang] })
                         : item.delayLabel}

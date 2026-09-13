@@ -6,10 +6,11 @@ from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import or_, select
+from sqlalchemy.exc import OperationalError
 
 from app.core.config import get_settings
 from app.db.models import Session
-from app.db.session import session_scope
+from app.db.session import reset_engine, session_scope
 from app.services.push import send_web_push, vapid_configured
 from app.services.reminder_copy import REMINDERS, push_payload
 from app.services.reminder_schedule import (
@@ -51,6 +52,12 @@ def _next_live_key(row: Session, now: datetime) -> str | None:
     return None
 
 
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def _next_demo_step(row: Session, now: datetime) -> dict[str, Any] | None:
     if row.reminder_anchor_at is None:
         start_demo_clock(row, restart=True)
@@ -58,7 +65,8 @@ def _next_demo_step(row: Session, now: datetime) -> dict[str, Any] | None:
     if sent >= len(DEMO_STEPS):
         return None
     step = DEMO_STEPS[sent]
-    if now < row.reminder_anchor_at + step["delay"]:
+    due = _as_utc(row.reminder_anchor_at) + step["delay"]
+    if _as_utc(now) < due:
         return None
     row.reminder_demo_sent = sent + 1
     return step
@@ -168,8 +176,17 @@ async def _send_push(
     await asyncio.to_thread(send_web_push, subscription, payload)
 
 
+def _claim_due_resilient() -> list[tuple[int | None, dict[str, Any] | None, str, str, str, dict[str, Any]]]:
+    try:
+        return _claim_due()
+    except OperationalError:
+        log.warning("Reminder claim lost the database socket; reconnecting")
+        reset_engine()
+        return _claim_due()
+
+
 async def run_reminder_tick() -> int:
-    claimed = await asyncio.to_thread(_claim_due)
+    claimed = await asyncio.to_thread(_claim_due_resilient)
     sent = 0
     for chat_id, subscription, copy_key, claim_key, code, extra in claimed:
         delivered = False
@@ -225,13 +242,14 @@ async def run_reminder_loop(stop: asyncio.Event) -> None:
     )
     while not stop.is_set():
         try:
-            await asyncio.wait_for(stop.wait(), timeout=tick)
-            return
-        except asyncio.TimeoutError:
-            pass
-        try:
             await run_reminder_tick()
         except asyncio.CancelledError:
             raise
         except Exception:
             log.exception("Reminder tick failed")
+            reset_engine()
+        try:
+            await asyncio.wait_for(stop.wait(), timeout=tick)
+            return
+        except asyncio.TimeoutError:
+            pass
