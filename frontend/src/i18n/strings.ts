@@ -267,7 +267,7 @@ export const EN = {
   'app.saveDate': 'Save date',
   'app.dateTitle': 'Change appointment date',
   'app.stayingAt': 'Still {hospital}',
-  'app.regenerating': 'Rebuilding your timeline…',
+  'app.regenerating': 'Building your timeline',
   'app.regeneratingHint': 'Following {hospital} only. New date, new countdown.',
   'pitch.kicker': 'HackitRx 2026 · OAS × LSS',
   'pitch.title': 'Don’t dread the prep.',

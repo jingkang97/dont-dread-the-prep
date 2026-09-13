@@ -20,6 +20,7 @@ function mapEvents(
     source: data.source_label,
     tentative: e.tentative,
     agent: e.agent,
+    prepImageLabel: e.prep_image_label,
   }))
 }
 

@@ -12,7 +12,10 @@ import { PegMixSheet } from './PegMixSheet'
 
 function mixAgent(event: TimelineEvent) {
   if (event.kind !== 'dose') return null
-  return event.agent === 'peg' ? 'peg' : 'picoprep'
+  if (event.agent === 'peg') {
+    return event.prepImageLabel ? 'peg' : null
+  }
+  return 'picoprep'
 }
 
 export function EventCard({
@@ -102,7 +105,7 @@ export function EventCard({
         createPortal(
           <AnimatePresence>
             {mixOpen && mix === 'peg' ? (
-              <PegMixSheet onClose={() => setMixOpen(false)} />
+              <PegMixSheet onClose={() => setMixOpen(false)} prepImageLabel={event.prepImageLabel} />
             ) : mixOpen && mix === 'picoprep' ? (
               <PicoprepMixSheet onClose={() => setMixOpen(false)} />
             ) : null}
