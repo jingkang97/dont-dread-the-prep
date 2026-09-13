@@ -22,6 +22,8 @@ export type TimelineEvent = {
   tentative?: boolean
   /** Prep agent on dose steps: 'picoprep' | 'peg' | null. */
   agent?: string | null
+  /** PNG filename under public/timeline (protocol_steps.prep_image_label). */
+  prepImageLabel?: string | null
 }
 
 export type SessionInput = {

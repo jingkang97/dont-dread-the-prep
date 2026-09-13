@@ -68,6 +68,8 @@ CREATE TABLE protocol_steps (
   mix_volume_ml         INT,
   follow_fluid_ml       INT,
   agent                 TEXT,                 -- 'picoprep' | 'peg' | null
+  -- Filename under frontend/public/timeline/, e.g. 'ttsh-peg-8-pack-79.png'.
+  prep_image_label      TEXT,
 
   meta                  JSONB NOT NULL DEFAULT '{}',
 

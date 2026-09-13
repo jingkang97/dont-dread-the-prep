@@ -1002,3 +1002,31 @@ CROSS JOIN (
 )
 WHERE p.name = 'ttsh-peg-3l (2pm-5pm)'
   AND v.version_id = 1;
+
+-- ---------------------------------------------------------------------------
+-- PEG prep-image labels (match frontend/public/timeline/{label})
+-- ---------------------------------------------------------------------------
+UPDATE protocol_steps ps
+SET prep_image_label = mapped.prep_image_label
+FROM (
+  SELECT
+    v.id AS protocol_version_id,
+    m.step_key,
+    m.prep_image_label
+  FROM protocol_versions v
+  JOIN protocols p ON p.id = v.protocol_id
+  JOIN (
+    VALUES
+    ('ttsh-picoprep-peg (8am-2pm)', 'peg-am',  'ttsh-peg-4-pack-56.png'),
+    ('ttsh-picoprep-peg (2pm-5pm)', 'peg-am',  'ttsh-peg-2-pack-89.png'),
+    ('ttsh-peg-2l (8am-2pm)',       'peg-eve', 'ttsh-peg-8-pack-79.png'),
+    ('ttsh-peg-2l (2pm-5pm)',       'peg-am',  'ttsh-peg-8-pack-79.png'),
+    ('ttsh-peg-3l (8am-2pm)',       'peg-eve', 'ttsh-peg-8-pack-79.png'),
+    ('ttsh-peg-3l (8am-2pm)',       'peg-am',  'ttsh-peg-4-pack-56.png'),
+    ('ttsh-peg-3l (2pm-5pm)',       'peg-am',  'ttsh-peg-12-pack-69.png')
+  ) AS m(protocol_name, step_key, prep_image_label)
+    ON p.name = m.protocol_name
+  WHERE v.version_id = 1
+) AS mapped
+WHERE ps.protocol_version_id = mapped.protocol_version_id
+  AND ps.step_key = mapped.step_key;

@@ -7,6 +7,22 @@ import {
 import type { PrepSession } from './session'
 import type { TimelineEvent } from './timeline'
 
+function mapEvents(
+  data: Awaited<ReturnType<typeof getApiTimeline>>,
+): TimelineEvent[] {
+  return data.events.map((e) => ({
+    id: e.id,
+    at: new Date(e.at),
+    kind: e.kind,
+    title: e.title,
+    detail: e.detail,
+    source: data.source_label,
+    tentative: e.tentative,
+    agent: e.agent,
+    prepImageLabel: e.prep_image_label,
+  }))
+}
+
 export function useSessionTimeline(session: PrepSession) {
   const key = timelineCacheKey(session)
   const cached = getCachedTimeline(key)
