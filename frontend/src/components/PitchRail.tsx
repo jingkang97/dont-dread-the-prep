@@ -8,7 +8,6 @@ const POINTS: { title: StringKey; body: StringKey }[] = [
   { title: 'pitch.2t', body: 'pitch.2d' },
   { title: 'pitch.3t', body: 'pitch.3d' },
   { title: 'pitch.4t', body: 'pitch.4d' },
-  { title: 'pitch.5t', body: 'pitch.5d' },
 ]
 
 export function PitchRail({ session }: { session: PrepSession | null }) {
