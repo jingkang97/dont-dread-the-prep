@@ -207,6 +207,7 @@ class ProtocolStep(Base):
     mix_volume_ml: Mapped[Optional[int]] = mapped_column(Integer)
     follow_fluid_ml: Mapped[Optional[int]] = mapped_column(Integer)
     agent: Mapped[Optional[str]] = mapped_column(Text)
+    prep_image_label: Mapped[Optional[str]] = mapped_column(Text)
     meta: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
