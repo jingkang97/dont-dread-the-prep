@@ -1,7 +1,7 @@
 import type { HospitalId, Slot } from '../data/hospitals'
 import { defaultReporting, type SessionInput } from './timeline'
 import { clearFoodChat } from './foodChat'
-import { clearTimelineCache } from './timelineCache'
+import { clearTimelineCache, loadTimeline, timelineCacheKey, getCachedTimeline } from './timelineCache'
 import { clearTimelineUi } from './timelineUi'
 import { clearFoodChatUi } from './foodChatUi'
 import {
@@ -244,6 +244,17 @@ export function clearSession() {
   clearTimelineCache()
 }
 
+async function withTimeline(session: PrepSession) {
+  if (!getCachedTimeline(timelineCacheKey(session))) {
+    try {
+      await loadTimeline(session)
+    } catch {
+      /* Home / Timeline show the error if this fetch fails */
+    }
+  }
+  return session
+}
+
 /** Refresh from API using cached public_code; keep cache if offline; clear if 404. */
 export async function hydrateSession(): Promise<PrepSession | null> {
   const fromLink = publicCodeFromUrl()
@@ -251,10 +262,11 @@ export async function hydrateSession(): Promise<PrepSession | null> {
     try {
       const fresh = fromApiSession(await getApiSession(fromLink))
       saveSession(fresh)
-      return fresh
+      return withTimeline(fresh)
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
-        return loadSession()
+        const fallback = loadSession()
+        return fallback ? withTimeline(fallback) : null
       }
     }
   }
@@ -265,13 +277,13 @@ export async function hydrateSession(): Promise<PrepSession | null> {
   try {
     const fresh = fromApiSession(await getApiSession(cached.id))
     saveSession(fresh)
-    return fresh
+    return withTimeline(fresh)
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
       clearSession()
       return null
     }
-    return cached
+    return withTimeline(cached)
   }
 }
 
@@ -295,6 +307,7 @@ export async function createSession(partial: {
   })
   const session = fromApiSession(row)
   saveSession(session)
+  await loadTimeline(session)
   return session
 }
 
@@ -324,6 +337,7 @@ export async function updateAppointment(
   saveSession(next)
   clearTimelineUi()
   clearTimelineCache(session.id)
+  await loadTimeline(next)
   return next
 }
 

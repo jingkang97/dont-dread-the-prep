@@ -22,6 +22,12 @@ const WA_COPY: Record<string, { label: StringKey; blurb: StringKey }> = {
   t72: { label: 'wa.t72', blurb: 'wa.t72b' },
   t24: { label: 'wa.t24', blurb: 'wa.t24b' },
   t6: { label: 'wa.t6', blurb: 'wa.t6b' },
+  dose: { label: 'wa.dose', blurb: 'wa.doseb' },
+  peg: { label: 'wa.peg', blurb: 'wa.pegb' },
+  p1: { label: 'wa.p1', blurb: 'wa.p1b' },
+  p2: { label: 'wa.p2', blurb: 'wa.p2b' },
+  p3: { label: 'wa.p3', blurb: 'wa.p3b' },
+  p4: { label: 'wa.p4', blurb: 'wa.p4b' },
 }
 
 export function Reminders({
@@ -103,7 +109,7 @@ export function Reminders({
                         : item.delayLabel}
                 </span>
               </div>
-              <p className="text-[12px] text-ink-soft">{t(WA_COPY[item.copy].blurb)}</p>
+              <p className="text-[12px] text-ink-soft">{t((WA_COPY[item.copy] ?? WA_COPY.dose).blurb)}</p>
             </li>
           ))}
         </ul>
