@@ -43,8 +43,7 @@ def _token() -> str:
 
 
 HOME_HINT = (
-    "Open PrepPath from the Home Screen icon, or in Safari/Chrome. "
-    "Telegram cannot open the app for you."
+    "Open PrepPath from the Home Screen icon, or in Safari/Chrome, for more details."
 )
 
 

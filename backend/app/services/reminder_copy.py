@@ -28,27 +28,27 @@ ITEMS: dict[str, ReminderCopy] = {
     },
     "dose": {
         "title": "Prep dose",
-        "body": "Time to mix and drink this dose. Open your timeline for the hospital steps.",
+        "body": "Time to mix and drink this dose.",
     },
     "peg": {
         "title": "PEG dose",
-        "body": "Time to mix and drink PEG. Open your timeline for the hospital steps.",
+        "body": "Time to mix and drink PEG.",
     },
     "p1": {
         "title": "Picoprep packet 1",
-        "body": "Time to mix and drink packet 1. Open your timeline for the hospital steps.",
+        "body": "Time to mix and drink packet 1.",
     },
     "p2": {
         "title": "Picoprep packet 2",
-        "body": "Time to mix and drink packet 2. Open your timeline for the hospital steps.",
+        "body": "Time to mix and drink packet 2.",
     },
     "p3": {
         "title": "Picoprep packet 3",
-        "body": "Time to mix and drink packet 3. Open your timeline for the hospital steps.",
+        "body": "Time to mix and drink packet 3.",
     },
     "p4": {
         "title": "Picoprep packet 4",
-        "body": "Time to mix and drink packet 4. Open your timeline for the hospital steps.",
+        "body": "Time to mix and drink packet 4.",
     },
 }
 
