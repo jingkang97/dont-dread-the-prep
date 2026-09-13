@@ -6,6 +6,7 @@ from typing import Optional
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
@@ -29,6 +30,7 @@ def get_engine() -> Engine:
         _engine = create_engine(
             url,
             pool_pre_ping=True,
+            pool_recycle=120,
             pool_size=5,
             max_overflow=5,
             connect_args={"prepare_threshold": None},
@@ -52,6 +54,14 @@ def get_db() -> Generator[Session, None, None]:
         session.close()
 
 
+def reset_engine() -> None:
+    """Drop pooled connections after a broken Supabase/pooler socket."""
+    global _engine, _SessionLocal
+    if _engine is None:
+        return
+    _engine.dispose()
+
+
 @contextmanager
 def session_scope() -> Generator[Session, None, None]:
     session = get_session_factory()()
@@ -59,7 +69,10 @@ def session_scope() -> Generator[Session, None, None]:
         yield session
         session.commit()
     except Exception:
-        session.rollback()
+        try:
+            session.rollback()
+        except DBAPIError:
+            session.invalidate()
         raise
     finally:
         session.close()
