@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import html
-import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,7 +27,7 @@ log = logging.getLogger(__name__)
 API = "https://api.telegram.org/bot{token}/{method}"
 
 WELCOME_TEST = (
-    "Demo clock: 3 alerts at now, +1 min, and +2 min, then 3 hourly, then 3 daily."
+    "Demo clock: T−72, T−24, Picoprep 1–4, then T−6 one minute apart, then 3 hourly, then 3 daily."
 )
 NEED_CODE = (
     "Open PrepPath and tap Set reminders so I can attach this chat to your session."
@@ -44,8 +43,8 @@ def _token() -> str:
 
 
 HOME_HINT = (
-    "If you added PrepPath to your Home Screen, open that icon. "
-    "Your session is already saved on this phone."
+    "Open PrepPath from the Home Screen icon, or in Safari/Chrome. "
+    "Telegram cannot open the app for you."
 )
 
 
@@ -73,32 +72,19 @@ def can_use_url_button(url: str) -> bool:
     return host not in {"localhost", "127.0.0.1", "::1"}
 
 
-def with_open_hint(text: str, label: str = "", url: str = "") -> str:
+def with_home_hint(text: str) -> str:
     return f"{text}\n\n{HOME_HINT}"
-
-
-def url_button(label: str, url: str) -> tuple[str, str] | None:
-    if can_use_url_button(url):
-        return (label, url)
-    return None
-
-
-def _button_markup(label: str, url: str) -> dict[str, Any]:
-    return {"inline_keyboard": [[{"text": label, "url": url}]]}
 
 
 async def send_photo(
     chat_id: int,
     path: Path,
     caption: str,
-    button: tuple[str, str] | None = None,
 ) -> None:
     token = _token()
     if not token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN is not set")
     data: dict[str, Any] = {"chat_id": str(chat_id), "caption": caption, "parse_mode": "HTML"}
-    if button:
-        data["reply_markup"] = json.dumps(_button_markup(*button))
     async with httpx.AsyncClient(timeout=45) as client:
         with path.open("rb") as photo:
             response = await client.post(
@@ -126,7 +112,6 @@ async def telegram_call(method: str, payload: dict[str, Any] | None = None) -> d
 async def send_message(
     chat_id: int,
     text: str,
-    button: tuple[str, str] | None = None,
 ) -> None:
     payload: dict[str, Any] = {
         "chat_id": chat_id,
@@ -134,8 +119,6 @@ async def send_message(
         "parse_mode": "HTML",
         "disable_web_page_preview": True,
     }
-    if button:
-        payload["reply_markup"] = _button_markup(*button)
     await telegram_call("sendMessage", payload)
 
 
@@ -226,23 +209,16 @@ async def handle_start(chat_id: int, text: str) -> None:
 
     public_code = str(linked["public_code"])
     first_name = linked.get("first_name")
-    url = timeline_url(public_code)
     await send_message(
         chat_id,
-        with_open_hint(welcome_text(public_code, first_name if isinstance(first_name, str) else None), "Open timeline", url),
-        button=url_button("Open timeline", url),
+        with_home_hint(welcome_text(public_code, first_name if isinstance(first_name, str) else None)),
     )
     skipped = list(linked.get("skipped") or [])
     if skipped:
         try:
             await send_message(
                 chat_id,
-                with_open_hint(
-                    late_notice_html(skipped, linked.get("next")),
-                    "Open timeline",
-                    url,
-                ),
-                button=url_button("Open timeline", url),
+                with_home_hint(late_notice_html(skipped, linked.get("next"))),
             )
         except Exception:
             log.exception("Failed sending late-join notice for session %s", public_code)

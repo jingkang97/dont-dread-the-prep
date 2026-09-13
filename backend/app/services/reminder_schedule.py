@@ -4,8 +4,10 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
 
+from sqlalchemy.orm.attributes import flag_modified
+
 from app.core.config import get_settings
-from app.services.reminder_copy import ITEMS, tap_hint
+from app.services.reminder_copy import ITEMS, item_body, tap_hint
 
 SG = ZoneInfo("Asia/Singapore")
 SENT_ATTR = {
@@ -23,11 +25,15 @@ LIVE_KEYS = ("t72", "t24", "t6")
 HOURS_BEFORE = {"t72": 72, "t24": 24, "t6": 6}
 
 # Demo ladder from the moment Telegram or push is linked:
-# now / +1 min / +2 min, then 3 hourly, then 3 daily.
+# T−72, T−24, packets 1–4, T−6 one minute apart, then 3 hourly, then 3 daily.
 DEMO_STEPS: tuple[dict[str, Any], ...] = (
-    {"key": "m1", "delay": timedelta(seconds=0), "copy": "t72", "phase": "Minute 1/3", "delay_label": "now"},
-    {"key": "m2", "delay": timedelta(minutes=1), "copy": "t24", "phase": "Minute 2/3", "delay_label": "1 min"},
-    {"key": "m3", "delay": timedelta(minutes=2), "copy": "t6", "phase": "Minute 3/3", "delay_label": "2 min"},
+    {"key": "m1", "delay": timedelta(seconds=0), "copy": "t72", "phase": "Minute 1/7", "delay_label": "now"},
+    {"key": "m2", "delay": timedelta(minutes=1), "copy": "t24", "phase": "Minute 2/7", "delay_label": "1 min"},
+    {"key": "m3", "delay": timedelta(minutes=2), "copy": "p1", "phase": "Minute 3/7", "delay_label": "2 min"},
+    {"key": "m4", "delay": timedelta(minutes=3), "copy": "p2", "phase": "Minute 4/7", "delay_label": "3 min"},
+    {"key": "m5", "delay": timedelta(minutes=4), "copy": "p3", "phase": "Minute 5/7", "delay_label": "4 min"},
+    {"key": "m6", "delay": timedelta(minutes=5), "copy": "p4", "phase": "Minute 6/7", "delay_label": "5 min"},
+    {"key": "m7", "delay": timedelta(minutes=6), "copy": "t6", "phase": "Minute 7/7", "delay_label": "6 min"},
     {"key": "h1", "delay": timedelta(hours=1), "copy": "t72", "phase": "Hour 1/3", "delay_label": "1 hour"},
     {"key": "h2", "delay": timedelta(hours=2), "copy": "t24", "phase": "Hour 2/3", "delay_label": "2 hours"},
     {"key": "h3", "delay": timedelta(hours=3), "copy": "t6", "phase": "Hour 3/3", "delay_label": "3 hours"},
@@ -46,19 +52,13 @@ def demo_title(step: dict[str, Any]) -> str:
 
 
 def demo_html(step: dict[str, Any]) -> str:
-    item = ITEMS[step["copy"]]
-    text = f"<b>{demo_title(step)}</b>\n\n{item['body']}"
-    extra = item.get("extra")
-    if extra:
-        text += f"\n\n{extra}"
-    return text
+    return f"<b>{demo_title(step)}</b>\n\n{item_body(ITEMS[step['copy']])}"
 
 
 def demo_push_payload(step: dict[str, Any], url: str) -> dict[str, str]:
-    item = ITEMS[step["copy"]]
     return {
         "title": demo_title(step),
-        "body": f"{item['body']}\n\n{tap_hint(url)}",
+        "body": f"{item_body(ITEMS[step['copy']])}\n\n{tap_hint(url)}",
         "url": url,
     }
 
@@ -68,6 +68,7 @@ def start_demo_clock(row: Session, *, restart: bool = False) -> None:
         return
     row.reminder_anchor_at = datetime.now(timezone.utc)
     row.reminder_demo_sent = 0
+    row.reminder_demo_push_sent = 0
 
 
 def reset_reminder_clock(row: Session) -> None:
@@ -76,7 +77,64 @@ def reset_reminder_clock(row: Session) -> None:
     row.reminder_t6_sent_at = None
     row.reminder_anchor_at = None
     row.reminder_demo_sent = 0
+    row.reminder_demo_push_sent = 0
     row.reminder_late_notice_sent_at = None
+    row.reminder_doses_sent = []
+    flag_modified(row, "reminder_doses_sent")
+
+
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def doses_sent(row: Session) -> list[str]:
+    raw = row.reminder_doses_sent
+    if not isinstance(raw, list):
+        return []
+    return [str(item) for item in raw]
+
+
+def mark_dose_sent(row: Session, key: str) -> None:
+    sent = doses_sent(row)
+    if key in sent:
+        return
+    sent.append(key)
+    row.reminder_doses_sent = sent
+    flag_modified(row, "reminder_doses_sent")
+
+
+def unmark_dose_sent(row: Session, key: str) -> None:
+    row.reminder_doses_sent = [item for item in doses_sent(row) if item != key]
+    flag_modified(row, "reminder_doses_sent")
+
+
+def skip_late_doses(row: Session, now: datetime, doses: list[dict[str, Any]]) -> list[str]:
+    skipped: list[str] = []
+    sent = set(doses_sent(row))
+    for dose in doses:
+        key = str(dose["key"])
+        if key in sent:
+            continue
+        if _as_utc(now) > _as_utc(dose["at"]) + LATE_GRACE:
+            mark_dose_sent(row, key)
+            skipped.append(key)
+    return skipped
+
+
+def upcoming_dose(row: Session, now: datetime, doses: list[dict[str, Any]]) -> dict[str, Any] | None:
+    sent = set(doses_sent(row))
+    current = _as_utc(now)
+    for dose in doses:
+        if str(dose["key"]) in sent:
+            continue
+        due = _as_utc(dose["at"])
+        if current > due + LATE_GRACE:
+            continue
+        if current >= due:
+            return dose
+    return None
 
 
 def report_at(row: Session) -> datetime:
@@ -150,7 +208,9 @@ def late_notice_push(skipped: list[str], nxt: tuple[str, datetime] | None, url: 
     return {"title": "Some reminder windows have passed", "body": body, "url": url}
 
 
-def reminder_plan(row: Session, report_at: datetime) -> list[dict[str, Any]]:
+def reminder_plan(
+    row: Session, report_at: datetime, doses: list[dict[str, Any]] | None = None
+) -> list[dict[str, Any]]:
     if demo_mode():
         sent = max(0, int(row.reminder_demo_sent or 0))
         anchor = row.reminder_anchor_at
@@ -167,21 +227,35 @@ def reminder_plan(row: Session, report_at: datetime) -> list[dict[str, Any]]:
                     "sent": index < sent,
                 }
             )
-        return items
-
-    live_sent = {
-        "t72": row.reminder_t72_sent_at is not None,
-        "t24": row.reminder_t24_sent_at is not None,
-        "t6": row.reminder_t6_sent_at is not None,
-    }
-    return [
-        {
-            "key": key,
-            "title": ITEMS[key]["title"],
-            "copy_key": key,
-            "delay_label": f"T−{HOURS_BEFORE[key]}h",
-            "at": report_at - timedelta(hours=HOURS_BEFORE[key]),
-            "sent": live_sent[key],
+    else:
+        live_sent = {
+            "t72": row.reminder_t72_sent_at is not None,
+            "t24": row.reminder_t24_sent_at is not None,
+            "t6": row.reminder_t6_sent_at is not None,
         }
-        for key in LIVE_KEYS
-    ]
+        items = [
+            {
+                "key": key,
+                "title": ITEMS[key]["title"],
+                "copy_key": key,
+                "delay_label": f"T−{HOURS_BEFORE[key]}h",
+                "at": report_at - timedelta(hours=HOURS_BEFORE[key]),
+                "sent": live_sent[key],
+            }
+            for key in LIVE_KEYS
+        ]
+
+    sent_doses = set(doses_sent(row))
+    for dose in doses or []:
+        agent = dose.get("agent") or "picoprep"
+        items.append(
+            {
+                "key": f"dose:{dose['key']}",
+                "title": dose["title"],
+                "copy_key": "peg" if agent == "peg" else "dose",
+                "delay_label": "",
+                "at": dose["at"],
+                "sent": str(dose["key"]) in sent_doses,
+            }
+        )
+    return items

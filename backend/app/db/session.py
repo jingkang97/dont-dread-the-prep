@@ -57,9 +57,10 @@ def get_db() -> Generator[Session, None, None]:
 def reset_engine() -> None:
     """Drop pooled connections after a broken Supabase/pooler socket."""
     global _engine, _SessionLocal
-    if _engine is None:
-        return
-    _engine.dispose()
+    if _engine is not None:
+        _engine.dispose()
+    _engine = None
+    _SessionLocal = None
 
 
 @contextmanager

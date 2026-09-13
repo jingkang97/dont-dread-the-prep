@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session as DbSession, selectinload
 from app.db.models import Hospital, Protocol, Session
 from app.schemas.session import HospitalOut, SessionCreate, SessionOut, SessionUpdate, Slot
 from app.services.reminder_schedule import demo_mode, reminder_plan, reset_reminder_clock
+from app.services.timeline import dose_reminders_for
 
 SG = ZoneInfo("Asia/Singapore")
 
@@ -62,7 +63,7 @@ def new_public_code() -> str:
     return "".join(secrets.choice(PUBLIC_CODE_ALPHABET) for _ in range(PUBLIC_CODE_LENGTH))
 
 
-def session_to_out(row: Session, hospital: Hospital, protocol: Protocol) -> SessionOut:
+def session_to_out(row: Session, hospital: Hospital, protocol: Protocol, db: DbSession) -> SessionOut:
     return SessionOut(
         public_code=row.public_code,
         hospital_code=hospital.code,
@@ -79,6 +80,7 @@ def session_to_out(row: Session, hospital: Hospital, protocol: Protocol) -> Sess
         reminder_plan=reminder_plan(
             row,
             datetime.combine(row.procedure_date, row.reporting_time, tzinfo=SG),
+            dose_reminders_for(db, row),
         ),
         created_at=row.created_at,
     )
@@ -197,7 +199,7 @@ def create_session(db: DbSession, body: SessionCreate) -> SessionOut:
             detail="Could not allocate a unique session public_code",
         )
 
-    return session_to_out(row, hospital, protocol)
+    return session_to_out(row, hospital, protocol, db)
 
 
 def get_session(db: DbSession, public_code: str) -> SessionOut:
@@ -212,7 +214,7 @@ def get_session(db: DbSession, public_code: str) -> SessionOut:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Session references missing hospital or protocol",
         )
-    return session_to_out(row, hospital, protocol)
+    return session_to_out(row, hospital, protocol, db)
 
 
 def update_session(db: DbSession, public_code: str, body: SessionUpdate) -> SessionOut:
@@ -250,4 +252,4 @@ def update_session(db: DbSession, public_code: str, body: SessionUpdate) -> Sess
 
     db.commit()
     db.refresh(row)
-    return session_to_out(row, hospital, remapped)
+    return session_to_out(row, hospital, remapped, db)

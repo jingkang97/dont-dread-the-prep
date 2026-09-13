@@ -93,7 +93,7 @@ def clear_endpoint(endpoint: str) -> None:
         row.push_auth = None
 
 
-def send_web_push(subscription: dict[str, Any], payload: dict[str, str]) -> None:
+def send_web_push(subscription: dict[str, Any], payload: dict[str, str]) -> bool:
     settings = get_settings()
     if not vapid_configured():
         raise RuntimeError("VAPID keys are not set")
@@ -103,13 +103,16 @@ def send_web_push(subscription: dict[str, Any], payload: dict[str, str]) -> None
             data=json.dumps(payload),
             vapid_private_key=settings.vapid_private_key.strip(),
             vapid_claims={"sub": settings.vapid_mailto.strip() or "mailto:preppath@localhost"},
+            ttl=86400,
+            headers={"Urgency": "high"},
         )
+        return True
     except WebPushException as exc:
         status = getattr(exc.response, "status_code", None) if exc.response is not None else None
         if status in {404, 410}:
             endpoint = str(subscription.get("endpoint") or "")
             if endpoint:
                 clear_endpoint(endpoint)
-            log.info("Cleared expired push subscription")
-            return
+            log.warning("Push subscription expired (%s); cleared endpoint", status)
+            return False
         raise

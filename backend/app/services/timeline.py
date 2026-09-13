@@ -125,3 +125,42 @@ def get_timeline(db: DbSession, public_code: str) -> TimelineOut:
         reporting_time=row.reporting_time,
         events=events,
     )
+
+
+def dose_reminders_for(db: DbSession, row: Session) -> list[dict]:
+    """Hospital/protocol dose times (Picoprep, PEG) for this session's slot."""
+    version = latest_protocol_version(db, row.protocol_id)
+    if version is None:
+        return []
+    steps = list(
+        db.scalars(
+            select(ProtocolStep)
+            .where(ProtocolStep.protocol_version_id == version.id)
+            .where(ProtocolStep.kind == "dose")
+            .where(or_(ProtocolStep.slot == "any", ProtocolStep.slot == row.slot))
+            .order_by(ProtocolStep.sort_order, ProtocolStep.id)
+        ).all()
+    )
+    doses: list[dict] = []
+    for step in steps:
+        try:
+            at = _resolve_at(
+                procedure_date=row.procedure_date,
+                reporting_time=row.reporting_time,
+                timing_mode=step.timing_mode,
+                day_offset=step.day_offset,
+                clock_time=step.clock_time,
+                hours_before_report=step.hours_before_report,
+            )
+        except HTTPException:
+            continue
+        doses.append(
+            {
+                "key": step.step_key,
+                "at": at,
+                "title": step.title,
+                "agent": step.agent or "picoprep",
+            }
+        )
+    doses.sort(key=lambda item: item["at"])
+    return doses
