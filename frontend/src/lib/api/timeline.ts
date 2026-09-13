@@ -10,9 +10,6 @@ export type ApiTimelineEvent = {
   title: string
   detail: string
   tentative: boolean
-  dose_label: string | null
-  mix_volume_ml: number | null
-  follow_fluid_ml: number | null
   agent: string | null
   prep_image_label: string | null
   sort_order: number

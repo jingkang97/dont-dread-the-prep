@@ -138,15 +138,7 @@ export const EN = {
   'tl.scopeDay': 'Colonoscopy day',
   'tl.hasSteps': 'Prep due',
   'tl.mixHint': 'How to mix Picoprep',
-  'tl.mixTitle': 'Picoprep',
-  'tl.mixImg': 'Picoprep mixed with 150 ml cool boiled water: cloudy off-white liquid',
-  'tl.picoprepWhy':
-    'Picoprep powder is used to increase bowel movement and empty your colon before colonoscopy.',
   'tl.pegMixHint': 'How to mix PEG',
-  'tl.pegMixTitle': 'PEG',
-  'tl.pegMixImg': 'Mix one PEG packet with liquid, then drink four glasses at 15-minute intervals',
-  'tl.pegWhy':
-    'PEG powder is mixed with water and drunk in four glasses, 15 minutes apart, to empty your colon before colonoscopy.',
   'tl.openStool': 'Open stool scale',
   'kind.diet': 'Diet',
   'kind.dose': 'Medicine',

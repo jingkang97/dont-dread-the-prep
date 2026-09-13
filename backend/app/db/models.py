@@ -203,12 +203,8 @@ class ProtocolStep(Base):
     detail: Mapped[str] = mapped_column(Text, nullable=False, default="")
     tentative: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    dose_label: Mapped[Optional[str]] = mapped_column(Text)
-    mix_volume_ml: Mapped[Optional[int]] = mapped_column(Integer)
-    follow_fluid_ml: Mapped[Optional[int]] = mapped_column(Integer)
     agent: Mapped[Optional[str]] = mapped_column(Text)
     prep_image_label: Mapped[Optional[str]] = mapped_column(Text)
-    meta: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
