@@ -1,12 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
 import { inlineMarkdown } from './inlineMarkdown'
-import { LANGS, translate, type Lang, type StringKey } from './strings'
-
-const KEY = 'preppath.lang'
+import { translate, type Lang, type StringKey } from './strings'
 
 type Ctx = {
   lang: Lang
-  setLang: (lang: Lang) => void
   t: (key: StringKey, vars?: Record<string, string>) => string
   tr: (key: StringKey, vars?: Record<string, string>) => ReactNode
 }
@@ -14,28 +11,18 @@ type Ctx = {
 const LanguageContext = createContext<Ctx | null>(null)
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>('en')
-
   useEffect(() => {
-    const saved = localStorage.getItem(KEY)
-    if (LANGS.some((l) => l.id === saved)) setLangState(saved as Lang)
+    document.documentElement.lang = 'en-SG'
+    localStorage.removeItem('preppath.lang')
   }, [])
-
-  useEffect(() => {
-    document.documentElement.lang = lang === 'zh' ? 'zh-SG' : lang === 'ms' ? 'ms-SG' : lang === 'ta' ? 'ta-SG' : 'en-SG'
-  }, [lang])
 
   const value = useMemo<Ctx>(
     () => ({
-      lang,
-      setLang: (next) => {
-        setLangState(next)
-        localStorage.setItem(KEY, next)
-      },
-      t: (key, vars) => translate(lang, key, vars),
-        tr: (key, vars) => inlineMarkdown(translate(lang, key, vars)),
+      lang: 'en',
+      t: (key, vars) => translate(key, vars),
+      tr: (key, vars) => inlineMarkdown(translate(key, vars)),
     }),
-    [lang],
+    [],
   )
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>

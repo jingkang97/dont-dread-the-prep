@@ -1,6 +1,5 @@
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import { DraftBanner } from './components/ui'
-import { LanguageBar } from './components/LanguageBar'
 import { BottomNav } from './components/BottomNav'
 import { Onboarding } from './screens/Onboarding'
 import { Home } from './screens/Home'
@@ -42,7 +41,6 @@ export default function App() {
         className="relative mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col overflow-hidden bg-paper xl:border-x xl:border-black/5"
       >
         <DraftBanner />
-        <LanguageBar />
         {session && !isStandaloneDisplay() && openedFromExternalLink() && (
           <p className="shrink-0 bg-cream px-4 py-2 text-[13px] leading-snug text-teal-deep">
             {t('app.homescreenHint')}
