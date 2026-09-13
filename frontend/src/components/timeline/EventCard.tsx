@@ -5,7 +5,7 @@ import { ArrowRight, CircleHelp } from 'lucide-react'
 import { Card } from '../ui'
 import { useLang } from '../../i18n/LanguageContext'
 import { cn } from '../../lib/cn'
-import { resolveEventText, type TimelineEvent } from '../../lib/timeline'
+import { fromNowDays, resolveEventText, type TimelineEvent } from '../../lib/timeline'
 import { KIND_KEY, KIND_TONE } from './kinds'
 import { PicoprepMixSheet } from './PicoprepMixSheet'
 import { PegMixSheet } from './PegMixSheet'
@@ -33,6 +33,7 @@ export function EventCard({
   const [mixOpen, setMixOpen] = useState(false)
   const mix = mixAgent(event)
   const stoolLink = event.kind === 'stool' && onOpenStool
+  const until = isNext ? fromNowDays(event.at, new Date(), t) : ''
 
   useLayoutEffect(() => {
     const host = cardRef.current?.closest('[data-app-pane]')
@@ -52,18 +53,30 @@ export function EventCard({
         <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide', KIND_TONE[event.kind])}>
           {t(KIND_KEY[event.kind])}
         </span>
+        {isNext && (
+          <span className="rounded-full bg-teal/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-deep">
+            {t('tl.next')}
+          </span>
+        )}
         {event.tentative && (
           <span className="text-[10px] font-bold tracking-wide text-ask">{t('tl.notOnForm')}</span>
         )}
-        {mix && (
-          <button
-            type="button"
-            aria-label={t(mix === 'peg' ? 'tl.pegMixHint' : 'tl.mixHint')}
-            onClick={() => setMixOpen(true)}
-            className="ml-auto -mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-teal-deep transition active:bg-teal/15"
-          >
-            <CircleHelp size={18} strokeWidth={2.2} />
-          </button>
+        {(until || mix) && (
+          <span className="ml-auto flex shrink-0 items-center gap-1">
+            {until ? (
+              <span className="text-[12px] font-semibold text-teal-deep">{until}</span>
+            ) : null}
+            {mix && (
+              <button
+                type="button"
+                aria-label={t(mix === 'peg' ? 'tl.pegMixHint' : 'tl.mixHint')}
+                onClick={() => setMixOpen(true)}
+                className="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-teal-deep transition active:bg-teal/15"
+              >
+                <CircleHelp size={18} strokeWidth={2.2} />
+              </button>
+            )}
+          </span>
         )}
       </div>
       <p className="mt-1.5 text-[16px] font-semibold text-ink">{title}</p>
