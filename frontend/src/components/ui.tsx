@@ -1,7 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react'
-import { type RuleId, type Verdict } from '../data/foods'
+import { type Verdict } from '../data/foods'
 import { useLang } from '../i18n/LanguageContext'
-import { ruleTitleKey } from '../i18n/keys'
 import { cn } from '../lib/cn'
 
 export function DraftBanner() {
@@ -31,22 +30,6 @@ export function VerdictPill({ verdict, compact }: { verdict: Verdict; compact?: 
     >
       {v.label}
     </span>
-  )
-}
-
-export function SourceLine({ text, rules }: { text: string; rules?: RuleId[] }) {
-  const { t } = useLang()
-  return (
-    <div className="mt-3 rounded-2xl bg-paper px-3 py-2.5 text-[12px] leading-relaxed text-ink-soft">
-      <p className="font-semibold text-ink">{t('source.cited')}</p>
-      <p className="mt-0.5">{text}</p>
-      {rules && rules.length > 0 && (
-        <p className="mt-1.5 text-[11px] text-muted">
-          {rules.map((r) => `${r} · ${t(ruleTitleKey(r))}`).join(' · ')}
-        </p>
-      )}
-      <p className="mt-1.5 text-[11px] text-muted">{t('source.original')}</p>
-    </div>
   )
 }
 

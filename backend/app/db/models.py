@@ -34,6 +34,13 @@ timing_mode_enum = ENUM(
     create_type=False,
 )
 step_slot_enum = ENUM("any", "am", "pm", name="step_slot", create_type=False)
+food_classification_enum = ENUM(
+    "can", "cannot", "review", name="food_classification", create_type=False
+)
+food_source_enum = ENUM("SGH", "TTSH", "CGH", "DIETICIAN", name="food_source", create_type=False)
+dish_meal_type_enum = ENUM(
+    "breakfast", "lunch", "dinner", "any", name="dish_meal_type", create_type=False
+)
 
 
 class Protocol(Base):
@@ -274,6 +281,22 @@ class HospitalMedStop(Base):
         order_by="HospitalMedStopItem.sort_order",
     )
 
+class Ingredient(Base):
+    __tablename__ = "ingredient_tab"
+    __table_args__ = (
+        UniqueConstraint("name", "source_hospital", name="ingredient_tab_name_source_hospital_key"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    classification: Mapped[str] = mapped_column(food_classification_enum, nullable=False)
+    classification_reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    source_hospital: Mapped[str] = mapped_column(food_source_enum, nullable=False)
+    source_document: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
 
 class HospitalMedStopItem(Base):
     __tablename__ = "hospital_med_stop_items"
@@ -293,3 +316,17 @@ class HospitalMedStopItem(Base):
 
     stop: Mapped[HospitalMedStop] = relationship(HospitalMedStop, back_populates="items")
 
+class Dish(Base):
+    __tablename__ = "dishes_tab"
+    __table_args__ = (
+        UniqueConstraint("name", "source_hospital", name="dishes_tab_name_source_hospital_key"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    meal_type: Mapped[str] = mapped_column(dish_meal_type_enum, nullable=False, default="any")
+    source_hospital: Mapped[str] = mapped_column(food_source_enum, nullable=False)
+    ingredient_list: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
