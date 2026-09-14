@@ -115,4 +115,9 @@ def send_web_push(subscription: dict[str, Any], payload: dict[str, str]) -> bool
                 clear_endpoint(endpoint)
             log.warning("Push subscription expired (%s); cleared endpoint", status)
             return False
+        # Wrong VAPID for this subscription. Retrying every tick resends Hour 1/3 forever
+        # (and undoes a successful send from another process sharing the same session).
+        if status == 403:
+            log.warning("Push rejected (%s); keeping claim so this step is not retried", status)
+            return True
         raise
