@@ -19,7 +19,6 @@ export type ApiSession = {
   slot: ApiSlot
   reporting_time: string
   first_name: string | null
-  wa_opt_in: boolean
   push_opt_in: boolean
   telegram_linked?: boolean
   reminder_mode?: 'demo' | 'live'
@@ -41,7 +40,6 @@ export type ApiSessionUpdate = {
   slot?: ApiSlot
   reporting_time?: string
   first_name?: string | null
-  wa_opt_in?: boolean
 }
 
 export function createApiSession(body: ApiSessionCreate) {

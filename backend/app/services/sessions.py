@@ -73,7 +73,6 @@ def session_to_out(row: Session, hospital: Hospital, protocol: Protocol, db: DbS
         slot=Slot(row.slot),
         reporting_time=row.reporting_time,
         first_name=row.first_name,
-        wa_opt_in=row.wa_opt_in,
         push_opt_in=bool(row.push_endpoint),
         telegram_linked=row.telegram_chat_id is not None,
         reminder_mode="demo" if demo_mode() else "live",
@@ -181,7 +180,6 @@ def create_session(db: DbSession, body: SessionCreate) -> SessionOut:
             slot=body.slot.value,
             reporting_time=reporting,
             first_name=body.first_name,
-            wa_opt_in=False,
         )
         db.add(candidate)
         try:

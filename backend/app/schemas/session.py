@@ -74,7 +74,6 @@ class SessionUpdate(BaseModel):
     slot: Optional[Slot] = None
     reporting_time: Optional[time] = None
     first_name: Optional[str] = Field(default=None, max_length=24)
-    wa_opt_in: Optional[bool] = None
 
     @field_validator("first_name")
     @classmethod
@@ -105,7 +104,6 @@ class SessionOut(BaseModel):
     slot: Slot
     reporting_time: time
     first_name: Optional[str] = None
-    wa_opt_in: bool
     push_opt_in: bool = False
     telegram_linked: bool = False
     reminder_mode: str = "live"

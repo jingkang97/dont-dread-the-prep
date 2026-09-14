@@ -123,7 +123,6 @@ class Session(Base):
     slot: Mapped[str] = mapped_column(slot_enum, nullable=False)
     reporting_time: Mapped[time] = mapped_column(Time, nullable=False)
     first_name: Mapped[Optional[str]] = mapped_column(Text)
-    wa_opt_in: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     telegram_chat_id: Mapped[Optional[int]] = mapped_column(BigInteger)
     push_endpoint: Mapped[Optional[str]] = mapped_column(Text)
     push_p256dh: Mapped[Optional[str]] = mapped_column(Text)
@@ -157,7 +156,6 @@ class ProtocolVersion(Base):
     version_id: Mapped[int] = mapped_column(Integer, nullable=False)
     version_label: Mapped[str] = mapped_column(Text, nullable=False)
     effective_from: Mapped[Optional[date]] = mapped_column(Date)
-    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
