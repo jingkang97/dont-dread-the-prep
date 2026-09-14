@@ -27,7 +27,6 @@ class Base(DeclarativeBase):
 
 
 slot_enum = ENUM("am", "pm", name="slot", create_type=False)
-three_way_enum = ENUM("yes", "no", "ask", name="three_way", create_type=False)
 event_kind_enum = ENUM(
     "diet",
     "dose",
@@ -54,11 +53,6 @@ class Protocol(Base):
     name: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
     prep_agent: Mapped[str] = mapped_column(Text, nullable=False)
     prep_agent_label: Mapped[str] = mapped_column(Text, nullable=False)
-    diet_days: Mapped[int] = mapped_column(nullable=False)
-    milk_in_coffee: Mapped[str] = mapped_column(three_way_enum, nullable=False)
-    fruit_juice: Mapped[str] = mapped_column(three_way_enum, nullable=False)
-    rice_cereal: Mapped[str] = mapped_column(three_way_enum, nullable=False)
-    coffee_tea: Mapped[str] = mapped_column(three_way_enum, nullable=False)
     listed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     reporting_from: Mapped[Optional[time]] = mapped_column(Time)
     reporting_until: Mapped[Optional[time]] = mapped_column(Time)

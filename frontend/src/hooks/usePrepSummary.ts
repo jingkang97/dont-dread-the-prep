@@ -7,7 +7,7 @@ import { useSessionHospital } from './useSessionHospital'
 
 export function usePrepSummary(session: PrepSession) {
   const { t } = useLang()
-  const { hospital: row, protocol, short } = useSessionHospital(session)
+  const { hospital: row, short } = useSessionHospital(session)
   const { events, loading, error } = useSessionTimeline(session)
   const now = new Date()
   const nextUpcoming = events.find((e) => isAfter(e.at, now))
@@ -19,8 +19,6 @@ export function usePrepSummary(session: PrepSession) {
   const hospital = {
     short,
     name: row?.name ?? short,
-    fruitJuice: protocol?.fruit_juice ?? 'ask',
-    milkInCoffee: protocol?.milk_in_coffee ?? 'no',
   }
 
   return { hospital, events, loading, error, now, next, nextUpcoming, nextWhen, report, started }

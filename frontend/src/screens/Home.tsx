@@ -24,12 +24,6 @@ export function Home({
   const { hospital, events, loading, error, now, next, nextWhen, report, started } = usePrepSummary(session)
   const remaining = report ? formatDistanceStrict(report, now, { addSuffix: true, locale }) : ''
   const remindersOn = session.telegramLinked || session.pushOptIn
-  const juice =
-    hospital.fruitJuice === 'yes'
-      ? t('home.juiceYes')
-      : hospital.fruitJuice === 'no'
-        ? t('home.juiceNo')
-        : t('home.juiceAsk')
 
   return (
     <div className="px-5 pb-8 pt-6">
@@ -153,11 +147,7 @@ export function Home({
           <div>
             <p className="text-[13px] font-semibold text-navy">{t('home.faithful')}</p>
             <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
-              {t('home.faithfulBody', {
-                hospital: hospital.short,
-                milk: hospital.milkInCoffee === 'yes' ? t('home.milkYes') : t('home.milkNo'),
-                juice,
-              })}
+              {t('home.faithfulBody', { hospital: hospital.short })}
             </p>
           </div>
         </div>

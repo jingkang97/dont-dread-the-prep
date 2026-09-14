@@ -25,9 +25,6 @@ class ProtocolSummary(BaseModel):
     name: str
     prep_agent: str
     prep_agent_label: str
-    diet_days: int
-    milk_in_coffee: str
-    fruit_juice: str
     listed: bool = True
     reporting_from: Optional[time] = None
     reporting_until: Optional[time] = None
