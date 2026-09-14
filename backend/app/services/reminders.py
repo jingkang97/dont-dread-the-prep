@@ -85,6 +85,20 @@ def _subscription_for(row: Session) -> dict[str, Any] | None:
 Claim = tuple[int | None, dict[str, Any] | None, str, str, str, dict[str, Any], str]
 
 
+def _doses_or_empty(db, row: Session, now: datetime) -> list[dict[str, Any]]:
+    """Load dose times in a savepoint so a bad query cannot undo other sessions' claims."""
+    nested = db.begin_nested()
+    try:
+        doses = dose_reminders_for(db, row)
+        skip_late_doses(row, now, doses)
+        nested.commit()
+        return doses
+    except Exception:
+        nested.rollback()
+        log.exception("Dose lookup failed for session %s; checkpoints still run", row.public_code)
+        return []
+
+
 def _claim_due() -> list[Claim]:
     """Telegram keeps its own receipt. In-app push retries on a separate cursor."""
     now = datetime.now(timezone.utc)
@@ -106,17 +120,7 @@ def _claim_due() -> list[Claim]:
                 if row.telegram_chat_id is None and not row.push_endpoint:
                     continue
                 extra: dict[str, Any] = {}
-                try:
-                    doses = dose_reminders_for(db, row)
-                    skip_late_doses(row, now, doses)
-                except Exception:
-                    log.exception("Dose lookup failed for session %s; checkpoints still run", row.public_code)
-                    try:
-                        db.rollback()
-                    except DBAPIError:
-                        reset_engine()
-                        raise
-                    doses = []
+                doses = _doses_or_empty(db, row, now)
                 subscription = _subscription_for(row)
                 if demo:
                     step = _peek_demo_step(row, now, row.reminder_demo_sent)
@@ -295,7 +299,13 @@ def _clear_sent(code: str, claim_key: str) -> None:
         if claim_key.startswith("dose:"):
             unmark_dose_sent(row, claim_key.removeprefix("dose:"))
             return
-        row.reminder_demo_sent = max(0, int(row.reminder_demo_sent or 0) - 1)
+        idx = next((i for i, step in enumerate(DEMO_STEPS) if step["key"] == claim_key), None)
+        if idx is None:
+            return
+        sent = max(0, int(row.reminder_demo_sent or 0))
+        # Only rewind if we are still sitting on this step — another worker may have moved on.
+        if sent == idx + 1:
+            row.reminder_demo_sent = idx
 
 
 def _reminders_enabled() -> bool:
