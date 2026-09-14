@@ -2,11 +2,14 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 
 from app.api.routes import api_router
 from app.core.config import get_settings
+from app.db.session import reset_engine
 from app.services.push import vapid_configured
 from app.services.reminders import run_reminder_loop
 from app.services.telegram import start_telegram_listener
@@ -64,6 +67,13 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+
+
+@app.exception_handler(OperationalError)
+async def database_unavailable(_request: Request, exc: OperationalError) -> JSONResponse:
+    log.warning("Database unreachable: %s", exc.__class__.__name__)
+    reset_engine()
+    return JSONResponse(status_code=503, content={"detail": "database unreachable"})
 
 
 @app.get("/")

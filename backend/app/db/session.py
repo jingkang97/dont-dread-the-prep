@@ -4,9 +4,10 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Optional
 
+from fastapi import HTTPException, status
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
@@ -47,11 +48,31 @@ def get_session_factory() -> sessionmaker:
 
 def get_db() -> Generator[Session, None, None]:
     """FastAPI dependency that yields a DB session."""
-    session = get_session_factory()()
+    try:
+        session = get_session_factory()()
+    except OperationalError as exc:
+        reset_engine()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="database unreachable",
+        ) from exc
     try:
         yield session
+    except OperationalError as exc:
+        try:
+            session.invalidate()
+        except DBAPIError:
+            pass
+        reset_engine()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="database unreachable",
+        ) from exc
     finally:
-        session.close()
+        try:
+            session.close()
+        except DBAPIError:
+            reset_engine()
 
 
 def reset_engine() -> None:

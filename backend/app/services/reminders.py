@@ -111,6 +111,11 @@ def _claim_due() -> list[Claim]:
                     skip_late_doses(row, now, doses)
                 except Exception:
                     log.exception("Dose lookup failed for session %s; checkpoints still run", row.public_code)
+                    try:
+                        db.rollback()
+                    except DBAPIError:
+                        reset_engine()
+                        raise
                     doses = []
                 subscription = _subscription_for(row)
                 if demo:
