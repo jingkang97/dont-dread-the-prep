@@ -24,7 +24,7 @@ export function useApiHospitals() {
         setHospitalsError(cachedError)
       } catch (err) {
         if (cancelled) return
-        cachedHospitals = []
+        cachedHospitals = null
         cachedError =
           err instanceof ApiError
             ? err.detail
