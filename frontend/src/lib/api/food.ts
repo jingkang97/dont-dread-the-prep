@@ -1,8 +1,9 @@
 import { apiFetch } from './client'
 
 export type ApiFoodClassification = 'can' | 'cannot' | 'review'
+export type ApiDishVerdict = ApiFoodClassification | 'possible'
 export type ApiFoodSource = 'SGH' | 'TTSH' | 'CGH' | 'DIETICIAN'
-export type ApiMealType = 'breakfast' | 'lunch' | 'dinner' | 'any'
+export type ApiMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink'
 
 export type ApiIngredient = {
   id: number
@@ -16,9 +17,10 @@ export type ApiIngredient = {
 export type ApiDish = {
   id: number
   name: string
-  meal_type: ApiMealType
+  meal_type: ApiMealType[]
   source_hospital: ApiFoodSource
-  verdict: ApiFoodClassification
+  verdict: ApiDishVerdict
+  remove_ingredients: string[]
   ingredients: ApiIngredient[]
 }
 
@@ -26,6 +28,8 @@ export type ApiMealPrep = {
   breakfast: ApiDish[]
   lunch: ApiDish[]
   dinner: ApiDish[]
+  snacks: ApiDish[]
+  drinks: ApiDish[]
 }
 
 export function getApiMealPrep(hospitalCode: string) {
@@ -34,7 +38,18 @@ export function getApiMealPrep(hospitalCode: string) {
   )
 }
 
-export type ApiFoodChatStatus = 'ok' | 'multiple' | 'irrelevant' | 'not_found' | 'not_configured'
+export type ApiFoodChatStatus =
+  | 'ok'
+  | 'multiple'
+  | 'irrelevant'
+  | 'not_found'
+  | 'not_configured'
+  | 'choices'
+
+export type ApiDishChoice = {
+  id: number
+  name: string
+}
 
 export type ApiFoodChatResponse = {
   status: ApiFoodChatStatus
@@ -42,6 +57,7 @@ export type ApiFoodChatResponse = {
   matched_query?: string | null
   matched_source?: ApiFoodSource | null
   dish?: ApiDish | null
+  choices?: ApiDishChoice[] | null
 }
 
 export function postApiFoodChat(query: string, hospitalCode: string) {
@@ -49,4 +65,8 @@ export function postApiFoodChat(query: string, hospitalCode: string) {
     method: 'POST',
     body: JSON.stringify({ query, hospital_code: hospitalCode }),
   })
+}
+
+export function getApiDish(dishId: number) {
+  return apiFetch<ApiDish>(`/api/food/dish/${dishId}`)
 }

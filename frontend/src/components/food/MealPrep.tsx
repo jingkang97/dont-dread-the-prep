@@ -7,7 +7,7 @@ import { useLang } from '../../i18n/LanguageContext'
 import type { ApiDish } from '../../lib/api'
 import type { PrepSession } from '../../lib/session'
 
-type MealKey = 'breakfast' | 'lunch' | 'dinner'
+type MealKey = 'breakfast' | 'lunch' | 'dinner' | 'snacks' | 'drinks'
 
 export function MealPrep({ session }: { session: PrepSession }) {
   const { t } = useLang()
@@ -26,6 +26,8 @@ export function MealPrep({ session }: { session: PrepSession }) {
             { id: 'breakfast', label: t('food.mealBreakfast') },
             { id: 'lunch', label: t('food.mealLunch') },
             { id: 'dinner', label: t('food.mealDinner') },
+            { id: 'snacks', label: t('food.mealSnacks') },
+            { id: 'drinks', label: t('food.mealDrinks') },
           ]}
         />
       </div>

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session as DbSession
 from app.core.config import get_settings
 from app.db.models import Dish, Ingredient
 from app.schemas.food import (
+    DishChoice,
     DishOut,
     FoodChatRequest,
     FoodChatResponse,
@@ -37,14 +38,31 @@ def hospital_source(hospital_code: str) -> str | None:
     return HOSPITAL_SOURCE_MAP.get(hospital_code.strip().lower())
 
 
-def _ingredient_verdict(ingredients: list[Ingredient]) -> str:
+POSSIBLE_MIN_INGREDIENTS = 3
+
+
+def _dish_verdict(ingredients: list[Ingredient]) -> tuple[str, list[str]]:
+    """Verdict + the ingredients to drop when the verdict is 'possible'.
+
+    Priority stays cannot > review > can, same as before. The one addition:
+    a dish that would be 'cannot' is downgraded to 'possible' when it has at
+    least 3 ingredients and the 'can' ones outnumber the 'cannot' ones — e.g.
+    "Teochew steamed fish with rice" is fine minus the achar garnish.
+    """
     if not ingredients:
-        return "review"
-    if any(i.classification == "cannot" for i in ingredients):
-        return "cannot"
+        return "review", []
+
+    cannot = [i for i in ingredients if i.classification == "cannot"]
+    if cannot:
+        can_count = sum(1 for i in ingredients if i.classification == "can")
+        if len(ingredients) >= POSSIBLE_MIN_INGREDIENTS and can_count > len(cannot):
+            return "possible", [i.name for i in cannot]
+        return "cannot", []
+
     if any(i.classification == "review" for i in ingredients):
-        return "review"
-    return "can"
+        return "review", []
+
+    return "can", []
 
 
 def _resolve_ingredients(db: DbSession, dish: Dish) -> list[Ingredient]:
@@ -57,18 +75,20 @@ def _resolve_ingredients(db: DbSession, dish: Dish) -> list[Ingredient]:
 
 def _dish_out(db: DbSession, dish: Dish) -> DishOut:
     ingredients = _resolve_ingredients(db, dish)
+    verdict, remove_ingredients = _dish_verdict(ingredients)
     return DishOut(
         id=dish.id,
         name=dish.name,
-        meal_type=MealType(dish.meal_type),
+        meal_type=[MealType(m) for m in dish.meal_type],
         source_hospital=FoodSource(dish.source_hospital),
-        verdict=_ingredient_verdict(ingredients),
+        verdict=verdict,
+        remove_ingredients=remove_ingredients,
         ingredients=[IngredientOut.model_validate(i) for i in ingredients],
     )
 
 
 def list_meal_prep(db: DbSession, hospital_code: str) -> MealPrepOut:
-    """Recommended dishes per meal slot: hospital sheet first, DIETICIAN fills gaps.
+    """Recommended dishes per meal-type category: hospital sheet first, DIETICIAN fills gaps.
 
     Only dishes where every ingredient classifies as 'can' are recommended.
     """
@@ -76,11 +96,17 @@ def list_meal_prep(db: DbSession, hospital_code: str) -> MealPrepOut:
     sources = [s for s in (source, "DIETICIAN") if s]
 
     out = MealPrepOut()
-    buckets = {"breakfast": out.breakfast, "lunch": out.lunch, "dinner": out.dinner}
+    buckets = {
+        "breakfast": out.breakfast,
+        "lunch": out.lunch,
+        "dinner": out.dinner,
+        "snack": out.snacks,
+        "drink": out.drinks,
+    }
     for meal_type, bucket in buckets.items():
         rows = db.scalars(
             select(Dish)
-            .where(Dish.meal_type.in_([meal_type, "any"]))
+            .where(Dish.meal_type.contains([meal_type]))
             .where(Dish.source_hospital.in_(sources))
             .order_by(Dish.name)
         ).all()
@@ -101,6 +127,11 @@ def list_meal_prep(db: DbSession, hospital_code: str) -> MealPrepOut:
     return out
 
 
+FUZZY_MATCH_THRESHOLD = 0.3
+CHOICE_GAP_THRESHOLD = 0.08
+MAX_CHOICES = 4
+
+
 def find_dish(db: DbSession, name: str, hospital_code: str) -> tuple[Dish, str] | None:
     """Exact (case-insensitive) name match. Hospital sheet takes priority over DIETICIAN."""
     source = hospital_source(hospital_code)
@@ -114,6 +145,48 @@ def find_dish(db: DbSession, name: str, hospital_code: str) -> tuple[Dish, str] 
         if row is not None:
             return row, candidate_source
     return None
+
+
+def find_dish_candidates(
+    db: DbSession, names: list[str], hospital_code: str, limit: int = MAX_CHOICES
+) -> list[tuple[Dish, str, float]]:
+    """Fuzzy (pg_trgm) matches across every candidate name string.
+
+    Deduped by dish name — a hospital-tier row wins over a same-named
+    DIETICIAN row, same priority rule as find_dish — and ranked by best
+    similarity score across all the candidate strings, descending.
+    """
+    source = hospital_source(hospital_code)
+    sources = [s for s in (source, "DIETICIAN") if s]
+    best_by_name: dict[str, tuple[Dish, str, float]] = {}
+
+    for term in names:
+        term = term.strip()
+        if not term:
+            continue
+        for candidate_source in sources:
+            similarity = func.similarity(Dish.name, term)
+            rows = db.execute(
+                select(Dish, similarity)
+                .where(Dish.source_hospital == candidate_source, similarity >= FUZZY_MATCH_THRESHOLD)
+                .order_by(similarity.desc())
+                .limit(limit)
+            ).all()
+            for dish, sim in rows:
+                key = dish.name.strip().lower()
+                existing = best_by_name.get(key)
+                if existing is None or sim > existing[2]:
+                    best_by_name[key] = (dish, candidate_source, float(sim))
+
+    ranked = sorted(best_by_name.values(), key=lambda row: row[2], reverse=True)
+    return ranked[:limit]
+
+
+def get_dish(db: DbSession, dish_id: int) -> DishOut | None:
+    dish = db.get(Dish, dish_id)
+    if dish is None:
+        return None
+    return _dish_out(db, dish)
 
 
 def answer_chat(db: DbSession, body: FoodChatRequest) -> FoodChatResponse:
@@ -144,7 +217,9 @@ def answer_chat(db: DbSession, body: FoodChatRequest) -> FoodChatResponse:
             message=result.message or "I can only look up one food at a time — ask about one item.",
         )
 
-    for synonym in result.synonyms or [body.query]:
+    candidate_terms = result.synonyms or [body.query]
+
+    for synonym in candidate_terms:
         found = find_dish(db, synonym, body.hospital_code)
         if found is not None:
             dish, source = found
@@ -155,7 +230,25 @@ def answer_chat(db: DbSession, body: FoodChatRequest) -> FoodChatResponse:
                 dish=_dish_out(db, dish),
             )
 
+    candidates = find_dish_candidates(db, candidate_terms, body.hospital_code)
+    if not candidates:
+        return FoodChatResponse(
+            status=FoodChatStatus.not_found,
+            message=result.message or f"I don't have '{body.query.strip()}' in the ruleset yet.",
+        )
+
+    top_dish, top_source, top_score = candidates[0]
+    runner_up_score = candidates[1][2] if len(candidates) > 1 else 0.0
+    if len(candidates) == 1 or (top_score - runner_up_score) >= CHOICE_GAP_THRESHOLD:
+        return FoodChatResponse(
+            status=FoodChatStatus.ok,
+            matched_query=top_dish.name,
+            matched_source=FoodSource(top_source),
+            dish=_dish_out(db, top_dish),
+        )
+
     return FoodChatResponse(
-        status=FoodChatStatus.not_found,
-        message=result.message or f"I don't have '{body.query.strip()}' in the ruleset yet.",
+        status=FoodChatStatus.choices,
+        message="I found a few dishes that might match — which one did you mean?",
+        choices=[DishChoice(id=dish.id, name=dish.name) for dish, _source, _score in candidates],
     )

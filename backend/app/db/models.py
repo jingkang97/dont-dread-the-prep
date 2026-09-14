@@ -18,7 +18,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import ENUM, JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, ENUM, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -39,7 +39,7 @@ food_classification_enum = ENUM(
 )
 food_source_enum = ENUM("SGH", "TTSH", "CGH", "DIETICIAN", name="food_source", create_type=False)
 dish_meal_type_enum = ENUM(
-    "breakfast", "lunch", "dinner", "any", name="dish_meal_type", create_type=False
+    "breakfast", "lunch", "dinner", "snack", "drink", name="dish_meal_type", create_type=False
 )
 
 
@@ -324,7 +324,7 @@ class Dish(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    meal_type: Mapped[str] = mapped_column(dish_meal_type_enum, nullable=False, default="any")
+    meal_type: Mapped[list[str]] = mapped_column(ARRAY(dish_meal_type_enum), nullable=False, default=list)
     source_hospital: Mapped[str] = mapped_column(food_source_enum, nullable=False)
     ingredient_list: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(

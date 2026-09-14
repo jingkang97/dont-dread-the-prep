@@ -1,4 +1,4 @@
-import type { ApiDish, ApiFoodChatStatus, ApiFoodSource } from './api/food'
+import type { ApiDish, ApiDishChoice, ApiFoodChatStatus, ApiFoodSource } from './api/food'
 
 const KEY = 'preppath.foodchat.v2'
 
@@ -8,6 +8,7 @@ export type FoodChatAnswer = {
   matchedQuery?: string | null
   matchedSource?: ApiFoodSource | null
   dish?: ApiDish | null
+  choices?: ApiDishChoice[] | null
 }
 
 export type FoodChatMsg = {

@@ -32,6 +32,8 @@ export const CLINICAL_EN = {
   'food.mealBreakfast': 'Breakfast',
   'food.mealLunch': 'Lunch',
   'food.mealDinner': 'Dinner',
+  'food.mealSnacks': 'Snacks',
+  'food.mealDrinks': 'Drinks',
   'food.mealLoadingTitle': 'Checking the ruleset…',
   'food.mealLoadingHint': 'Matching dishes against {hospital} first, then the dietitian baseline.',
   'food.mealEmpty': 'No fully-clear dishes for this meal yet. Try the Ask the bot tab for a specific food.',
@@ -40,7 +42,9 @@ export const CLINICAL_EN = {
   'food.irrelevantTitle': 'Not a food question',
   'food.notFoundTitle': 'Not in the ruleset yet',
   'food.notConfiguredTitle': 'Chat unavailable',
+  'food.choicesTitle': 'Which one did you mean?',
   'food.matchedHospital': 'From {hospital}’s own sheet.',
   'food.matchedDietician': 'Your hospital sheet is silent here — showing the dietitian baseline instead.',
+  'food.possibleNote': 'Possible if you leave out {ingredients}.',
   'food.networkError': 'Could not reach the food service. Check your connection and try again.',
 } as const

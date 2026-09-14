@@ -1,5 +1,6 @@
-import type { ApiDish, ApiFoodClassification } from '../../lib/api'
+import type { ApiDish, ApiDishVerdict, ApiFoodClassification } from '../../lib/api'
 import type { Verdict } from '../../data/foods'
+import { useLang } from '../../i18n/LanguageContext'
 import { Card, VerdictPill } from '../ui'
 
 function toVerdict(classification: ApiFoodClassification): Verdict {
@@ -8,13 +9,24 @@ function toVerdict(classification: ApiFoodClassification): Verdict {
   return 'ask'
 }
 
+function toDishVerdict(verdict: ApiDishVerdict): Verdict {
+  if (verdict === 'possible') return 'possible'
+  return toVerdict(verdict)
+}
+
 export function DishCard({ dish, footnote }: { dish: ApiDish; footnote?: string }) {
+  const { t } = useLang()
   return (
     <Card className="p-3.5">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[16px] font-semibold text-ink">{dish.name}</p>
-        <VerdictPill verdict={toVerdict(dish.verdict)} />
+        <VerdictPill verdict={toDishVerdict(dish.verdict)} />
       </div>
+      {dish.verdict === 'possible' && dish.remove_ingredients.length > 0 && (
+        <p className="mt-1 text-[13px] font-medium text-possible">
+          {t('food.possibleNote', { ingredients: dish.remove_ingredients.join(', ') })}
+        </p>
+      )}
       <div className="mt-2.5 grid gap-1.5">
         {dish.ingredients.map((ingredient) => (
           <div

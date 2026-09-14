@@ -18,6 +18,7 @@ export function VerdictPill({ verdict, compact }: { verdict: Verdict; compact?: 
     yes: { label: t('verdict.yes'), className: 'bg-yes-bg text-yes' },
     no: { label: t('verdict.no'), className: 'bg-no-bg text-no' },
     ask: { label: t('verdict.ask'), className: 'bg-ask-bg text-ask' },
+    possible: { label: t('verdict.possible'), className: 'bg-possible-bg text-possible' },
   }
   const v = map[verdict]
   return (

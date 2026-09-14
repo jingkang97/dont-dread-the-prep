@@ -12,6 +12,13 @@ class FoodClassification(str, Enum):
     review = "review"
 
 
+class DishVerdict(str, Enum):
+    can = "can"
+    cannot = "cannot"
+    review = "review"
+    possible = "possible"
+
+
 class FoodSource(str, Enum):
     sgh = "SGH"
     ttsh = "TTSH"
@@ -23,7 +30,8 @@ class MealType(str, Enum):
     breakfast = "breakfast"
     lunch = "lunch"
     dinner = "dinner"
-    any = "any"
+    snack = "snack"
+    drink = "drink"
 
 
 class IngredientOut(BaseModel):
@@ -40,9 +48,11 @@ class IngredientOut(BaseModel):
 class DishOut(BaseModel):
     id: int
     name: str
-    meal_type: MealType
+    meal_type: list[MealType]
     source_hospital: FoodSource
-    verdict: FoodClassification
+    verdict: DishVerdict
+    # Ingredients to leave out when verdict == 'possible'.
+    remove_ingredients: list[str] = Field(default_factory=list)
     ingredients: list[IngredientOut] = Field(default_factory=list)
 
 
@@ -50,6 +60,8 @@ class MealPrepOut(BaseModel):
     breakfast: list[DishOut] = Field(default_factory=list)
     lunch: list[DishOut] = Field(default_factory=list)
     dinner: list[DishOut] = Field(default_factory=list)
+    snacks: list[DishOut] = Field(default_factory=list)
+    drinks: list[DishOut] = Field(default_factory=list)
 
 
 class FoodChatRequest(BaseModel):
@@ -63,6 +75,12 @@ class FoodChatStatus(str, Enum):
     irrelevant = "irrelevant"
     not_found = "not_found"
     not_configured = "not_configured"
+    choices = "choices"
+
+
+class DishChoice(BaseModel):
+    id: int
+    name: str
 
 
 class FoodChatResponse(BaseModel):
@@ -71,3 +89,4 @@ class FoodChatResponse(BaseModel):
     matched_query: Optional[str] = None
     matched_source: Optional[FoodSource] = None
     dish: Optional[DishOut] = None
+    choices: Optional[list[DishChoice]] = None

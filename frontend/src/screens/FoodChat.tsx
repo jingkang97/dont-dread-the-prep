@@ -7,7 +7,7 @@ import { ScreenHeader } from '../components/ScreenHeader'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { Card } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
-import { ApiError, postApiFoodChat } from '../lib/api'
+import { ApiError, getApiDish, postApiFoodChat, type ApiDishChoice } from '../lib/api'
 import { loadFoodChat, saveFoodChat, type FoodChatAnswer, type FoodChatMsg } from '../lib/foodChat'
 import { clearFoodChatUi, loadFoodChatUi, saveFoodChatUi } from '../lib/foodChatUi'
 import type { PrepSession } from '../lib/session'
@@ -142,6 +142,36 @@ export function FoodChat({ session }: { session: PrepSession }) {
         matchedQuery: res.matched_query,
         matchedSource: res.matched_source,
         dish: res.dish,
+        choices: res.choices,
+      }
+    } catch (err) {
+      answer = {
+        status: 'not_configured',
+        message: err instanceof ApiError ? err.detail : t('food.networkError'),
+      }
+    }
+
+    setMessages((m) =>
+      m.map((msg) => (msg.id === pendingId ? { ...msg, pending: false, answer } : msg)),
+    )
+  }
+
+  async function selectChoice(choice: ApiDishChoice) {
+    const pendingId = crypto.randomUUID()
+    setMessages((m) => [
+      ...m,
+      { id: crypto.randomUUID(), role: 'user', text: choice.name },
+      { id: pendingId, role: 'bot', pending: true },
+    ])
+
+    let answer: FoodChatAnswer
+    try {
+      const dish = await getApiDish(choice.id)
+      answer = {
+        status: 'ok',
+        matchedQuery: dish.name,
+        matchedSource: dish.source_hospital,
+        dish,
       }
     } catch (err) {
       answer = {
@@ -257,7 +287,11 @@ export function FoodChat({ session }: { session: PrepSession }) {
                       </motion.div>
                     ) : (
                       <motion.div key={msg.id} {...(skipEnter.current ? {} : fadeY)}>
-                        {msg.pending || !msg.answer ? <ThinkingCard /> : <BotCard answer={msg.answer} />}
+                        {msg.pending || !msg.answer ? (
+                          <ThinkingCard />
+                        ) : (
+                          <BotCard answer={msg.answer} onSelectChoice={selectChoice} />
+                        )}
                       </motion.div>
                     ),
                   )}

@@ -5,7 +5,7 @@ import { type HospitalId } from './hospitals'
  * (ingredient_tab / dishes_tab). No longer imported by the running app — the food
  * chat and meal-prep tabs are backend-driven (see backend/app/services/food.py).
  */
-export type Verdict = 'yes' | 'no' | 'ask'
+export type Verdict = 'yes' | 'no' | 'ask' | 'possible'
 export type RuleId =
   | 'R1'
   | 'R2'

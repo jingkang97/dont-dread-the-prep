@@ -14,6 +14,7 @@ export const EN = {
   'verdict.yes': 'Yes',
   'verdict.no': 'No',
   'verdict.ask': 'Ask your care team',
+  'verdict.possible': 'Possible',
   'source.cited': 'Cited source',
   'source.original':
     'Hospital wording stays in English — that is the audit trail.',
