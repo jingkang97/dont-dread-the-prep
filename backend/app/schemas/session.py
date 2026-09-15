@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -25,12 +25,32 @@ class ProtocolSummary(BaseModel):
     name: str
     prep_agent: str
     prep_agent_label: str
-    diet_days: int
-    milk_in_coffee: str
-    fruit_juice: str
     listed: bool = True
     reporting_from: Optional[time] = None
     reporting_until: Optional[time] = None
+
+
+StoolReady = Literal["not", "almost", "ready"]
+
+
+class StoolScaleStageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    n: int
+    name: str
+    look: str
+    ready: Optional[StoolReady] = None
+    color: Optional[str] = None
+    photo: Optional[str] = None
+
+
+class StoolScaleOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    key: str
+    show_ready_badges: bool
+    not_ready_action: Optional[str] = None
+    stages: list[StoolScaleStageOut] = Field(default_factory=list)
 
 
 class HospitalOut(BaseModel):
@@ -42,6 +62,7 @@ class HospitalOut(BaseModel):
     cluster: str
     contacts: list[ContactOut] = Field(default_factory=list)
     protocols: list[ProtocolSummary] = Field(default_factory=list)
+    stool_scale: StoolScaleOut
 
 
 class SessionCreate(BaseModel):
@@ -77,7 +98,6 @@ class SessionUpdate(BaseModel):
     slot: Optional[Slot] = None
     reporting_time: Optional[time] = None
     first_name: Optional[str] = Field(default=None, max_length=24)
-    wa_opt_in: Optional[bool] = None
 
     @field_validator("first_name")
     @classmethod
@@ -108,7 +128,6 @@ class SessionOut(BaseModel):
     slot: Slot
     reporting_time: time
     first_name: Optional[str] = None
-    wa_opt_in: bool
     push_opt_in: bool = False
     telegram_linked: bool = False
     reminder_mode: str = "live"

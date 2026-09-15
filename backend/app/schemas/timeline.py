@@ -16,9 +16,6 @@ class TimelineEventOut(BaseModel):
     title: str
     detail: str = ""
     tentative: bool = False
-    dose_label: Optional[str] = None
-    mix_volume_ml: Optional[int] = None
-    follow_fluid_ml: Optional[int] = None
     agent: Optional[str] = None
     prep_image_label: Optional[str] = None
     sort_order: int = 0

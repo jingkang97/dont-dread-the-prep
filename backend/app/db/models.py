@@ -27,7 +27,6 @@ class Base(DeclarativeBase):
 
 
 slot_enum = ENUM("am", "pm", name="slot", create_type=False)
-three_way_enum = ENUM("yes", "no", "ask", name="three_way", create_type=False)
 event_kind_enum = ENUM(
     "diet",
     "dose",
@@ -54,11 +53,6 @@ class Protocol(Base):
     name: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
     prep_agent: Mapped[str] = mapped_column(Text, nullable=False)
     prep_agent_label: Mapped[str] = mapped_column(Text, nullable=False)
-    diet_days: Mapped[int] = mapped_column(nullable=False)
-    milk_in_coffee: Mapped[str] = mapped_column(three_way_enum, nullable=False)
-    fruit_juice: Mapped[str] = mapped_column(three_way_enum, nullable=False)
-    rice_cereal: Mapped[str] = mapped_column(three_way_enum, nullable=False)
-    coffee_tea: Mapped[str] = mapped_column(three_way_enum, nullable=False)
     listed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     reporting_from: Mapped[Optional[time]] = mapped_column(Time)
     reporting_until: Mapped[Optional[time]] = mapped_column(Time)
@@ -74,6 +68,45 @@ class Protocol(Base):
     )
 
 
+class StoolScale(Base):
+    __tablename__ = "stool_scales"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    key: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    show_ready_badges: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    not_ready_action: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    stages: Mapped[list["StoolScaleStage"]] = relationship(
+        "StoolScaleStage",
+        back_populates="scale",
+        viewonly=True,
+        order_by="StoolScaleStage.n",
+    )
+
+
+class StoolScaleStage(Base):
+    __tablename__ = "stool_scale_stages"
+    __table_args__ = (
+        UniqueConstraint("scale_id", "n", name="stool_scale_stages_scale_id_n_key"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    scale_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("stool_scales.id", ondelete="CASCADE"), nullable=False
+    )
+    n: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    look: Mapped[str] = mapped_column(Text, nullable=False)
+    ready: Mapped[Optional[str]] = mapped_column(Text)
+    color: Mapped[Optional[str]] = mapped_column(Text)
+    photo: Mapped[Optional[str]] = mapped_column(Text)
+
+    scale: Mapped[StoolScale] = relationship(StoolScale, back_populates="stages")
+
+
 class Hospital(Base):
     __tablename__ = "hospitals"
 
@@ -83,6 +116,9 @@ class Hospital(Base):
     name: Mapped[str] = mapped_column(Text, nullable=False)
     cluster: Mapped[str] = mapped_column(Text, nullable=False)
     contacts: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    stool_scale_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("stool_scales.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -93,6 +129,7 @@ class Hospital(Base):
         viewonly=True,
         order_by=Protocol.id,
     )
+    stool_scale: Mapped[Optional[StoolScale]] = relationship(StoolScale, viewonly=True)
 
 
 class HospitalProtocol(Base):
@@ -129,7 +166,6 @@ class Session(Base):
     slot: Mapped[str] = mapped_column(slot_enum, nullable=False)
     reporting_time: Mapped[time] = mapped_column(Time, nullable=False)
     first_name: Mapped[Optional[str]] = mapped_column(Text)
-    wa_opt_in: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     telegram_chat_id: Mapped[Optional[int]] = mapped_column(BigInteger)
     push_endpoint: Mapped[Optional[str]] = mapped_column(Text)
     push_p256dh: Mapped[Optional[str]] = mapped_column(Text)
@@ -163,7 +199,6 @@ class ProtocolVersion(Base):
     version_id: Mapped[int] = mapped_column(Integer, nullable=False)
     version_label: Mapped[str] = mapped_column(Text, nullable=False)
     effective_from: Mapped[Optional[date]] = mapped_column(Date)
-    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -203,12 +238,8 @@ class ProtocolStep(Base):
     detail: Mapped[str] = mapped_column(Text, nullable=False, default="")
     tentative: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    dose_label: Mapped[Optional[str]] = mapped_column(Text)
-    mix_volume_ml: Mapped[Optional[int]] = mapped_column(Integer)
-    follow_fluid_ml: Mapped[Optional[int]] = mapped_column(Integer)
     agent: Mapped[Optional[str]] = mapped_column(Text)
     prep_image_label: Mapped[Optional[str]] = mapped_column(Text)
-    meta: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

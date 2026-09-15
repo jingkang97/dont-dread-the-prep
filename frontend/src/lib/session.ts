@@ -28,7 +28,6 @@ export type PrepSession = SessionInput & {
   hospitalShort: string
   firstName?: string
   createdAt: string
-  waOptIn: boolean
   pushOptIn: boolean
   telegramLinked: boolean
   reminderMode?: 'demo' | 'live'
@@ -66,7 +65,6 @@ export function fromApiSession(row: ApiSession): PrepSession {
     reportingTime: normalizeTime(row.reporting_time),
     firstName: row.first_name ?? undefined,
     createdAt: row.created_at,
-    waOptIn: row.wa_opt_in,
     pushOptIn: Boolean(row.push_opt_in),
     telegramLinked: Boolean(row.telegram_linked),
     reminderMode: row.reminder_mode === 'demo' ? 'demo' : 'live',
@@ -97,7 +95,6 @@ function parseSession(raw: unknown): PrepSession | null {
     reportingTime: normalizeTime(String(s.reportingTime)),
     firstName: cleanFirstName(s.firstName),
     createdAt: String(s.createdAt),
-    waOptIn: Boolean(s.waOptIn),
     pushOptIn: Boolean(s.pushOptIn),
     telegramLinked: Boolean(s.telegramLinked),
     reminderMode: s.reminderMode === 'demo' ? 'demo' : 'live',
@@ -309,19 +306,6 @@ export async function createSession(partial: {
   saveSession(session)
   await loadTimeline(session)
   return session
-}
-
-export async function markWaOptIn(session: PrepSession): Promise<PrepSession> {
-  try {
-    const row = await patchApiSession(session.id, { wa_opt_in: true })
-    const next = fromApiSession(row)
-    saveSession(next)
-    return next
-  } catch {
-    const next = { ...session, waOptIn: true }
-    saveSession(next)
-    return next
-  }
 }
 
 export async function updateAppointment(
