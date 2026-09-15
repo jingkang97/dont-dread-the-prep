@@ -11,7 +11,7 @@ import { PicoprepMixSheet } from './PicoprepMixSheet'
 import { PegMixSheet } from './PegMixSheet'
 
 function mixAgent(event: TimelineEvent) {
-  if (event.kind !== 'dose') return null
+  if (event.kind !== 'prep') return null
   if (event.agent === 'peg') {
     return event.prepImageLabel ? 'peg' : null
   }

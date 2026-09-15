@@ -6,7 +6,7 @@ type CachedTimeline = {
   events: TimelineEvent[]
 }
 
-const STORAGE_KEY = 'preppath.timeline.v1'
+const STORAGE_KEY = 'preppath.timeline.v3'
 const memory = new Map<string, CachedTimeline>()
 const inflight = new Map<string, Promise<TimelineEvent[]>>()
 
@@ -103,10 +103,15 @@ export function clearTimelineCache(sessionId?: string) {
   writeStore(store)
 }
 
-export async function loadTimeline(session: PrepSession): Promise<TimelineEvent[]> {
+export async function loadTimeline(
+  session: PrepSession,
+  opts?: { force?: boolean },
+): Promise<TimelineEvent[]> {
   const key = timelineCacheKey(session)
-  const hit = getCachedTimeline(key)
-  if (hit) return hit.events
+  if (!opts?.force) {
+    const hit = getCachedTimeline(key)
+    if (hit) return hit.events
+  }
   const pending = inflight.get(key)
   if (pending) return pending
   const request = getApiTimeline(session.id)

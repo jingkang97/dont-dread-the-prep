@@ -13,7 +13,8 @@ ALTER TABLE protocols
 
 CREATE TYPE event_kind AS ENUM (
   'diet',
-  'dose',
+  'prep',
+  'med',
   'meal',
   'fast',
   'arrive',

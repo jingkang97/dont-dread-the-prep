@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -8,7 +8,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session as DbSession
 
-from app.db.models import Protocol, ProtocolStep, ProtocolVersion, Session
+from app.db.models import HospitalMedStop, Protocol, ProtocolStep, ProtocolVersion, Session
 from app.schemas.timeline import TimelineEventOut, TimelineOut
 
 SG = ZoneInfo("Asia/Singapore")
@@ -110,6 +110,26 @@ def get_timeline(db: DbSession, public_code: str) -> TimelineOut:
             )
         )
 
+    stops = list(
+        db.scalars(
+            select(HospitalMedStop)
+            .where(HospitalMedStop.hospital_id == row.hospital_id)
+            .order_by(HospitalMedStop.sort_order, HospitalMedStop.id)
+        ).all()
+    )
+    for stop in stops:
+        day = row.procedure_date + timedelta(days=int(stop.day_offset))
+        events.append(
+            TimelineEventOut(
+                id=stop.step_key,
+                at=datetime.combine(day, time(0, 0), tzinfo=SG),
+                kind="med",
+                title=stop.title,
+                detail=stop.detail,
+                sort_order=stop.sort_order,
+            )
+        )
+
     events.sort(key=lambda e: (e.at, e.sort_order, e.id))
 
     return TimelineOut(
@@ -134,7 +154,7 @@ def dose_reminders_for(db: DbSession, row: Session) -> list[dict]:
         db.scalars(
             select(ProtocolStep)
             .where(ProtocolStep.protocol_version_id == version.id)
-            .where(ProtocolStep.kind == "dose")
+            .where(ProtocolStep.kind == "prep")
             .where(or_(ProtocolStep.slot == "any", ProtocolStep.slot == row.slot))
             .order_by(ProtocolStep.sort_order, ProtocolStep.id)
         ).all()
