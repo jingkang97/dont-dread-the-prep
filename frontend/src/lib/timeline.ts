@@ -2,7 +2,7 @@ import { differenceInCalendarDays, startOfDay } from 'date-fns'
 import type { HospitalId, Slot } from '../data/hospitals'
 import type { StringKey } from '../i18n/strings'
 
-export type EventKind = 'diet' | 'dose' | 'meal' | 'fast' | 'arrive' | 'stool'
+export type EventKind = 'diet' | 'prep' | 'med' | 'meal' | 'fast' | 'arrive' | 'stool'
 
 export type TimelineEvent = {
   id: string
@@ -20,7 +20,7 @@ export type TimelineEvent = {
   kind: EventKind
   source: string
   tentative?: boolean
-  /** Prep agent on dose steps: 'picoprep' | 'peg' | null. */
+  /** Prep agent on bowel-prep steps: 'picoprep' | 'peg' | null. */
   agent?: string | null
   /** PNG filename under public/timeline (protocol_steps.prep_image_label). */
   prepImageLabel?: string | null

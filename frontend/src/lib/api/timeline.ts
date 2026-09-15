@@ -1,7 +1,7 @@
 import { apiFetch } from './client'
 import type { ApiSlot } from './types'
 
-export type ApiEventKind = 'diet' | 'dose' | 'meal' | 'fast' | 'arrive' | 'stool'
+export type ApiEventKind = 'diet' | 'prep' | 'med' | 'meal' | 'fast' | 'arrive' | 'stool'
 
 export type ApiTimelineEvent = {
   id: string
