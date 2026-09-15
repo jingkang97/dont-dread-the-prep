@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -30,6 +30,29 @@ class ProtocolSummary(BaseModel):
     reporting_until: Optional[time] = None
 
 
+StoolReady = Literal["not", "almost", "ready"]
+
+
+class StoolScaleStageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    n: int
+    name: str
+    look: str
+    ready: Optional[StoolReady] = None
+    color: Optional[str] = None
+    photo: Optional[str] = None
+
+
+class StoolScaleOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    key: str
+    show_ready_badges: bool
+    not_ready_action: Optional[str] = None
+    stages: list[StoolScaleStageOut] = Field(default_factory=list)
+
+
 class HospitalOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -39,6 +62,7 @@ class HospitalOut(BaseModel):
     cluster: str
     contacts: list[ContactOut] = Field(default_factory=list)
     protocols: list[ProtocolSummary] = Field(default_factory=list)
+    stool_scale: StoolScaleOut
 
 
 class SessionCreate(BaseModel):

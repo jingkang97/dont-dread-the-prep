@@ -68,6 +68,45 @@ class Protocol(Base):
     )
 
 
+class StoolScale(Base):
+    __tablename__ = "stool_scales"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    key: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    show_ready_badges: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    not_ready_action: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    stages: Mapped[list["StoolScaleStage"]] = relationship(
+        "StoolScaleStage",
+        back_populates="scale",
+        viewonly=True,
+        order_by="StoolScaleStage.n",
+    )
+
+
+class StoolScaleStage(Base):
+    __tablename__ = "stool_scale_stages"
+    __table_args__ = (
+        UniqueConstraint("scale_id", "n", name="stool_scale_stages_scale_id_n_key"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    scale_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("stool_scales.id", ondelete="CASCADE"), nullable=False
+    )
+    n: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    look: Mapped[str] = mapped_column(Text, nullable=False)
+    ready: Mapped[Optional[str]] = mapped_column(Text)
+    color: Mapped[Optional[str]] = mapped_column(Text)
+    photo: Mapped[Optional[str]] = mapped_column(Text)
+
+    scale: Mapped[StoolScale] = relationship(StoolScale, back_populates="stages")
+
+
 class Hospital(Base):
     __tablename__ = "hospitals"
 
@@ -77,6 +116,9 @@ class Hospital(Base):
     name: Mapped[str] = mapped_column(Text, nullable=False)
     cluster: Mapped[str] = mapped_column(Text, nullable=False)
     contacts: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    stool_scale_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("stool_scales.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -87,6 +129,7 @@ class Hospital(Base):
         viewonly=True,
         order_by=Protocol.id,
     )
+    stool_scale: Mapped[Optional[StoolScale]] = relationship(StoolScale, viewonly=True)
 
 
 class HospitalProtocol(Base):

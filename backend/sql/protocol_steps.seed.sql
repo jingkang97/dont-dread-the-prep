@@ -173,8 +173,8 @@ CROSS JOIN (
 
   -- shared close
   ('stool-check', 'stool', 'any', 'report_relative', NULL, NULL, 3.0,
-   'Check your stool against the colour scale',
-   'The SGH/NCCS form has no stool chart. This guide adapts TTSH''s 6-point scale. If stool still looks like stages 1–4, call the number below or report 2 hours early.',
+   'Check your stool against the guide',
+   'The SGH/NCCS form has no stool chart. This guide uses the Bristol stool scale so you can compare appearance. If you are unsure, call the number below or report 2 hours early.',
    false, 100, NULL, NULL, NULL, NULL),
   ('fast', 'fast', 'any', 'report_relative', NULL, NULL, 2.0,
    'Stop all fluids',

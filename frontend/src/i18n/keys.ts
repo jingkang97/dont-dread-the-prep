@@ -3,7 +3,6 @@ import { isStringKey, type StringKey } from './strings'
 
 export type HospCopyField = 'name' | 'prep' | 'stoolAction' | 'formGap'
 export type ContactField = 'label' | 'hours' | 'note'
-export type StoolStageN = 1 | 2 | 3 | 4 | 5 | 6
 
 type Translate = (key: StringKey) => string
 
@@ -26,14 +25,6 @@ export function hospCopyOr(
 /** Compile-fails if `rule.{id}` is missing from the EN catalog. */
 export function ruleTitleKey<R extends RuleId>(id: R): Extract<StringKey, `rule.${R}`> {
   return `rule.${id}` as Extract<StringKey, `rule.${R}`>
-}
-
-/** Compile-fails if `stool.s{n}n` / `stool.s{n}l` is missing from the EN catalog. */
-export function stoolStageKey<N extends StoolStageN, Kind extends 'n' | 'l'>(
-  n: N,
-  kind: Kind,
-): Extract<StringKey, `stool.s${N}${Kind}`> {
-  return `stool.s${n}${kind}` as Extract<StringKey, `stool.s${N}${Kind}`>
 }
 
 function hospContactKey(id: string, index: number, field: ContactField): StringKey | null {

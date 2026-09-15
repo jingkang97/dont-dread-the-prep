@@ -9,8 +9,16 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DbSession, selectinload
 
-from app.db.models import Hospital, Protocol, Session
-from app.schemas.session import HospitalOut, SessionCreate, SessionOut, SessionUpdate, Slot
+from app.db.models import Hospital, Protocol, Session, StoolScale
+from app.schemas.session import (
+    HospitalOut,
+    ProtocolSummary,
+    SessionCreate,
+    SessionOut,
+    SessionUpdate,
+    Slot,
+    StoolScaleOut,
+)
 from app.services.reminder_schedule import demo_mode, reminder_plan, reset_reminder_clock
 from app.services.timeline import dose_reminders_for
 
@@ -85,24 +93,54 @@ def session_to_out(row: Session, hospital: Hospital, protocol: Protocol, db: DbS
     )
 
 
+BRISTOL_SCALE_KEY = "bristol"
+
+
 def list_hospitals(db: DbSession) -> list[Hospital]:
     stmt = (
         select(Hospital)
-        .options(selectinload(Hospital.protocols))
+        .options(
+            selectinload(Hospital.protocols),
+            selectinload(Hospital.stool_scale).selectinload(StoolScale.stages),
+        )
         .order_by(Hospital.id)
     )
     return list(db.scalars(stmt).unique().all())
 
 
-def hospital_to_out(hospital: Hospital) -> HospitalOut:
-    """Picker payload: only listed protocol chips (AM/PM sheets stay server-side)."""
-    out = HospitalOut.model_validate(hospital)
-    out.protocols = [p for p in out.protocols if p.listed]
-    return out
+def load_bristol_scale(db: DbSession) -> StoolScale:
+    row = db.scalar(
+        select(StoolScale)
+        .options(selectinload(StoolScale.stages))
+        .where(StoolScale.key == BRISTOL_SCALE_KEY)
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Bristol stool scale is not seeded",
+        )
+    return row
+
+
+def hospital_to_out(hospital: Hospital, bristol: StoolScale) -> HospitalOut:
+    """Picker payload: only listed protocol chips (AM/PM sheets stay server-side).
+
+    stool_scale is always resolved: the hospital FK, or Bristol when the FK is null.
+    """
+    return HospitalOut(
+        code=hospital.code,
+        short_name=hospital.short_name,
+        name=hospital.name,
+        cluster=hospital.cluster,
+        contacts=hospital.contacts,
+        protocols=[ProtocolSummary.model_validate(p) for p in hospital.protocols if p.listed],
+        stool_scale=StoolScaleOut.model_validate(hospital.stool_scale or bristol),
+    )
 
 
 def list_hospitals_out(db: DbSession) -> list[HospitalOut]:
-    return [hospital_to_out(row) for row in list_hospitals(db)]
+    bristol = load_bristol_scale(db)
+    return [hospital_to_out(row, bristol) for row in list_hospitals(db)]
 
 
 def listed_protocols(hospital: Hospital) -> list[Protocol]:

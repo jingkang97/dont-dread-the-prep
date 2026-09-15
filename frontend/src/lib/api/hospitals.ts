@@ -9,6 +9,24 @@ export type ApiProtocolSummary = {
   reporting_until?: string | null
 }
 
+export type ApiStoolReady = 'not' | 'almost' | 'ready'
+
+export type ApiStoolScaleStage = {
+  n: number
+  name: string
+  look: string
+  ready: ApiStoolReady | null
+  color?: string | null
+  photo?: string | null
+}
+
+export type ApiStoolScale = {
+  key: string
+  show_ready_badges: boolean
+  not_ready_action?: string | null
+  stages: ApiStoolScaleStage[]
+}
+
 export type ApiHospital = {
   code: string
   short_name: string
@@ -16,6 +34,7 @@ export type ApiHospital = {
   cluster: string
   contacts: { label: string; phone: string; hours?: string; note?: string }[]
   protocols: ApiProtocolSummary[]
+  stool_scale: ApiStoolScale
 }
 
 export function listApiHospitals() {
