@@ -2,7 +2,6 @@ import type { RuleId } from '../data/foods'
 import { isStringKey, type StringKey } from './strings'
 
 export type HospCopyField = 'name' | 'prep' | 'stoolAction' | 'formGap'
-export type ContactField = 'label' | 'hours' | 'note'
 
 type Translate = (key: StringKey) => string
 
@@ -25,20 +24,4 @@ export function hospCopyOr(
 /** Compile-fails if `rule.{id}` is missing from the EN catalog. */
 export function ruleTitleKey<R extends RuleId>(id: R): Extract<StringKey, `rule.${R}`> {
   return `rule.${id}` as Extract<StringKey, `rule.${R}`>
-}
-
-function hospContactKey(id: string, index: number, field: ContactField): StringKey | null {
-  const key = `hosp.${id}.c${index}.${field}`
-  return isStringKey(key) ? key : null
-}
-
-export function hospContactOr(
-  t: Translate,
-  id: string,
-  index: number,
-  field: ContactField,
-  fallback: string,
-) {
-  const key = hospContactKey(id, index, field)
-  return key ? t(key) : fallback
 }

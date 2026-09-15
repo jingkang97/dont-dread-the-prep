@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { format, formatDistanceStrict, isAfter } from 'date-fns'
-import { ArrowRight, Bell, Droplets, EllipsisVertical, Sparkles, Utensils } from 'lucide-react'
+import { ArrowRight, Bell, Droplets, EllipsisVertical, Phone, Sparkles, Utensils } from 'lucide-react'
 import { Card, SectionLabel } from '../components/ui'
 import { cn } from '../lib/cn'
 import { useLang } from '../i18n/LanguageContext'
@@ -138,6 +138,14 @@ export function Home({
           title={t('home.stoolTitle')}
           body={t('home.stoolBody')}
           onClick={() => onOpen('stool')}
+        />
+        <div className="ml-[68px] h-px bg-line" />
+        <Tile
+          icon={<Phone size={18} />}
+          iconClass="bg-teal/15 text-teal-deep"
+          title={t('home.contactsTitle')}
+          body={t('home.contactsBody')}
+          onClick={() => onOpen('contacts')}
         />
       </Card>
 

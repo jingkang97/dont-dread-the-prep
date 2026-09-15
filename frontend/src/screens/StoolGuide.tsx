@@ -1,8 +1,7 @@
-import { ArrowRight, Bell, Phone } from 'lucide-react'
-import { formatPhone, telHref } from '../data/hospitals'
+import { ArrowRight, Bell } from 'lucide-react'
 import { ScreenHeader } from '../components/ScreenHeader'
-import { Card, PrimaryButton, SectionLabel } from '../components/ui'
-import { hospContactOr, hospCopyOr } from '../i18n/keys'
+import { Card } from '../components/ui'
+import { hospCopyOr } from '../i18n/keys'
 import { useLang } from '../i18n/LanguageContext'
 import { useSessionHospital } from '../hooks/useSessionHospital'
 import type { ApiStoolReady, ApiStoolScaleStage } from '../lib/api'
@@ -17,8 +16,7 @@ export function StoolGuide({
   onReminders: () => void
 }) {
   const { t } = useLang()
-  const { hospital, short, loading } = useSessionHospital(session)
-  const contacts = hospital?.contacts ?? []
+  const { hospital, loading } = useSessionHospital(session)
   const scale = hospital?.stool_scale
   const showBadges = scale?.show_ready_badges === true
   const notReadyAction = scale?.not_ready_action?.trim() || null
@@ -49,37 +47,6 @@ export function StoolGuide({
           </p>
         </Card>
       ) : null}
-
-      <div className="mt-5">
-        <SectionLabel>{t('stool.contactFor', { hospital: short })}</SectionLabel>
-      </div>
-      <p className="mt-1 text-[12px] leading-relaxed text-muted">
-        {hospCopyOr(t, session.hospitalId, 'formGap', '')}
-      </p>
-
-      <div className="mt-3 grid gap-2.5">
-        {contacts.map((c, i) => (
-          <Card key={c.phone} className="p-4">
-            <p className="text-[12px] font-semibold tracking-wide text-muted">
-              {hospContactOr(t, session.hospitalId, i, 'label', c.label)}
-            </p>
-            <p className="font-display mt-0.5 text-[28px] text-navy">{formatPhone(c.phone)}</p>
-            <p className="text-[12px] text-ink-soft">
-              {hospContactOr(t, session.hospitalId, i, 'hours', c.hours ?? '')}
-            </p>
-            <p className="mt-2 text-[12px] leading-relaxed text-muted">
-              {hospContactOr(t, session.hospitalId, i, 'note', c.note ?? '')}
-            </p>
-            <a href={telHref(c.phone)}>
-              <PrimaryButton className="mt-3">
-                <span className="inline-flex items-center gap-2">
-                  <Phone size={16} /> {t('stool.call', { phone: formatPhone(c.phone) })}
-                </span>
-              </PrimaryButton>
-            </a>
-          </Card>
-        ))}
-      </div>
 
       <button type="button" onClick={onReminders} className="mt-5 w-full text-left">
         <Card className="flex items-center gap-3 p-4">

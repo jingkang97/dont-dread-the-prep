@@ -12,7 +12,7 @@ import {
   type ApiSession,
 } from './api'
 
-export type Screen = 'onboarding' | 'home' | 'timeline' | 'food' | 'stool' | 'reminders'
+export type Screen = 'onboarding' | 'home' | 'timeline' | 'food' | 'stool' | 'contacts' | 'reminders'
 
 export type ReminderPlanItem = {
   key: string
@@ -136,7 +136,14 @@ function publicCodeFromUrl(): string | null {
 }
 
 export function screenFromGo(go: unknown): Screen | null {
-  if (go === 'timeline' || go === 'food' || go === 'stool' || go === 'reminders' || go === 'home') {
+  if (
+    go === 'timeline' ||
+    go === 'food' ||
+    go === 'stool' ||
+    go === 'contacts' ||
+    go === 'reminders' ||
+    go === 'home'
+  ) {
     return go
   }
   return null
