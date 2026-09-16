@@ -53,12 +53,12 @@ export function markHomeTourSeen() {
 let active: ReturnType<typeof driver> | null = null
 
 function scrollHomeToTop() {
-  const pane = document.querySelector('[data-app-pane]')
-  const scroller = pane?.firstElementChild
+  const scroller = document.querySelector('[data-home-scroll]')
   if (scroller instanceof HTMLElement) {
     scroller.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
+  const pane = document.querySelector('[data-app-pane]')
   if (pane instanceof HTMLElement) pane.scrollTo({ top: 0, behavior: 'smooth' })
 }
 

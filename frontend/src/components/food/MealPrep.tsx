@@ -18,7 +18,7 @@ export function MealPrep({ session }: { session: PrepSession }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 px-5 pb-3">
+      <div className="shrink-0 px-5 pb-3 pt-4">
         <SegmentedControl
           value={meal}
           onChange={setMeal}

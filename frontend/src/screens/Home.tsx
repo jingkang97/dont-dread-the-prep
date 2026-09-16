@@ -150,18 +150,6 @@ export function Home({
       </Card>
 
       <Card data-tour="home-shortcut" className="mt-4 p-4">
-        <div className="flex items-start gap-2">
-          <Sparkles size={16} className="mt-0.5 text-teal-deep" />
-          <div>
-            <p className="text-[13px] font-semibold text-navy">{t('home.faithful')}</p>
-            <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
-              {t('home.faithfulBody', { hospital: hospital.short })}
-            </p>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="mt-4 p-4">
         <p className="text-[13px] font-semibold text-navy">{t('home.shortcut')}</p>
         <div className="mt-3 grid w-full grid-cols-2 gap-2">
           <button

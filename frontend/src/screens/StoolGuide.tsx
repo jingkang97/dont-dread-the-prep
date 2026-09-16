@@ -1,4 +1,3 @@
-import { ArrowRight, Bell } from 'lucide-react'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { Card } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
@@ -9,10 +8,8 @@ import { cn } from '../lib/cn'
 
 export function StoolGuide({
   session,
-  onReminders,
 }: {
   session: PrepSession
-  onReminders: () => void
 }) {
   const { t } = useLang()
   const { hospital, loading } = useSessionHospital(session)
@@ -44,19 +41,6 @@ export function StoolGuide({
           </p>
         </Card>
       ) : null}
-
-      <button type="button" onClick={onReminders} className="mt-5 w-full text-left">
-        <Card className="flex items-center gap-3 p-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-teal/15 text-teal-deep">
-            <Bell size={18} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold text-ink">{t('stool.reminders')}</span>
-            <span className="mt-0.5 block text-[13px] leading-relaxed text-muted">{t('stool.remindersBody')}</span>
-          </span>
-          <ArrowRight size={16} className="shrink-0 text-muted" />
-        </Card>
-      </button>
     </div>
   )
 }

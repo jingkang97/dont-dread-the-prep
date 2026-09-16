@@ -4,8 +4,6 @@ export type Lang = 'en'
 
 export const EN = {
   ...CLINICAL_EN,
-  'draft.banner':
-    'Draft prototype — not medical advice. Food answers use an unapproved ruleset (Doc 03). **Always follow your own hospital’s form.**',
   'nav.home': 'Home',
   'nav.timeline': 'Timeline',
   'nav.food': 'Food',

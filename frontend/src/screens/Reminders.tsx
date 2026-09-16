@@ -1,5 +1,5 @@
 import { format, isAfter, parseISO } from 'date-fns'
-import { Bell, Check, Info } from 'lucide-react'
+import { Bell, Check, ChevronLeft, Info } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useEffect } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
@@ -35,10 +35,12 @@ export function Reminders({
   session,
   onSession,
   onShortcut,
+  onBack,
 }: {
   session: PrepSession
   onSession: (s: PrepSession) => void
   onShortcut: (os: 'ios' | 'android') => void
+  onBack: () => void
 }) {
   const { t, lang } = useLang()
   const { copied, copy } = useCopyToClipboard()
@@ -82,6 +84,14 @@ export function Reminders({
 
   return (
     <div className="px-5 pb-10 pt-6">
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-3 inline-flex items-center gap-0.5 text-[13px] font-semibold text-teal-deep"
+      >
+        <ChevronLeft size={16} strokeWidth={2.4} />
+        {t('nav.home')}
+      </button>
       <ScreenHeader kicker={t('wa.kicker')} title={t('wa.title')} lead={t('wa.lead', { id: session.id })} />
 
       <Card className="mt-5 p-4">

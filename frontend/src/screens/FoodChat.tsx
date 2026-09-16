@@ -232,7 +232,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
             ) : null
           }
         />
-        <div className="mt-3">
+        <div className="mt-4">
           <SegmentedControl
             value={tab}
             onChange={setTab}
