@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # BotFather token. Polls getUpdates locally; HTTPS public API uses a webhook.
     telegram_bot_token: str = ""
     telegram_webhook_secret: str = ""
-    # True: demo ladder after link — T−72 / T−24 / Picoprep 1–4 / T−6 one minute apart, then 3 hourly, 3 daily.
+    # True: demo ladder after link — 72h / 24h / each prep dose / 6h one minute apart, then 3 hourly, 3 daily.
     # Keep false for live T−72 / T−24 / T−6 from the appointment time.
     telegram_reminder_test: bool = False
     # Local getUpdates. Deletes this bot's webhook — leave false when Railway owns it.

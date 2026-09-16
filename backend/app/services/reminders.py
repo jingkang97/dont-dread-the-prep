@@ -14,11 +14,12 @@ from app.db.session import reset_engine, session_scope
 from app.services.push import send_web_push, vapid_configured
 from app.services.reminder_copy import REMINDERS, dose_html, dose_push_payload, push_payload
 from app.services.reminder_schedule import (
-    DEMO_STEPS,
     SENT_ATTR,
+    demo_fast_tick_span,
     demo_html,
     demo_mode,
     demo_push_payload,
+    demo_steps_for,
     late_notice_html,
     late_notice_push,
     mark_dose_sent,
@@ -31,10 +32,8 @@ from app.services.reminder_schedule import (
 )
 from app.services.timeline import dose_reminders_for
 from app.services.telegram import (
-    STOOL_CHART,
     app_path,
     send_message,
-    send_photo,
     with_home_hint,
 )
 
@@ -60,13 +59,16 @@ def _as_utc(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
-def _peek_demo_step(row: Session, now: datetime, sent: int) -> dict[str, Any] | None:
+def _peek_demo_step(
+    row: Session, now: datetime, sent: int, doses: list[dict[str, Any]]
+) -> dict[str, Any] | None:
     if row.reminder_anchor_at is None:
         start_demo_clock(row, restart=True)
     sent = max(0, int(sent or 0))
-    if sent >= len(DEMO_STEPS):
+    steps = demo_steps_for(doses)
+    if sent >= len(steps):
         return None
-    step = DEMO_STEPS[sent]
+    step = steps[sent]
     due = _as_utc(row.reminder_anchor_at) + step["delay"]
     if _as_utc(now) < due:
         return None
@@ -123,9 +125,11 @@ def _claim_due() -> list[Claim]:
                 doses = _doses_or_empty(db, row, now)
                 subscription = _subscription_for(row)
                 if demo:
-                    step = _peek_demo_step(row, now, row.reminder_demo_sent)
+                    demo_index = max(0, int(row.reminder_demo_sent or 0))
+                    step = _peek_demo_step(row, now, demo_index, doses)
                     if step is not None:
-                        row.reminder_demo_sent = max(0, int(row.reminder_demo_sent or 0)) + 1
+                        row.reminder_demo_sent = demo_index + 1
+                        extra = {"demo_step": step, "demo_index": demo_index}
                         claimed.append(
                             (
                                 row.telegram_chat_id,
@@ -133,27 +137,10 @@ def _claim_due() -> list[Claim]:
                                 step["copy"],
                                 step["key"],
                                 row.public_code,
-                                {},
+                                extra,
                                 "both",
                             )
                         )
-                        continue
-                    dose = upcoming_dose(row, now, doses)
-                    if dose is None:
-                        continue
-                    mark_dose_sent(row, str(dose["key"]))
-                    extra = {"dose_title": dose["title"], "dose_agent": dose.get("agent") or "picoprep"}
-                    claimed.append(
-                        (
-                            row.telegram_chat_id,
-                            subscription,
-                            "peg" if dose.get("agent") == "peg" else "dose",
-                            f"dose:{dose['key']}",
-                            row.public_code,
-                            extra,
-                            "both",
-                        )
-                    )
                     continue
                 skipped = skip_late_windows(row, now)
                 if skipped and row.reminder_late_notice_sent_at is None:
@@ -199,11 +186,9 @@ def _claim_due() -> list[Claim]:
     return claimed
 
 
-def _step_for(claim_key: str) -> dict[str, Any] | None:
-    for step in DEMO_STEPS:
-        if step["key"] == claim_key:
-            return step
-    return None
+def _demo_step_from(extra: dict[str, Any]) -> dict[str, Any] | None:
+    step = extra.get("demo_step")
+    return step if isinstance(step, dict) else None
 
 
 async def _send_telegram(
@@ -217,11 +202,8 @@ async def _send_telegram(
         html = dose_html(str(extra.get("dose_title") or "Prep dose"), str(extra.get("dose_agent") or "picoprep"))
         await send_message(chat_id, with_home_hint(html))
         return
-    step = _step_for(claim_key)
+    step = _demo_step_from(extra)
     html = demo_html(step) if step else REMINDERS[copy_key]
-    if copy_key == "t6" and STOOL_CHART.is_file():
-        await send_photo(chat_id, STOOL_CHART, with_home_hint(html))
-        return
     await send_message(chat_id, with_home_hint(html))
 
 
@@ -243,7 +225,7 @@ async def _send_push(
             path,
         )
         return bool(await asyncio.to_thread(send_web_push, subscription, payload))
-    step = _step_for(claim_key)
+    step = _demo_step_from(extra)
     payload = demo_push_payload(step, path) if step else push_payload(copy_key, path)
     return bool(await asyncio.to_thread(send_web_push, subscription, payload))
 
@@ -280,12 +262,12 @@ async def run_reminder_tick() -> int:
             sent += 1
             log.warning("Sent %s reminder for session %s", claim_key, code)
         else:
-            await asyncio.to_thread(_clear_sent, code, claim_key)
+            await asyncio.to_thread(_clear_sent, code, claim_key, extra)
             log.warning("Rolled back %s reminder claim for session %s", claim_key, code)
     return sent
 
 
-def _clear_sent(code: str, claim_key: str) -> None:
+def _clear_sent(code: str, claim_key: str, extra: dict[str, Any] | None = None) -> None:
     with session_scope() as db:
         row = db.scalar(select(Session).where(Session.public_code == code.upper()))
         if row is None:
@@ -299,9 +281,16 @@ def _clear_sent(code: str, claim_key: str) -> None:
         if claim_key.startswith("dose:"):
             unmark_dose_sent(row, claim_key.removeprefix("dose:"))
             return
-        idx = next((i for i, step in enumerate(DEMO_STEPS) if step["key"] == claim_key), None)
+        idx = extra.get("demo_index") if extra else None
+        if idx is None:
+            try:
+                doses = dose_reminders_for(db, row)
+            except Exception:
+                doses = []
+            idx = next((i for i, step in enumerate(demo_steps_for(doses)) if step["key"] == claim_key), None)
         if idx is None:
             return
+        idx = int(idx)
         sent = max(0, int(row.reminder_demo_sent or 0))
         # Only rewind if we are still sitting on this step — another worker may have moved on.
         if sent == idx + 1:
@@ -318,7 +307,7 @@ async def run_reminder_loop(stop: asyncio.Event) -> None:
         return
     log.warning(
         "Reminder loop starting (%s)",
-        "demo: T−72/T−24/p1–p4/T−6 one minute apart, then 3 hourly, then 3 daily"
+        "demo: 72h/24h/prep doses/6h one minute apart, then 3 hourly, then 3 daily"
         if demo_mode()
         else "live T−72/24/6",
     )
@@ -356,7 +345,11 @@ def _tick_seconds() -> int:
                 anchor = row.reminder_anchor_at
                 if anchor is None:
                     continue
-                if _as_utc(now) - _as_utc(anchor) <= timedelta(minutes=8):
+                try:
+                    span = demo_fast_tick_span(dose_reminders_for(db, row))
+                except Exception:
+                    span = timedelta(minutes=15)
+                if _as_utc(now) - _as_utc(anchor) <= span:
                     return DEMO_TICK_SECONDS
     except DBAPIError:
         log.warning("Reminder wait probe lost the database socket; reconnecting")

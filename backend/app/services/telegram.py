@@ -4,7 +4,6 @@ import asyncio
 import html
 import logging
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
@@ -27,7 +26,7 @@ log = logging.getLogger(__name__)
 API = "https://api.telegram.org/bot{token}/{method}"
 
 WELCOME_TEST = (
-    "Demo clock: T−72, T−24, Picoprep 1–4, then T−6 one minute apart, then 3 hourly, then 3 daily."
+    "Demo clock: 72 hours before, 24 hours before, each hospital prep dose, then 6 hours before, one minute apart, then 3 hourly, then 3 daily."
 )
 NEED_CODE = (
     "Open PrepPath and tap Set reminders so I can attach this chat to your session."
@@ -35,7 +34,6 @@ NEED_CODE = (
 UNKNOWN = (
     "I couldn't find session {code}. Open PrepPath and tap Set reminders again."
 )
-STOOL_CHART = Path(__file__).resolve().parent.parent / "assets" / "stool-chart.png"
 
 
 def _token() -> str:
@@ -73,27 +71,6 @@ def can_use_url_button(url: str) -> bool:
 
 def with_home_hint(text: str) -> str:
     return f"{text}\n\n{HOME_HINT}"
-
-
-async def send_photo(
-    chat_id: int,
-    path: Path,
-    caption: str,
-) -> None:
-    token = _token()
-    if not token:
-        raise RuntimeError("TELEGRAM_BOT_TOKEN is not set")
-    data: dict[str, Any] = {"chat_id": str(chat_id), "caption": caption, "parse_mode": "HTML"}
-    async with httpx.AsyncClient(timeout=45) as client:
-        with path.open("rb") as photo:
-            response = await client.post(
-                API.format(token=token, method="sendPhoto"),
-                data=data,
-                files={"photo": (path.name, photo, "image/png")},
-            )
-        payload = response.json()
-        if not payload.get("ok"):
-            raise RuntimeError(payload.get("description") or "Telegram sendPhoto failed")
 
 
 async def telegram_call(method: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -149,7 +126,7 @@ def welcome_text(code: str, first_name: str | None) -> str:
     else:
         cadence = (
             "You'll get three alerts before your colonoscopy: "
-            "<b>T−72h</b>, <b>T−24h</b>, and <b>T−6h</b>."
+            "<b>72 hours</b>, <b>24 hours</b>, and <b>6 hours</b> before."
         )
     if _show_session_debug():
         bits.append(f"Session {html.escape(code)}.")

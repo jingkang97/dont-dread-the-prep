@@ -23,42 +23,125 @@ if TYPE_CHECKING:
 
 LIVE_KEYS = ("t72", "t24", "t6")
 HOURS_BEFORE = {"t72": 72, "t24": 24, "t6": 6}
+DEMO_HOURLY = ("t72", "t24", "t6")
+DEMO_DAILY = ("t72", "t24", "t6")
 
-# Demo ladder from the moment Telegram or push is linked:
-# T−72, T−24, packets 1–4, T−6 one minute apart, then 3 hourly, then 3 daily.
-DEMO_STEPS: tuple[dict[str, Any], ...] = (
-    {"key": "m1", "delay": timedelta(seconds=0), "copy": "t72", "phase": "Minute 1/7", "delay_label": "now"},
-    {"key": "m2", "delay": timedelta(minutes=1), "copy": "t24", "phase": "Minute 2/7", "delay_label": "1 min"},
-    {"key": "m3", "delay": timedelta(minutes=2), "copy": "p1", "phase": "Minute 3/7", "delay_label": "2 min"},
-    {"key": "m4", "delay": timedelta(minutes=3), "copy": "p2", "phase": "Minute 4/7", "delay_label": "3 min"},
-    {"key": "m5", "delay": timedelta(minutes=4), "copy": "p3", "phase": "Minute 5/7", "delay_label": "4 min"},
-    {"key": "m6", "delay": timedelta(minutes=5), "copy": "p4", "phase": "Minute 6/7", "delay_label": "5 min"},
-    {"key": "m7", "delay": timedelta(minutes=6), "copy": "t6", "phase": "Minute 7/7", "delay_label": "6 min"},
-    {"key": "h1", "delay": timedelta(hours=1), "copy": "t72", "phase": "Hour 1/3", "delay_label": "1 hour"},
-    {"key": "h2", "delay": timedelta(hours=2), "copy": "t24", "phase": "Hour 2/3", "delay_label": "2 hours"},
-    {"key": "h3", "delay": timedelta(hours=3), "copy": "t6", "phase": "Hour 3/3", "delay_label": "3 hours"},
-    {"key": "d1", "delay": timedelta(days=1), "copy": "t72", "phase": "Day 1/3", "delay_label": "1 day"},
-    {"key": "d2", "delay": timedelta(days=2), "copy": "t24", "phase": "Day 2/3", "delay_label": "2 days"},
-    {"key": "d3", "delay": timedelta(days=3), "copy": "t6", "phase": "Day 3/3", "delay_label": "3 days"},
-)
+
+def _delay_label(delay: timedelta) -> str:
+    if delay <= timedelta(0):
+        return "now"
+    minutes = int(delay.total_seconds() // 60)
+    if delay < timedelta(hours=1):
+        return "1 min" if minutes == 1 else f"{minutes} min"
+    hours = int(delay.total_seconds() // 3600)
+    if delay < timedelta(days=1):
+        return "1 hour" if hours == 1 else f"{hours} hours"
+    days = delay.days
+    return "1 day" if days == 1 else f"{days} days"
+
+
+def _dose_copy(agent: str | None) -> str:
+    return "peg" if agent == "peg" else "dose"
+
+
+def demo_steps_for(doses: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """Compressed demo ladder: 72h / 24h / each prep dose / 6h, then hourly and daily."""
+    doses = list(doses or [])
+    minute_n = 2 + len(doses) + 1
+    steps: list[dict[str, Any]] = []
+    minute = 0
+
+    def add_minute(
+        *,
+        key: str,
+        copy: str,
+        title: str | None = None,
+        dose_agent: str | None = None,
+    ) -> None:
+        nonlocal minute
+        delay = timedelta(minutes=minute)
+        step: dict[str, Any] = {
+            "key": key,
+            "delay": delay,
+            "copy": copy,
+            "phase": f"Minute {minute + 1}/{minute_n}",
+            "delay_label": _delay_label(delay),
+        }
+        if title:
+            step["title"] = title
+        if dose_agent:
+            step["dose_agent"] = dose_agent
+        steps.append(step)
+        minute += 1
+
+    add_minute(key="m1", copy="t72")
+    add_minute(key="m2", copy="t24")
+    for dose in doses:
+        agent = str(dose.get("agent") or "picoprep")
+        add_minute(
+            key=f"demo-dose:{dose['key']}",
+            copy=_dose_copy(agent),
+            title=str(dose.get("title") or "Prep dose"),
+            dose_agent=agent,
+        )
+    add_minute(key="m-t6", copy="t6")
+
+    for index, copy in enumerate(DEMO_HOURLY, start=1):
+        delay = timedelta(hours=index)
+        steps.append(
+            {
+                "key": f"h{index}",
+                "delay": delay,
+                "copy": copy,
+                "phase": f"Hour {index}/3",
+                "delay_label": _delay_label(delay),
+            }
+        )
+    for index, copy in enumerate(DEMO_DAILY, start=1):
+        delay = timedelta(days=index)
+        steps.append(
+            {
+                "key": f"d{index}",
+                "delay": delay,
+                "copy": copy,
+                "phase": f"Day {index}/3",
+                "delay_label": _delay_label(delay),
+            }
+        )
+    return steps
+
+
+def demo_fast_tick_span(doses: list[dict[str, Any]] | None = None) -> timedelta:
+    last = timedelta(0)
+    for step in demo_steps_for(doses):
+        if step["delay"] < timedelta(hours=1):
+            last = max(last, step["delay"])
+    return last + timedelta(minutes=2)
 
 
 def demo_mode() -> bool:
     return get_settings().telegram_reminder_test
 
 
+def demo_body(step: dict[str, Any]) -> str:
+    if step.get("body"):
+        return str(step["body"])
+    return item_body(ITEMS[step["copy"]])
+
+
 def demo_title(step: dict[str, Any]) -> str:
-    return f"{step['phase']} · {ITEMS[step['copy']]['title']}"
+    title = step.get("title") or ITEMS[step["copy"]]["title"]
+    return f"{step['phase']} · {title}"
 
 
 def demo_html(step: dict[str, Any]) -> str:
-    return f"<b>{demo_title(step)}</b>\n\n{item_body(ITEMS[step['copy']])}"
+    return f"<b>{demo_title(step)}</b>\n\n{demo_body(step)}"
 
 
 def demo_push_payload(step: dict[str, Any], url: str) -> dict[str, str]:
     return {
         "title": demo_title(step),
-        "body": f"{item_body(ITEMS[step['copy']])}\n\n{tap_hint(url)}",
+        "body": f"{demo_body(step)}\n\n{tap_hint(url)}",
         "url": url,
     }
 
@@ -215,7 +298,7 @@ def reminder_plan(
         sent = max(0, int(row.reminder_demo_sent or 0))
         anchor = row.reminder_anchor_at
         items: list[dict[str, Any]] = []
-        for index, step in enumerate(DEMO_STEPS):
+        for index, step in enumerate(demo_steps_for(doses)):
             at = anchor + step["delay"] if anchor is not None else None
             items.append(
                 {
@@ -227,24 +310,24 @@ def reminder_plan(
                     "sent": index < sent,
                 }
             )
-    else:
-        live_sent = {
-            "t72": row.reminder_t72_sent_at is not None,
-            "t24": row.reminder_t24_sent_at is not None,
-            "t6": row.reminder_t6_sent_at is not None,
-        }
-        items = [
-            {
-                "key": key,
-                "title": ITEMS[key]["title"],
-                "copy_key": key,
-                "delay_label": f"T−{HOURS_BEFORE[key]}h",
-                "at": report_at - timedelta(hours=HOURS_BEFORE[key]),
-                "sent": live_sent[key],
-            }
-            for key in LIVE_KEYS
-        ]
+        return items
 
+    live_sent = {
+        "t72": row.reminder_t72_sent_at is not None,
+        "t24": row.reminder_t24_sent_at is not None,
+        "t6": row.reminder_t6_sent_at is not None,
+    }
+    items = [
+        {
+            "key": key,
+            "title": ITEMS[key]["title"],
+            "copy_key": key,
+            "delay_label": f"{HOURS_BEFORE[key]} hours before",
+            "at": report_at - timedelta(hours=HOURS_BEFORE[key]),
+            "sent": live_sent[key],
+        }
+        for key in LIVE_KEYS
+    ]
     sent_doses = set(doses_sent(row))
     for dose in doses or []:
         agent = dose.get("agent") or "picoprep"

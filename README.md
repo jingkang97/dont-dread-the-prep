@@ -44,7 +44,7 @@ Frontend is on Vercel at [dont-dread-the-prep.vercel.app](https://dont-dread-the
    | `DEBUG` | `false` |
    | `SITE_URL` | `https://dont-dread-the-prep.vercel.app` (Telegram buttons; defaults to this when `DEBUG=false`) |
    | `TELEGRAM_BOT_TOKEN` | BotFather token |
-   | `TELEGRAM_REMINDER_TEST` | `true` for the demo ladder (now / +1 min / +2 min, then 3 hourly, then 3 daily). `false` = live T−72 / T−24 / T−6 |
+   | `TELEGRAM_REMINDER_TEST` | `true` for the demo ladder (72h / 24h / each prep dose / 6h one minute apart, then 3 hourly, then 3 daily). `false` = live 72 / 24 / 6 hours before plus hospital dose times |
    | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Web Push pair (`npx web-push generate-vapid-keys`) |
    | `VAPID_MAILTO` | `mailto:you@example.com` |
 

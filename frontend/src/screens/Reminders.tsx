@@ -24,6 +24,7 @@ const WA_COPY: Record<string, { label: StringKey; blurb: StringKey }> = {
   t6: { label: 'wa.t6', blurb: 'wa.t6b' },
   dose: { label: 'wa.dose', blurb: 'wa.doseb' },
   peg: { label: 'wa.peg', blurb: 'wa.pegb' },
+  step: { label: 'wa.step', blurb: 'wa.stepb' },
   p1: { label: 'wa.p1', blurb: 'wa.p1b' },
   p2: { label: 'wa.p2', blurb: 'wa.p2b' },
   p3: { label: 'wa.p3', blurb: 'wa.p3b' },
