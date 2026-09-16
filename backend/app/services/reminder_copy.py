@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import html
-from datetime import date, datetime, time
+from datetime import date, time
 from typing import Any, TypedDict
 
 
@@ -14,32 +14,32 @@ class ReminderCopy(TypedDict, total=False):
 # Fallback labels for demo extras and older clients.
 ITEMS: dict[str, ReminderCopy] = {
     "t14": {
-        "title": "14 days before · Medication check",
-        "body": "Check which medications you may need to stop next week.",
+        "title": "14 days before · Check your medications",
+        "body": "Your colonoscopy is on your appointment date. There may be some medications that you need to stop in 1 week's time. Please check the instructions given by your hospital.",
     },
     "med7": {
         "title": "7 days before · Stop certain medications",
-        "body": "Stop medications as instructed by your clinic",
+        "body": "Your colonoscopy is on your appointment date. If you were instructed to stop certain medications 7 days before your colonoscopy, please stop them today. Please follow the instructions given by your hospital.",
     },
     "sglt2": {
         "title": "Stop SGLT2 inhibitors",
-        "body": "Stop your SGLT2 inhibitor today, if instructed.",
+        "body": "Your colonoscopy is on your appointment date. If you were instructed to stop your SGLT2 inhibitor before your colonoscopy, please stop it today. Please follow the instructions given by your hospital.",
     },
     "diet": {
         "title": "3 days before · Start low-residue diet",
-        "body": "Start your prescribed low-residue diet today.",
+        "body": "Your colonoscopy is on your appointment date. Please start your low-residue diet today, as prescribed by your clinic. Please follow the dietary instructions given by your hospital.",
     },
     "prep_start": {
         "title": "1 day before · Start bowel preparation",
-        "body": "Start your prescribed bowel preparation today.",
+        "body": "Your colonoscopy is tomorrow. Please start your bowel preparation today and take your prescribed bowel preparation solution at the instructed time. Please follow the instructions given by your hospital.",
     },
     "stool": {
-        "title": "Check your stool",
-        "body": "If still brown, cloudy or solid, contact your clinic.",
+        "title": "During bowel preparation · Check your stool",
+        "body": "As you complete your bowel preparation, check your stool. Your stool should become light yellow, watery and clear, like urine, with little or no solid material.",
     },
     "fast": {
-        "title": "Stop all fluids",
-        "body": "Stop drinking all fluids, including water, now.",
+        "title": "2 hours before · Stop all fluids",
+        "body": "Your colonoscopy is in 2 hours. Please stop drinking all fluids now, including water. Please follow the instructions given by your hospital.",
     },
     "dose": {
         "title": "Prep dose",
@@ -89,10 +89,6 @@ def fmt_date(value: date) -> str:
     return value.strftime("%d %b %Y").lstrip("0").replace(" 0", " ")
 
 
-def fmt_time(value: time) -> str:
-    return datetime.combine(date.min, value).strftime("%I:%M %p").lstrip("0")
-
-
 def days_phrase(n: int) -> str:
     n = abs(int(n))
     return "1 day" if n == 1 else f"{n} days"
@@ -106,146 +102,122 @@ def hours_phrase(hours: float) -> str:
     return f"{text} hours"
 
 
-def _ctx(hospital: str, procedure_date: date, reporting_time: time) -> dict[str, str]:
+def _message(copy_key: str, title: str, body: str, *bold: str, go: str = "timeline") -> dict[str, str]:
+    html_body = _esc(body)
+    for piece in bold:
+        if not piece:
+            continue
+        token = _esc(piece)
+        html_body = html_body.replace(token, f"<b>{token}</b>", 1)
     return {
-        "hospital": _esc(hospital),
-        "date": _esc(fmt_date(procedure_date)),
-        "time": _esc(fmt_time(reporting_time)),
+        "copy_key": copy_key,
+        "title": title,
+        "body": body,
+        "html": wrap_html(title, html_body),
+        "go": go,
     }
 
 
 def t14_copy(hospital: str, procedure_date: date, reporting_time: time) -> dict[str, str]:
-    ctx = _ctx(hospital, procedure_date, reporting_time)
-    title = "14 days before · Medication check"
-    body = "Check which medications you may need to stop next week."
-    long_html = (
-        f"<b>Upcoming colonoscopy at {ctx['hospital']}: {ctx['date']}</b>\n\n"
-        f"Your colonoscopy is scheduled for <b>{ctx['date']}</b> and <b>{ctx['time']}</b>.\n\n"
-        "Some medications may need to be stopped or adjusted <b>1 week before your colonoscopy</b>.\n\n"
-        "Please check the preparation instructions provided by your hospital to see if this applies "
-        "to any of your medications. <b>Do not stop any medication unless instructed to do so.</b>\n\n"
-        "If you are unsure, please contact your healthcare team for advice."
+    stamp = fmt_date(procedure_date)
+    return _message(
+        "t14",
+        "14 days before · Check your medications",
+        (
+            f"Your colonoscopy is on {stamp}. There may be some medications "
+            "that you need to stop in 1 week's time. Please check the instructions given by your hospital."
+        ),
+        stamp,
     )
-    return {"copy_key": "t14", "title": title, "body": body, "html": wrap_html(title, long_html), "go": "timeline"}
 
 
 def med7_copy(
     hospital: str, procedure_date: date, reporting_time: time, *, days: int
 ) -> dict[str, str]:
-    ctx = _ctx(hospital, procedure_date, reporting_time)
+    stamp = fmt_date(procedure_date)
     when = days_phrase(days)
-    title = f"{when} before · Stop certain medications"
-    body = "Stop medications as instructed by your clinic"
-    long_html = (
-        f"<b>Upcoming colonoscopy at {ctx['hospital']}: {ctx['date']}</b>\n\n"
-        f"Your colonoscopy is in <b>{when}</b>.\n\n"
-        f"If you were instructed to stop or adjust certain medications <b>{when} before your colonoscopy</b>, "
-        "please do so <b>TODAY</b>. This may include certain blood-thinning medications, Iron supplements, "
-        "anti-diarrhea medications and blood-thinning supplements.\n\n"
-        "Please follow the medication instructions provided by your hospital. "
-        "<b>Do not stop any medication unless you have been instructed to do so.</b>\n\n"
-        "If you are unsure which medications to stop or adjust, please contact your healthcare team for advice."
+    return _message(
+        "med7",
+        f"{when} before · Stop certain medications",
+        (
+            f"Your colonoscopy is on {stamp}. If you were instructed to stop certain medications "
+            f"{when} before your colonoscopy, please stop them today. Please follow the instructions given by your hospital."
+        ),
+        stamp,
+        when,
     )
-    return {"copy_key": "med7", "title": title, "body": body, "html": wrap_html(title, long_html), "go": "timeline"}
 
 
 def sglt2_copy(
     hospital: str, procedure_date: date, reporting_time: time, *, days: int
 ) -> dict[str, str]:
-    ctx = _ctx(hospital, procedure_date, reporting_time)
+    stamp = fmt_date(procedure_date)
     when = days_phrase(days)
-    title = f"{when} before · Stop SGLT2 inhibitors"
-    body = "Stop your SGLT2 inhibitor today, if instructed."
-    long_html = (
-        f"<b>Upcoming colonoscopy at {ctx['hospital']}: {ctx['date']}</b>\n\n"
-        f"Your colonoscopy is in <b>{when}</b>.\n\n"
-        f"If you are taking an SGLT2 inhibitor and have been instructed to stop it <b>{when} before your "
-        "colonoscopy</b>, please stop it <b>TODAY</b>.\n\n"
-        "SGLT2 inhibitors include:\n"
-        "• Dapagliflozin (e.g. Forxiga)\n"
-        "• Empagliflozin (e.g. Jardiance)\n"
-        "• Canagliflozin (e.g. Invokana)\n"
-        "• Combination medicines containing dapagliflozin or empagliflozin or canagliflozin "
-        "(e.g. Xigduo XR, Jardiance Duo, Glyxambi, Invokamet, Invokamet XR)\n\n"
-        "Please check the medication instructions provided by your hospital. "
-        "<b>Do not stop any medication unless you have been instructed to do so.</b>\n\n"
-        "If you are unsure whether your medication contains dapagliflozin or empagliflozin, "
-        "please contact your healthcare team for advice."
+    return _message(
+        "sglt2",
+        f"{when} before · Stop SGLT2 inhibitors",
+        (
+            f"Your colonoscopy is on {stamp}. If you were instructed to stop your SGLT2 inhibitor "
+            f"{when} before your colonoscopy, please stop it today. Please follow the instructions given by your hospital."
+        ),
+        stamp,
+        when,
     )
-    return {"copy_key": "sglt2", "title": title, "body": body, "html": wrap_html(title, long_html), "go": "timeline"}
 
 
 def diet_copy(
     hospital: str, procedure_date: date, reporting_time: time, *, days: int
 ) -> dict[str, str]:
-    ctx = _ctx(hospital, procedure_date, reporting_time)
+    stamp = fmt_date(procedure_date)
     when = days_phrase(days)
-    title = f"{when} before · Start low-residue diet"
-    body = "Start your prescribed low-residue diet today."
-    long_html = (
-        f"<b>Upcoming colonoscopy at {ctx['hospital']}: {ctx['date']}</b>\n\n"
-        f"Your colonoscopy is in <b>{when}</b>.\n\n"
-        "<b>Please start your low-residue diet TODAY</b>, as prescribed by your clinic.\n\n"
-        "Follow the dietary instructions provided by your clinic on <b>what you can eat and what you should "
-        "avoid</b> in the days leading up to your colonoscopy.\n\n"
-        "Following the recommended diet helps prepare your bowel for a successful colonoscopy.\n\n"
-        "If you are unsure about what you can eat, please refer to your clinic's instructions or contact "
-        "your healthcare team."
+    return _message(
+        "diet",
+        f"{when} before · Start low-residue diet",
+        (
+            f"Your colonoscopy is on {stamp}. Please start your low-residue diet today, as prescribed "
+            "by your clinic. Please follow the dietary instructions given by your hospital."
+        ),
+        stamp,
     )
-    return {"copy_key": "diet", "title": title, "body": body, "html": wrap_html(title, long_html), "go": "timeline"}
 
 
 def prep_start_copy(hospital: str, procedure_date: date, reporting_time: time) -> dict[str, str]:
-    ctx = _ctx(hospital, procedure_date, reporting_time)
-    title = "1 day before · Start bowel preparation"
-    body = "Start your prescribed bowel preparation today."
-    long_html = (
-        f"<b>Your colonoscopy at {ctx['hospital']} is tomorrow: {ctx['date']}</b>\n\n"
-        f"Your colonoscopy is scheduled for <b>{ctx['date']}</b> and <b>{ctx['time']}</b>.\n\n"
-        "<b>Start your prescribed bowel preparation today.</b>\n\n"
-        "<b>Tips to make it easier to drink</b>\n"
-        "• Chill the bowel preparation solution"
+    stamp = fmt_date(procedure_date)
+    return _message(
+        "prep_start",
+        "1 day before · Start bowel preparation",
+        (
+            f"Your colonoscopy is tomorrow, {stamp}. Please start your bowel preparation today and "
+            "take your prescribed bowel preparation solution at the instructed time. Please follow the "
+            "instructions given by your hospital."
+        ),
+        stamp,
     )
-    return {
-        "copy_key": "prep_start",
-        "title": title,
-        "body": body,
-        "html": wrap_html(title, long_html),
-        "go": "timeline",
-    }
 
 
-def stool_copy(*, hours: float) -> dict[str, str]:
-    when = hours_phrase(hours)
-    title = f"{when} before · Check your stool"
-    body = "If still brown, cloudy or solid, contact your clinic."
-    long_html = (
-        "<b>Check your stool before your colonoscopy</b>\n\n"
-        "Your bowel preparation is working well when your stool becomes:\n\n"
-        "✓ Light yellow or yellowish\n"
-        "✓ Watery\n"
-        "✓ Clear or see-through, similar to urine\n"
-        "✓ With little or no solid material\n\n"
-        "<b>The goal: Light yellow, watery and clear.</b>\n\n"
-        f"<b>{when} before your scheduled colonoscopy:</b>\n"
-        "If your stool is still brown, cloudy or contains solid pieces, please contact your clinic "
-        "for further instructions."
+def stool_copy(*, hours: float = 0) -> dict[str, str]:
+    return _message(
+        "stool",
+        "During bowel preparation · Check your stool",
+        (
+            "As you complete your bowel preparation, check your stool. Your stool should become light yellow, "
+            "watery and clear, like urine, with little or no solid material."
+        ),
+        go="stool",
     )
-    return {"copy_key": "stool", "title": title, "body": body, "html": wrap_html(title, long_html), "go": "stool"}
 
 
 def fast_copy(*, hours: float) -> dict[str, str]:
     when = hours_phrase(hours)
-    title = f"{when} before · Stop all fluids"
-    body = "Stop drinking all fluids, including water, now."
-    long_html = (
-        f"<b>Your colonoscopy is in {when}</b>\n\n"
-        "Please <b>STOP drinking all fluids including water.</b>\n\n"
-        "Please do not drink again until after your colonoscopy, unless otherwise instructed by your "
-        "healthcare team.\n\n"
-        "Following these instructions is important for your safety during the procedure."
+    return _message(
+        "fast",
+        f"{when} before · Stop all fluids",
+        (
+            f"Your colonoscopy is in {when}. Please stop drinking all fluids now, including water. "
+            "Please follow the instructions given by your hospital."
+        ),
+        when,
     )
-    return {"copy_key": "fast", "title": title, "body": body, "html": wrap_html(title, long_html), "go": "timeline"}
 
 
 def dose_copy(title: str, *, agent: str, detail: str = "") -> dict[str, str]:

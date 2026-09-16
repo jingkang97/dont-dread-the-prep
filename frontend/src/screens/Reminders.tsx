@@ -116,9 +116,12 @@ export function Reminders({
       )}
       <div className="mt-2 grid grid-cols-2 gap-3">
         <Card className="flex flex-col p-3.5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-teal/15 text-teal-deep">
-            <Bell size={18} />
-          </span>
+          <div className="flex items-start justify-between gap-2">
+            <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-teal/15 text-teal-deep">
+              <Bell size={18} />
+            </span>
+            {session.pushOptIn && <OnBadge>{t('wa.on')}</OnBadge>}
+          </div>
           <p className="mt-2.5 text-[15px] font-semibold leading-tight text-ink">{t('wa.pushTitle')}</p>
           <p className="mt-1 flex-1 text-[12px] leading-relaxed text-ink-soft">{t('wa.pushBody')}</p>
           {session.pushOptIn ? (
@@ -140,11 +143,16 @@ export function Reminders({
         </Card>
 
         <Card className="flex flex-col p-3.5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-telegram text-white">
-            <TelegramMark />
-          </span>
+          <div className="flex items-start justify-between gap-2">
+            <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-telegram text-white">
+              <TelegramMark />
+            </span>
+            {session.telegramLinked && <OnBadge>{t('wa.on')}</OnBadge>}
+          </div>
           <p className="mt-2.5 text-[15px] font-semibold leading-tight text-ink">{t('wa.sandbox')}</p>
-          <p className="mt-1 flex-1 text-[12px] leading-relaxed text-ink-soft">{t('wa.sandboxBody')}</p>
+          <p className="mt-1 flex-1 text-[12px] leading-relaxed text-ink-soft">
+            {t(session.telegramLinked ? 'wa.sandboxBodyOn' : 'wa.sandboxBody')}
+          </p>
           <a
             href={href}
             target="_blank"
@@ -155,7 +163,7 @@ export function Reminders({
             }}
           >
             <PrimaryButton className="bg-telegram py-2.5 text-[14px]">
-              {telegram.waiting ? t('wa.waiting') : t('wa.open')}
+              {telegram.waiting && !session.telegramLinked ? t('wa.waiting') : t('wa.open')}
             </PrimaryButton>
           </a>
         </Card>
@@ -169,15 +177,18 @@ export function Reminders({
           {t(push.error === 'denied' ? 'wa.pushDenied' : 'wa.pushError')}
         </p>
       )}
-      {session.pushOptIn && <p className="mt-3 text-[13px] font-semibold text-yes">{t('wa.pushOn')}</p>}
-
-      {session.telegramLinked && (
-        <p className="mt-3 text-center text-[13px] font-semibold text-yes">{t('wa.optin')}</p>
-      )}
       {telegram.timedOut && !session.telegramLinked && (
-        <p className="mt-3 text-center text-[13px] font-semibold text-no">{t('wa.waitingTimeout')}</p>
+        <p className="mt-3 text-[13px] font-semibold text-no">{t('wa.waitingTimeout')}</p>
       )}
     </div>
+  )
+}
+
+function OnBadge({ children }: { children: string }) {
+  return (
+    <span className="rounded-full bg-yes-bg px-2 py-0.5 text-[10px] font-bold tracking-wide text-yes">
+      {children}
+    </span>
   )
 }
 
