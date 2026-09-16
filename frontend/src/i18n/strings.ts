@@ -4,8 +4,6 @@ export type Lang = 'en'
 
 export const EN = {
   ...CLINICAL_EN,
-  'draft.banner':
-    'Draft prototype — not medical advice. Food answers use an unapproved ruleset (Doc 03). **Always follow your own hospital’s form.**',
   'nav.home': 'Home',
   'nav.timeline': 'Timeline',
   'nav.food': 'Food',
@@ -78,7 +76,7 @@ export const EN = {
   'home.contactsBody': 'Call the numbers for your hospital when you need help.',
   'home.waTitle': 'Get prep reminders',
   'home.waOn': 'Reminders on',
-  'home.waBody': 'Telegram or this phone. T−72, T−24, T−6, plus each prep dose from your hospital sheet.',
+  'home.waBody': 'Telegram or this phone. 72 hours, 24 hours, and 6 hours before, plus each prep dose from your hospital sheet.',
   'home.waCta': 'Set reminders',
   'home.waOnCta': 'View reminders',
   'home.faithful': 'Hospital-faithful, on purpose',
@@ -114,7 +112,7 @@ export const EN = {
   'tour.2t': 'Change date or hospital',
   'tour.2d': 'Tap Edit to change the appointment time. Start over if you need a different hospital.',
   'tour.3t': 'Reminders',
-  'tour.3d': 'Telegram or this phone — same T−72, T−24, and T−6 reminders.',
+  'tour.3d': 'Telegram or this phone — same alerts at 72 hours, 24 hours, and 6 hours before.',
   'tour.4t': 'Food, stool, and contacts',
   'tour.4d': 'Check a food against your hospital sheet, open the stool guide, or call your hospital.',
   'tour.5t': 'The four tabs',
@@ -169,7 +167,7 @@ export const EN = {
   'contacts.lead': 'Call these numbers if you need help with your prep.',
   'contacts.call': 'Call {phone}',
   'stool.reminders': 'Set reminders',
-  'stool.remindersBody': 'T−72, T−24, and T−6 on Telegram or this phone.',
+  'stool.remindersBody': '72 hours, 24 hours, and 6 hours before, on Telegram or this phone.',
   'stool.ready': 'Ready',
   'stool.almost': 'Almost',
   'stool.notReady': 'Not ready',
@@ -177,9 +175,9 @@ export const EN = {
   'wa.title': 'Reminders',
   'wa.welcome': 'How alerts work',
   'wa.welcomeBody':
-    'Pick this phone, Telegram, or both. Checkpoints at T−72, T−24, and T−6, plus each Picoprep or PEG dose from your hospital sheet.',
+    'Pick this phone, Telegram, or both. Alerts at 72 hours, 24 hours, and 6 hours before, plus each Picoprep or PEG dose from your hospital sheet.',
   'wa.welcomeBodyDemo':
-    'Demo clock: T−72, T−24, Picoprep 1–4, then T−6 one minute apart, then 3 hourly and 3 daily.',
+    'Demo clock: 72 hours before, 24 hours before, each hospital prep dose, then 6 hours before, one minute apart, then 3 hourly and 3 daily.',
   'wa.lead':
     'Reminders do not answer food questions. Timeline and food answers stay in session {id} here.',
   'wa.times': 'Your alert times',
@@ -187,7 +185,7 @@ export const EN = {
   'wa.sent': 'sent',
   'wa.computed': 'Checkpoints from {hospital} reporting time {time}. Prep doses follow that hospital’s sheet.',
   'wa.computedDemo':
-    'Demo times start when you link: T−72, T−24, Picoprep 1–4, T−6 one minute apart, then hourly and daily. Hospital packet times still fire on their real clock.',
+    'Demo times start when you link: 72 hours before, 24 hours before, each hospital prep dose, 6 hours before, one minute apart, then hourly and daily.',
   'wa.sandbox': 'Telegram',
   'wa.sandboxBody':
     "Opens the bot with this session. Tap 'start' once so we can send checkpoints and your hospital’s prep doses.",
@@ -201,9 +199,9 @@ export const EN = {
   'wa.optin': 'Telegram reminders are on for session {id}.',
   'wa.copy': 'Copy session id {id}',
   'wa.copied': 'Copied {id}',
-  'wa.t72': 'T−72 hours',
-  'wa.t24': 'T−24 hours',
-  'wa.t6': 'T−6 hours',
+  'wa.t72': '72 hours before',
+  'wa.t24': '24 hours before',
+  'wa.t6': '6 hours before',
   'wa.t72b': 'Low-residue diet should already be underway.',
   'wa.t24b': 'Eve of scope. Last meal and first Picoprep doses are close.',
   'wa.t6b': 'Final doses and fasting cutoff. Check stool colour before you leave.',
@@ -211,6 +209,8 @@ export const EN = {
   'wa.doseb': 'Time to mix and drink this dose.',
   'wa.peg': 'PEG dose',
   'wa.pegb': 'Time to mix and drink PEG.',
+  'wa.step': 'Timeline step',
+  'wa.stepb': 'See your timeline for this step.',
   'wa.p1': 'Picoprep packet 1',
   'wa.p1b': 'Time to mix and drink packet 1.',
   'wa.p2': 'Picoprep packet 2',
@@ -261,7 +261,7 @@ export const EN = {
   'pitch.3t': 'Can I eat this?',
   'pitch.3d': 'Yes, no, or ask your care team — from the hospital rules, not guessed.',
   'pitch.4t': 'Reminders that bring you back',
-  'pitch.4d': 'T−72, T−24, and T−6 on Telegram or this phone. Each alert opens PrepPath.',
+  'pitch.4d': '72 hours, 24 hours, and 6 hours before, on Telegram or this phone. Each alert opens PrepPath.',
   'pitch.live': 'Live session',
   'pitch.scan': 'Scan to open the live demo',
   'hosp.sgh.name': 'Singapore General Hospital',

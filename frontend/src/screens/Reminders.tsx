@@ -1,5 +1,5 @@
 import { format, isAfter, parseISO } from 'date-fns'
-import { Bell, Check, Info } from 'lucide-react'
+import { Bell, Check, ChevronLeft, Info } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useEffect } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
@@ -24,6 +24,7 @@ const WA_COPY: Record<string, { label: StringKey; blurb: StringKey }> = {
   t6: { label: 'wa.t6', blurb: 'wa.t6b' },
   dose: { label: 'wa.dose', blurb: 'wa.doseb' },
   peg: { label: 'wa.peg', blurb: 'wa.pegb' },
+  step: { label: 'wa.step', blurb: 'wa.stepb' },
   p1: { label: 'wa.p1', blurb: 'wa.p1b' },
   p2: { label: 'wa.p2', blurb: 'wa.p2b' },
   p3: { label: 'wa.p3', blurb: 'wa.p3b' },
@@ -34,10 +35,12 @@ export function Reminders({
   session,
   onSession,
   onShortcut,
+  onBack,
 }: {
   session: PrepSession
   onSession: (s: PrepSession) => void
   onShortcut: (os: 'ios' | 'android') => void
+  onBack: () => void
 }) {
   const { t, lang } = useLang()
   const { copied, copy } = useCopyToClipboard()
@@ -81,6 +84,14 @@ export function Reminders({
 
   return (
     <div className="px-5 pb-10 pt-6">
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-3 inline-flex items-center gap-0.5 text-[13px] font-semibold text-teal-deep"
+      >
+        <ChevronLeft size={16} strokeWidth={2.4} />
+        {t('nav.home')}
+      </button>
       <ScreenHeader kicker={t('wa.kicker')} title={t('wa.title')} lead={t('wa.lead', { id: session.id })} />
 
       <Card className="mt-5 p-4">

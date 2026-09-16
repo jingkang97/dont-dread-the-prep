@@ -27,9 +27,7 @@ async def lifespan(_app: FastAPI):
     public_https = settings.resolved_public_api_url.startswith("https://")
     if token and (settings.telegram_poll or public_https):
         tasks.append(asyncio.create_task(start_telegram_listener(stop), name="telegram-listener"))
-    if (token or vapid_configured()) and (
-        not settings.debug or settings.telegram_poll or settings.telegram_reminder_test
-    ):
+    if token or vapid_configured():
         tasks.append(asyncio.create_task(run_reminder_loop(stop), name="telegram-reminders"))
     log.info(
         "Reminders telegram=%s push=%s test=%s poll=%s site=%s api=%s",

@@ -61,7 +61,7 @@ export async function enablePush(session: PrepSession): Promise<PrepSession> {
   const next = { ...session, pushOptIn: true }
   saveSession(next)
   await registration.showNotification("You're set for reminders", {
-    body: "You'll get three alerts before your colonoscopy: T−72h, T−24h, and T−6h.",
+    body: "You'll get three alerts before your colonoscopy: 72 hours, 24 hours, and 6 hours before.",
     icon: '/icon-192.png',
     data: { url: `/?s=${encodeURIComponent(session.id)}&go=timeline` },
   })

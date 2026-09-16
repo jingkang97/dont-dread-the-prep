@@ -1,5 +1,4 @@
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
-import { DraftBanner } from './components/ui'
 import { BottomNav } from './components/BottomNav'
 import { Onboarding } from './screens/Onboarding'
 import { Home } from './screens/Home'
@@ -12,7 +11,7 @@ import { SessionBar } from './components/SessionBar'
 import { PitchRail } from './components/PitchRail'
 import { AppointmentChooser, ChangeDatePanel, StartOverSheet } from './components/AppointmentEdit'
 import { ShortcutSheet } from './components/ShortcutSheet'
-import { fadeY } from './lib/motion'
+import { fadeY, pageSlide } from './lib/motion'
 import { formatSessionWhen } from './lib/dates'
 import { useLang } from './i18n/LanguageContext'
 import { cn } from './lib/cn'
@@ -21,14 +20,24 @@ import { useHomeTour } from './hooks/useHomeTour'
 import { useSession } from './hooks/useSession'
 import { startHomeTour } from './lib/homeTour'
 import { isStandaloneDisplay } from './lib/push'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import type { Screen } from './lib/session'
 
 export default function App() {
   const { lang, t } = useLang()
   const { session, setSession, screen, setScreen, ready, create, clear, update } = useSession()
   const edit = useAppointmentEdit()
   const [shortcut, setShortcut] = useState<'off' | 'ios' | 'android'>('off')
+  const homeLeafRef = useRef<'home' | 'reminders'>('home')
+  if (!session || screen === 'onboarding') homeLeafRef.current = 'home'
+  else if (screen === 'home' || screen === 'reminders') homeLeafRef.current = screen
+  const homeLeaf = homeLeafRef.current
+  const homeStack = screen === 'home' || screen === 'reminders'
   useHomeTour(ready && !!session && screen === 'home')
+
+  function openTab(id: Screen) {
+    setScreen(id === 'home' ? homeLeafRef.current : id)
+  }
 
   if (!ready) return null
 
@@ -41,7 +50,6 @@ export default function App() {
         data-app-column
         className="relative mx-auto flex h-full min-h-0 w-full max-w-107.5 flex-col overflow-hidden bg-paper xl:border-x xl:border-black/5"
       >
-        <DraftBanner />
         {session && !isStandaloneDisplay() && openedFromExternalLink() && (
           <p className="shrink-0 bg-cream px-4 py-2 text-[13px] leading-snug text-teal-deep">
             {t('app.homescreenHint')}
@@ -69,16 +77,51 @@ export default function App() {
             />
             <div
               data-app-pane
-              className={cn('relative min-h-0 flex-1', screen !== 'timeline' && '**:data-tl-fab:hidden')}
+              className={cn(
+                'relative min-h-0 flex-1 overflow-hidden',
+                screen !== 'timeline' && '**:data-tl-fab:hidden',
+              )}
             >
+              <div
+                aria-hidden={screen !== 'home' && screen !== 'reminders'}
+                className={cn(
+                  'absolute inset-0 overflow-hidden',
+                  screen !== 'home' && screen !== 'reminders' && 'invisible pointer-events-none',
+                )}
+              >
+                <motion.div
+                  initial={false}
+                  animate={{ x: homeLeaf === 'reminders' ? '-100%' : 0 }}
+                  transition={pageSlide(homeStack)}
+                  aria-hidden={screen !== 'home'}
+                  data-home-scroll
+                  className="absolute inset-0 overflow-y-auto overscroll-y-contain"
+                  style={{ pointerEvents: screen === 'home' ? 'auto' : 'none' }}
+                >
+                  <Home session={session} onOpen={setScreen} onShortcut={setShortcut} />
+                </motion.div>
+                <motion.div
+                  initial={false}
+                  animate={{ x: homeLeaf === 'reminders' ? 0 : '100%' }}
+                  transition={pageSlide(homeStack)}
+                  aria-hidden={screen !== 'reminders'}
+                  className="absolute inset-0 overflow-y-auto overscroll-y-contain"
+                  style={{ pointerEvents: screen === 'reminders' ? 'auto' : 'none' }}
+                >
+                  <Reminders
+                    session={session}
+                    onSession={setSession}
+                    onShortcut={setShortcut}
+                    onBack={() => setScreen('home')}
+                  />
+                </motion.div>
+              </div>
               {(
                 [
-                  ['home', <Home session={session} onOpen={setScreen} onShortcut={setShortcut} />],
                   ['timeline', <Timeline session={session} onOpenStool={() => setScreen('stool')} />],
                   ['food', <FoodChat session={session} />],
-                  ['stool', <StoolGuide session={session} onReminders={() => setScreen('reminders')} />],
+                  ['stool', <StoolGuide session={session} />],
                   ['contacts', <Contacts session={session} />],
-                  ['reminders', <Reminders session={session} onSession={setSession} onShortcut={setShortcut} />],
                 ] as const
               ).map(([id, node]) => (
                 <div
@@ -94,7 +137,7 @@ export default function App() {
                 </div>
               ))}
             </div>
-            <BottomNav screen={screen} onChange={setScreen} />
+            <BottomNav screen={screen} onChange={openTab} />
             <AnimatePresence>
             {edit.edit === 'choose' && session && (
               <AppointmentChooser

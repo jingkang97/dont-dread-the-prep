@@ -11,20 +11,16 @@ class ReminderCopy(TypedDict, total=False):
 
 ITEMS: dict[str, ReminderCopy] = {
     "t72": {
-        "title": "T−72 hours",
+        "title": "72 hours before",
         "body": "Low-residue diet should already be underway.",
     },
     "t24": {
-        "title": "T−24 hours",
+        "title": "24 hours before",
         "body": "Eve of scope. Last meal and first Picoprep doses are close.",
     },
     "t6": {
-        "title": "T−6 hours",
+        "title": "6 hours before",
         "body": "Final doses and fasting cutoff. Check stool colour before you leave.",
-        "extra": (
-            "Stages 1–4: not ready — call your hospital or report 2 hours early.\n"
-            "Stage 5: almost. Stage 6: ready."
-        ),
     },
     "dose": {
         "title": "Prep dose",
@@ -33,6 +29,10 @@ ITEMS: dict[str, ReminderCopy] = {
     "peg": {
         "title": "PEG dose",
         "body": "Time to mix and drink PEG.",
+    },
+    "step": {
+        "title": "Timeline step",
+        "body": "See your timeline for this step.",
     },
     "p1": {
         "title": "Picoprep packet 1",

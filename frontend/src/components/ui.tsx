@@ -3,15 +3,6 @@ import { type Verdict } from '../data/foods'
 import { useLang } from '../i18n/LanguageContext'
 import { cn } from '../lib/cn'
 
-export function DraftBanner() {
-  const { tr } = useLang()
-  return (
-    <div className="flex h-11 shrink-0 items-center bg-ask-bg px-4 text-center text-[11px] leading-[1.35] text-ask">
-      <p className="line-clamp-2 w-full">{tr('draft.banner')}</p>
-    </div>
-  )
-}
-
 export function VerdictPill({ verdict, compact }: { verdict: Verdict; compact?: boolean }) {
   const { t } = useLang()
   const map = {
