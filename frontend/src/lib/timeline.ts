@@ -69,18 +69,6 @@ export function fromNowDays(at: Date, now: Date, t: Translate) {
   return t('tl.fromNowDays', { n: String(n) })
 }
 
-function subHours(date: Date, hours: number) {
-  return new Date(date.getTime() - hours * 60 * 60 * 1000)
-}
-
 export function defaultReporting(slot: Slot) {
   return slot === 'am' ? '08:00' : '13:30'
-}
-
-export function remindersFor(report: Date) {
-  return [
-    { key: 't72' as const, label: '72 hours before', at: subHours(report, 72), blurb: 'Low-residue diet should already be underway.' },
-    { key: 't24' as const, label: '24 hours before', at: subHours(report, 24), blurb: 'Eve of scope. Last meal and first Picoprep doses are close.' },
-    { key: 't6' as const, label: '6 hours before', at: subHours(report, 6), blurb: 'Final doses and fasting cutoff. Check stool colour before you leave.' },
-  ]
 }

@@ -48,6 +48,7 @@ export function MealPrep({ session }: { session: PrepSession }) {
               <DishCard
                 key={dish.id}
                 dish={dish}
+                hideApproved
                 footnote={t('food.forHospital', { hospital: session.hospitalShort })}
               />
             ))}

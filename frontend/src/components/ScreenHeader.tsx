@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { SectionLabel } from './ui'
+import { cn } from '../lib/cn'
 
 export function ScreenHeader({
   kicker,
@@ -8,7 +9,7 @@ export function ScreenHeader({
   leadClassName = 'mt-2 text-[14px] leading-relaxed text-ink-soft',
   trailing,
 }: {
-  kicker: string
+  kicker?: string
   title: string
   lead?: ReactNode
   leadClassName?: string
@@ -18,8 +19,10 @@ export function ScreenHeader({
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <SectionLabel>{kicker}</SectionLabel>
-          <h1 className="font-display mt-1 text-[28px] leading-tight text-navy">{title}</h1>
+          {kicker ? <SectionLabel>{kicker}</SectionLabel> : null}
+          <h1 className={cn('font-display text-[28px] leading-tight text-navy', kicker && 'mt-1')}>
+            {title}
+          </h1>
         </div>
         {trailing}
       </div>

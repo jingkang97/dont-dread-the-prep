@@ -16,17 +16,18 @@ from app.db.session import session_scope
 from app.services.reminder_schedule import (
     demo_mode,
     late_notice_html,
-    skip_late_windows,
+    next_unsent_event,
+    skip_late_events,
     start_demo_clock,
-    upcoming_live,
 )
+from app.services.timeline import live_reminder_events_for
 
 log = logging.getLogger(__name__)
 
 API = "https://api.telegram.org/bot{token}/{method}"
 
 WELCOME_TEST = (
-    "Demo clock: 72 hours before, 24 hours before, each hospital prep dose, then 6 hours before, one minute apart, then 3 hourly, then 3 daily."
+    "Demo clock: each reminder from your timeline, one minute apart, then hourly and daily extras."
 )
 NEED_CODE = (
     "Open PrepPath and tap Set reminders so I can attach this chat to your session."
@@ -125,8 +126,8 @@ def welcome_text(code: str, first_name: str | None) -> str:
         cadence = WELCOME_TEST
     else:
         cadence = (
-            "You'll get three alerts before your colonoscopy: "
-            "<b>72 hours</b>, <b>24 hours</b>, and <b>6 hours</b> before."
+            "You'll get reminders timed to your timeline: medicines, diet, each prep dose, "
+            "a stool check, and when to stop fluids."
         )
     if _show_session_debug():
         bits.append(f"Session {html.escape(code)}.")
@@ -145,14 +146,15 @@ def _link_session(chat_id: int, code: str) -> dict[str, Any] | None:
         if row is None:
             return None
         row.telegram_chat_id = chat_id
-        skipped: list[str] = []
+        skipped: list[dict[str, Any]] = []
         nxt = None
         if demo_mode():
             start_demo_clock(row, restart=True)
         else:
             now = datetime.now(timezone.utc)
-            skipped = skip_late_windows(row, now)
-            nxt = upcoming_live(row, now)
+            events = live_reminder_events_for(db, row)
+            skipped = skip_late_events(row, now, events)
+            nxt = next_unsent_event(row, events)
             if skipped:
                 row.reminder_late_notice_sent_at = now
         return {

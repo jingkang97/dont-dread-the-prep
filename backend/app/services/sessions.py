@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, time
-from zoneinfo import ZoneInfo
+from datetime import time
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -20,9 +19,7 @@ from app.schemas.session import (
     StoolScaleOut,
 )
 from app.services.reminder_schedule import demo_mode, reminder_plan, reset_reminder_clock
-from app.services.timeline import dose_reminders_for
-
-SG = ZoneInfo("Asia/Singapore")
+from app.services.timeline import live_reminder_events_for
 
 PUBLIC_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 PUBLIC_CODE_LENGTH = 4
@@ -84,11 +81,7 @@ def session_to_out(row: Session, hospital: Hospital, protocol: Protocol, db: DbS
         push_opt_in=bool(row.push_endpoint),
         telegram_linked=row.telegram_chat_id is not None,
         reminder_mode="demo" if demo_mode() else "live",
-        reminder_plan=reminder_plan(
-            row,
-            datetime.combine(row.procedure_date, row.reporting_time, tzinfo=SG),
-            dose_reminders_for(db, row),
-        ),
+        reminder_plan=reminder_plan(row, live_reminder_events_for(db, row)),
         created_at=row.created_at,
     )
 

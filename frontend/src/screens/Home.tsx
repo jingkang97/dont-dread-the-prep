@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { format, formatDistanceStrict, isAfter } from 'date-fns'
 import { ArrowRight, Bell, Droplets, EllipsisVertical, Phone, Sparkles, Utensils } from 'lucide-react'
-import { Card, SectionLabel } from '../components/ui'
+import { Card } from '../components/ui'
 import { cn } from '../lib/cn'
 import { useLang } from '../i18n/LanguageContext'
 import type { PrepSession, Screen } from '../lib/session'
@@ -28,10 +28,9 @@ export function Home({
   return (
     <div className="px-5 pb-8 pt-6">
       <div data-tour="home-hero">
-        <SectionLabel>{t('home.session', { id: session.id })}</SectionLabel>
         {session.firstName ? (
           <>
-            <h1 className="font-display mt-1 text-[32px] leading-[1.1] tracking-tight text-ink">
+            <h1 className="font-display text-[32px] leading-[1.1] tracking-tight text-ink">
               {t('home.hi', { name: session.firstName })}
             </h1>
             <p className="mt-1 text-[17px] font-semibold text-ink">
@@ -41,7 +40,7 @@ export function Home({
             </p>
           </>
         ) : (
-          <h1 className="font-display mt-1 text-[32px] leading-[1.1] tracking-tight text-ink">
+          <h1 className="font-display text-[32px] leading-[1.1] tracking-tight text-ink">
             {t(session.slot === 'am' ? 'home.morningScope' : 'home.afternoonScope', {
               hospital: hospital.short,
             })}
@@ -101,16 +100,6 @@ export function Home({
             <p className="font-display text-[20px] leading-tight tracking-tight text-ink">
               {t(remindersOn ? 'home.waOn' : 'home.waTitle')}
             </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {['72 hours before', '24 hours before', '6 hours before'].map((label) => (
-                <span
-                  key={label}
-                  className="rounded-full bg-cream px-2 py-0.5 text-[11px] font-semibold text-teal-deep"
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
             <p className="mt-2 text-[13px] leading-relaxed text-muted">{t('home.waBody')}</p>
             <button
               type="button"

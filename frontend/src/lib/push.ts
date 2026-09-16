@@ -61,7 +61,7 @@ export async function enablePush(session: PrepSession): Promise<PrepSession> {
   const next = { ...session, pushOptIn: true }
   saveSession(next)
   await registration.showNotification("You're set for reminders", {
-    body: "You'll get three alerts before your colonoscopy: 72 hours, 24 hours, and 6 hours before.",
+    body: 'Reminders follow your timeline — meds, diet, prep doses, stool check, and fasting.',
     icon: '/icon-192.png',
     data: { url: `/?s=${encodeURIComponent(session.id)}&go=timeline` },
   })
