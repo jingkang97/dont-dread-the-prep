@@ -14,7 +14,7 @@ export type ApiStoolReady = 'not' | 'almost' | 'ready'
 export type ApiStoolScaleStage = {
   n: number
   name: string
-  look: string
+  look?: string | null
   ready: ApiStoolReady | null
   color?: string | null
   photo?: string | null

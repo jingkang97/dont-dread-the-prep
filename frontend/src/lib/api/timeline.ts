@@ -12,6 +12,7 @@ export type ApiTimelineEvent = {
   tentative: boolean
   agent: string | null
   prep_image_label: string | null
+  all_day?: boolean
   sort_order: number
 }
 

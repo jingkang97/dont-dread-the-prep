@@ -89,7 +89,7 @@ class StoolScaleStage(Base):
     )
     n: Mapped[int] = mapped_column(Integer, nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    look: Mapped[str] = mapped_column(Text, nullable=False)
+    look: Mapped[Optional[str]] = mapped_column(Text)
     ready: Mapped[Optional[str]] = mapped_column(Text)
     color: Mapped[Optional[str]] = mapped_column(Text)
     photo: Mapped[Optional[str]] = mapped_column(Text)
@@ -252,29 +252,4 @@ class HospitalMedStop(Base):
     )
 
     hospital: Mapped[Hospital] = relationship(Hospital, back_populates="med_stops")
-    items: Mapped[list["HospitalMedStopItem"]] = relationship(
-        "HospitalMedStopItem",
-        back_populates="stop",
-        viewonly=True,
-        order_by="HospitalMedStopItem.sort_order",
-    )
-
-
-class HospitalMedStopItem(Base):
-    __tablename__ = "hospital_med_stop_items"
-    __table_args__ = (
-        UniqueConstraint(
-            "stop_id", "med_key", name="hospital_med_stop_items_stop_id_med_key_key"
-        ),
-    )
-
-    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    stop_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("hospital_med_stops.id", ondelete="CASCADE"), nullable=False
-    )
-    med_key: Mapped[str] = mapped_column(Text, nullable=False)
-    name: Mapped[str] = mapped_column(Text, nullable=False)
-    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-
-    stop: Mapped[HospitalMedStop] = relationship(HospitalMedStop, back_populates="items")
 

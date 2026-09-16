@@ -126,6 +126,7 @@ def get_timeline(db: DbSession, public_code: str) -> TimelineOut:
                 kind="med",
                 title=stop.title,
                 detail=stop.detail,
+                all_day=True,
                 sort_order=stop.sort_order,
             )
         )

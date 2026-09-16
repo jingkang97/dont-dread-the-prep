@@ -10,7 +10,6 @@ export function useApiHospitals() {
   const [hospitalsError, setHospitalsError] = useState<string | null>(cachedError)
 
   useEffect(() => {
-    if (cachedHospitals) return
     let cancelled = false
     ;(async () => {
       try {
@@ -24,13 +23,15 @@ export function useApiHospitals() {
         setHospitalsError(cachedError)
       } catch (err) {
         if (cancelled) return
-        cachedHospitals = null
-        cachedError =
-          err instanceof ApiError
-            ? err.detail
-            : 'Could not load hospitals. Is the API running on port 8000?'
-        setApiHospitals([])
-        setHospitalsError(cachedError)
+        // Keep last good catalog if a refresh fails mid-session.
+        if (!cachedHospitals) {
+          cachedError =
+            err instanceof ApiError
+              ? err.detail
+              : 'Could not load hospitals. Is the API running on port 8000?'
+          setApiHospitals([])
+          setHospitalsError(cachedError)
+        }
       } finally {
         if (!cancelled) setHospitalsLoading(false)
       }

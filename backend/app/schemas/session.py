@@ -38,7 +38,7 @@ class StoolScaleStageOut(BaseModel):
 
     n: int
     name: str
-    look: str
+    look: Optional[str] = None
     ready: Optional[StoolReady] = None
     color: Optional[str] = None
     photo: Optional[str] = None

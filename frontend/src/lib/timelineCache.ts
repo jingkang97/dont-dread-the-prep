@@ -6,7 +6,7 @@ type CachedTimeline = {
   events: TimelineEvent[]
 }
 
-const STORAGE_KEY = 'preppath.timeline.v3'
+const STORAGE_KEY = 'preppath.timeline.v4'
 const memory = new Map<string, CachedTimeline>()
 const inflight = new Map<string, Promise<TimelineEvent[]>>()
 
@@ -32,6 +32,7 @@ function mapEvents(data: ApiTimeline): TimelineEvent[] {
     tentative: e.tentative,
     agent: e.agent,
     prepImageLabel: e.prep_image_label,
+    allDay: e.all_day === true,
   }))
 }
 
