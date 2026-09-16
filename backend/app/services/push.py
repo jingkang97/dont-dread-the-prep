@@ -15,11 +15,12 @@ from datetime import datetime, timezone
 from app.services.reminder_schedule import (
     demo_mode,
     late_notice_push,
-    skip_late_windows,
+    next_unsent_event,
+    skip_late_events,
     start_demo_clock,
-    upcoming_live,
 )
 from app.services.telegram import app_path
+from app.services.timeline import live_reminder_events_for
 
 log = logging.getLogger(__name__)
 
@@ -56,10 +57,11 @@ def save_subscription(code: str, endpoint: str, p256dh: str, auth: str) -> bool:
             start_demo_clock(row)
         else:
             now = datetime.now(timezone.utc)
-            skipped = skip_late_windows(row, now)
+            events = live_reminder_events_for(db, row)
+            skipped = skip_late_events(row, now, events)
             if skipped and row.reminder_late_notice_sent_at is None:
                 row.reminder_late_notice_sent_at = now
-                notice = late_notice_push(skipped, upcoming_live(row, now), app_path(row.public_code))
+                notice = late_notice_push(skipped, next_unsent_event(row, events), app_path(row.public_code))
                 subscription = {
                     "endpoint": row.push_endpoint,
                     "keys": {"p256dh": row.push_p256dh, "auth": row.push_auth},

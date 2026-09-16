@@ -113,6 +113,7 @@ class ReminderPlanItem(BaseModel):
     title: str
     copy_key: str
     delay_label: str
+    body: str = ""
     at: Optional[datetime] = None
     sent: bool = False
 

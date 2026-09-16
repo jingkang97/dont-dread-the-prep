@@ -7,24 +7,14 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.config import get_settings
-from app.services.reminder_copy import ITEMS, item_body, tap_hint
+from app.services.reminder_copy import ITEMS, item_body, tap_hint, wrap_html
 
 SG = ZoneInfo("Asia/Singapore")
-SENT_ATTR = {
-    "t72": "reminder_t72_sent_at",
-    "t24": "reminder_t24_sent_at",
-    "t6": "reminder_t6_sent_at",
-}
-# Still send as a live alert if the window became due in the last couple of minutes.
+# Still send as a live reminder if the window became due in the last couple of minutes.
 LATE_GRACE = timedelta(minutes=2)
 
 if TYPE_CHECKING:
     from app.db.models import Session
-
-LIVE_KEYS = ("t72", "t24", "t6")
-HOURS_BEFORE = {"t72": 72, "t24": 24, "t6": 6}
-DEMO_HOURLY = ("t72", "t24", "t6")
-DEMO_DAILY = ("t72", "t24", "t6")
 
 
 def _delay_label(delay: timedelta) -> str:
@@ -40,80 +30,74 @@ def _delay_label(delay: timedelta) -> str:
     return "1 day" if days == 1 else f"{days} days"
 
 
-def _dose_copy(agent: str | None) -> str:
-    return "peg" if agent == "peg" else "dose"
-
-
-def demo_steps_for(doses: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
-    """Compressed demo ladder: 72h / 24h / each prep dose / 6h, then hourly and daily."""
-    doses = list(doses or [])
-    minute_n = 2 + len(doses) + 1
+def demo_steps_for(events: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """Compressed demo ladder: each live event one minute apart, then hourly and daily extras."""
+    events = list(events or [])
+    extras_n = 3 if events else 0
+    minute_n = len(events) + extras_n + extras_n
     steps: list[dict[str, Any]] = []
     minute = 0
 
-    def add_minute(
-        *,
-        key: str,
-        copy: str,
-        title: str | None = None,
-        dose_agent: str | None = None,
-    ) -> None:
+    def add_minute(event: dict[str, Any], *, key: str | None = None) -> None:
         nonlocal minute
         delay = timedelta(minutes=minute)
-        step: dict[str, Any] = {
-            "key": key,
-            "delay": delay,
-            "copy": copy,
-            "phase": f"Minute {minute + 1}/{minute_n}",
-            "delay_label": _delay_label(delay),
-        }
-        if title:
-            step["title"] = title
-        if dose_agent:
-            step["dose_agent"] = dose_agent
-        steps.append(step)
-        minute += 1
-
-    add_minute(key="m1", copy="t72")
-    add_minute(key="m2", copy="t24")
-    for dose in doses:
-        agent = str(dose.get("agent") or "picoprep")
-        add_minute(
-            key=f"demo-dose:{dose['key']}",
-            copy=_dose_copy(agent),
-            title=str(dose.get("title") or "Prep dose"),
-            dose_agent=agent,
-        )
-    add_minute(key="m-t6", copy="t6")
-
-    for index, copy in enumerate(DEMO_HOURLY, start=1):
-        delay = timedelta(hours=index)
         steps.append(
             {
-                "key": f"h{index}",
+                "key": key or f"demo:{event['key']}",
                 "delay": delay,
-                "copy": copy,
-                "phase": f"Hour {index}/3",
+                "copy": event.get("copy_key") or "step",
+                "title": event.get("title"),
+                "body": event.get("body"),
+                "html": event.get("html"),
+                "go": event.get("go") or "timeline",
+                "phase": f"Minute {minute + 1}/{max(minute_n, 1)}",
                 "delay_label": _delay_label(delay),
             }
         )
-    for index, copy in enumerate(DEMO_DAILY, start=1):
-        delay = timedelta(days=index)
+        minute += 1
+
+    for event in events:
+        add_minute(event)
+
+    sample = events[:3] or events
+    for index in range(extras_n):
+        event = sample[index % len(sample)]
+        delay = timedelta(hours=index + 1)
         steps.append(
             {
-                "key": f"d{index}",
+                "key": f"h{index + 1}",
                 "delay": delay,
-                "copy": copy,
-                "phase": f"Day {index}/3",
+                "copy": event.get("copy_key") or "step",
+                "title": event.get("title"),
+                "body": event.get("body"),
+                "html": event.get("html"),
+                "go": event.get("go") or "timeline",
+                "phase": f"Hour {index + 1}/3",
+                "delay_label": _delay_label(delay),
+            }
+        )
+    for index in range(extras_n):
+        event = sample[index % len(sample)]
+        delay = timedelta(days=index + 1)
+        steps.append(
+            {
+                "key": f"d{index + 1}",
+                "delay": delay,
+                "copy": event.get("copy_key") or "step",
+                "title": event.get("title"),
+                "body": event.get("body"),
+                "html": event.get("html"),
+                "go": event.get("go") or "timeline",
+                "phase": f"Day {index + 1}/3",
                 "delay_label": _delay_label(delay),
             }
         )
     return steps
 
 
-def demo_fast_tick_span(doses: list[dict[str, Any]] | None = None) -> timedelta:
+def demo_fast_tick_span(events: list[dict[str, Any]] | None = None) -> timedelta:
     last = timedelta(0)
-    for step in demo_steps_for(doses):
+    for step in demo_steps_for(events):
         if step["delay"] < timedelta(hours=1):
             last = max(last, step["delay"])
     return last + timedelta(minutes=2)
@@ -126,15 +110,23 @@ def demo_mode() -> bool:
 def demo_body(step: dict[str, Any]) -> str:
     if step.get("body"):
         return str(step["body"])
-    return item_body(ITEMS[step["copy"]])
+    copy = step.get("copy")
+    if copy in ITEMS:
+        return item_body(ITEMS[copy])
+    return item_body(ITEMS["step"])
 
 
 def demo_title(step: dict[str, Any]) -> str:
-    title = step.get("title") or ITEMS[step["copy"]]["title"]
+    title = step.get("title") or ITEMS.get(step.get("copy") or "", ITEMS["step"])["title"]
     return f"{step['phase']} · {title}"
 
 
 def demo_html(step: dict[str, Any]) -> str:
+    long_html = step.get("html")
+    if isinstance(long_html, str) and long_html.strip():
+        # Demo prefixes the phase; the stored html already includes the live title.
+        body = long_html.split("\n\n", 1)[-1] if "\n\n" in long_html else long_html
+        return wrap_html(demo_title(step), body)
     return f"<b>{demo_title(step)}</b>\n\n{demo_body(step)}"
 
 
@@ -172,15 +164,15 @@ def _as_utc(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
-def doses_sent(row: Session) -> list[str]:
+def events_sent(row: Session) -> list[str]:
     raw = row.reminder_doses_sent
     if not isinstance(raw, list):
         return []
     return [str(item) for item in raw]
 
 
-def mark_dose_sent(row: Session, key: str) -> None:
-    sent = doses_sent(row)
+def mark_event_sent(row: Session, key: str) -> None:
+    sent = events_sent(row)
     if key in sent:
         return
     sent.append(key)
@@ -188,35 +180,44 @@ def mark_dose_sent(row: Session, key: str) -> None:
     flag_modified(row, "reminder_doses_sent")
 
 
-def unmark_dose_sent(row: Session, key: str) -> None:
-    row.reminder_doses_sent = [item for item in doses_sent(row) if item != key]
+def unmark_event_sent(row: Session, key: str) -> None:
+    row.reminder_doses_sent = [item for item in events_sent(row) if item != key]
     flag_modified(row, "reminder_doses_sent")
 
 
-def skip_late_doses(row: Session, now: datetime, doses: list[dict[str, Any]]) -> list[str]:
-    skipped: list[str] = []
-    sent = set(doses_sent(row))
-    for dose in doses:
-        key = str(dose["key"])
+def skip_late_events(row: Session, now: datetime, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    skipped: list[dict[str, Any]] = []
+    sent = set(events_sent(row))
+    current = _as_utc(now)
+    for event in events:
+        key = str(event["key"])
         if key in sent:
             continue
-        if _as_utc(now) > _as_utc(dose["at"]) + LATE_GRACE:
-            mark_dose_sent(row, key)
-            skipped.append(key)
+        if current > _as_utc(event["at"]) + LATE_GRACE:
+            mark_event_sent(row, key)
+            skipped.append(event)
     return skipped
 
 
-def upcoming_dose(row: Session, now: datetime, doses: list[dict[str, Any]]) -> dict[str, Any] | None:
-    sent = set(doses_sent(row))
+def upcoming_event(row: Session, now: datetime, events: list[dict[str, Any]]) -> dict[str, Any] | None:
+    sent = set(events_sent(row))
     current = _as_utc(now)
-    for dose in doses:
-        if str(dose["key"]) in sent:
+    for event in events:
+        if str(event["key"]) in sent:
             continue
-        due = _as_utc(dose["at"])
+        due = _as_utc(event["at"])
         if current > due + LATE_GRACE:
             continue
         if current >= due:
-            return dose
+            return event
+    return None
+
+
+def next_unsent_event(row: Session, events: list[dict[str, Any]]) -> dict[str, Any] | None:
+    sent = set(events_sent(row))
+    for event in events:
+        if str(event["key"]) not in sent:
+            return event
     return None
 
 
@@ -224,81 +225,46 @@ def report_at(row: Session) -> datetime:
     return datetime.combine(row.procedure_date, row.reporting_time, tzinfo=SG)
 
 
-def trigger_at(row: Session, key: str) -> datetime:
-    return report_at(row) - timedelta(hours=HOURS_BEFORE[key])
-
-
 def _format_sg(when: datetime) -> str:
     local = when.astimezone(SG)
     return local.strftime("%d %b, %I:%M %p").lstrip("0").replace(" 0", " ")
 
 
-def late_keys(row: Session, now: datetime) -> list[str]:
-    overdue: list[str] = []
-    for key in LIVE_KEYS:
-        if getattr(row, SENT_ATTR[key]) is not None:
-            continue
-        if now > trigger_at(row, key) + LATE_GRACE:
-            overdue.append(key)
-    return overdue
-
-
-def skip_late_windows(row: Session, now: datetime) -> list[str]:
-    skipped = late_keys(row, now)
-    for key in skipped:
-        setattr(row, SENT_ATTR[key], now)
-    return skipped
-
-
-def upcoming_live(row: Session, now: datetime) -> tuple[str, datetime] | None:
-    for key in LIVE_KEYS:
-        if getattr(row, SENT_ATTR[key]) is not None:
-            continue
-        due = trigger_at(row, key)
-        if now <= due + LATE_GRACE:
-            return key, due
-    return None
-
-
-def late_notice_html(skipped: list[str], nxt: tuple[str, datetime] | None) -> str:
-    labels = ", ".join(f"<b>{ITEMS[key]['title']}</b>" for key in skipped)
+def late_notice_html(skipped: list[dict[str, Any]], nxt: dict[str, Any] | None) -> str:
+    labels = ", ".join(f"<b>{event['title']}</b>" for event in skipped)
     lines = [
         "<b>Some reminder windows have already passed.</b>",
         "",
         f"These were due before reminders were turned on: {labels}.",
     ]
-    for key in skipped:
-        item = ITEMS[key]
-        lines.append(f"• <b>{item['title']}</b> — {item['body']}")
+    for event in skipped:
+        lines.append(f"• <b>{event['title']}</b> — {event['body']}")
     lines.append("")
     if nxt:
-        key, when = nxt
-        lines.append(
-            f"Your next alert is <b>{ITEMS[key]['title']}</b> on {_format_sg(when)}."
-        )
+        lines.append(f"Your next reminder is <b>{nxt['title']}</b> on {_format_sg(nxt['at'])}.")
     else:
-        lines.append("There are no further timed alerts for this appointment.")
+        lines.append("There are no further timed reminders for this appointment.")
     return "\n".join(lines)
 
 
-def late_notice_push(skipped: list[str], nxt: tuple[str, datetime] | None, url: str) -> dict[str, str]:
-    titles = " and ".join(ITEMS[key]["title"] for key in skipped)
+def late_notice_push(
+    skipped: list[dict[str, Any]], nxt: dict[str, Any] | None, url: str
+) -> dict[str, str]:
+    titles = " and ".join(str(event["title"]) for event in skipped)
     if nxt:
-        key, when = nxt
-        body = f"{titles} already passed. Next: {ITEMS[key]['title']} on {_format_sg(when)}."
+        body = f"{titles} already passed. Next: {nxt['title']} on {_format_sg(nxt['at'])}."
     else:
-        body = f"{titles} already passed. There are no further timed alerts."
+        body = f"{titles} already passed. There are no further timed reminders."
     return {"title": "Some reminder windows have passed", "body": body, "url": url}
 
 
-def reminder_plan(
-    row: Session, report_at: datetime, doses: list[dict[str, Any]] | None = None
-) -> list[dict[str, Any]]:
+def reminder_plan(row: Session, events: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    events = list(events or [])
     if demo_mode():
         sent = max(0, int(row.reminder_demo_sent or 0))
         anchor = row.reminder_anchor_at
         items: list[dict[str, Any]] = []
-        for index, step in enumerate(demo_steps_for(doses)):
+        for index, step in enumerate(demo_steps_for(events)):
             at = anchor + step["delay"] if anchor is not None else None
             items.append(
                 {
@@ -306,39 +272,23 @@ def reminder_plan(
                     "title": demo_title(step),
                     "copy_key": step["copy"],
                     "delay_label": step["delay_label"],
+                    "body": demo_body(step),
                     "at": at,
                     "sent": index < sent,
                 }
             )
         return items
 
-    live_sent = {
-        "t72": row.reminder_t72_sent_at is not None,
-        "t24": row.reminder_t24_sent_at is not None,
-        "t6": row.reminder_t6_sent_at is not None,
-    }
-    items = [
+    sent = set(events_sent(row))
+    return [
         {
-            "key": key,
-            "title": ITEMS[key]["title"],
-            "copy_key": key,
-            "delay_label": f"{HOURS_BEFORE[key]} hours before",
-            "at": report_at - timedelta(hours=HOURS_BEFORE[key]),
-            "sent": live_sent[key],
+            "key": event["key"],
+            "title": event["title"],
+            "copy_key": event.get("copy_key") or "step",
+            "delay_label": "",
+            "body": event.get("body") or "",
+            "at": event["at"],
+            "sent": str(event["key"]) in sent,
         }
-        for key in LIVE_KEYS
+        for event in events
     ]
-    sent_doses = set(doses_sent(row))
-    for dose in doses or []:
-        agent = dose.get("agent") or "picoprep"
-        items.append(
-            {
-                "key": f"dose:{dose['key']}",
-                "title": dose["title"],
-                "copy_key": "peg" if agent == "peg" else "dose",
-                "delay_label": "",
-                "at": dose["at"],
-                "sent": str(dose["key"]) in sent_doses,
-            }
-        )
-    return items

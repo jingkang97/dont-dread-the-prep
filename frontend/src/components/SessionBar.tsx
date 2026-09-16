@@ -26,7 +26,7 @@ export function SessionBar({
           {session.hospitalShort} · {slot}
         </p>
         <p className="truncate text-[12px] leading-tight text-muted">
-          {when} · {session.id}
+          {when}
         </p>
       </div>
       {onReplayTour ? (

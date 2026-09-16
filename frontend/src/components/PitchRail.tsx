@@ -42,11 +42,10 @@ export function PitchRail({ session }: { session: PrepSession | null }) {
           <div className="min-w-0">
             {session ? (
               <>
-                <p className="text-[12px] font-medium text-white/45">{t('pitch.live')}</p>
-                <p className="font-display text-[28px] leading-none tracking-tight">{session.id}</p>
-                <p className="mt-1.5 text-[13px] text-white/55">
-                  {session.hospitalShort} · {session.date} · {session.slot.toUpperCase()}
+                <p className="font-display text-[22px] leading-[1.2] tracking-tight text-white">
+                  {session.hospitalShort} · {session.slot.toUpperCase()}
                 </p>
+                <p className="mt-1 text-[15px] text-white/70">{session.date}</p>
                 <p className="mt-3 text-[12px] leading-snug text-white/45">{t('pitch.scan')}</p>
               </>
             ) : (

@@ -6,6 +6,7 @@ export type ApiReminderPlanItem = {
   title: string
   copy_key: string
   delay_label: string
+  body?: string
   at: string | null
   sent: boolean
 }

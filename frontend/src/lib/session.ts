@@ -19,6 +19,7 @@ export type ReminderPlanItem = {
   title: string
   copyKey: string
   delayLabel: string
+  body?: string
   at: string | null
   sent: boolean
 }
@@ -73,6 +74,7 @@ export function fromApiSession(row: ApiSession): PrepSession {
       title: item.title,
       copyKey: item.copy_key,
       delayLabel: item.delay_label,
+      body: item.body,
       at: item.at,
       sent: Boolean(item.sent),
     })),
