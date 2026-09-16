@@ -1,14 +1,22 @@
-import type { ChatAnswer } from '../data/foods'
-import type { StringKey } from '../i18n/strings'
+import type { ApiDish, ApiDishChoice, ApiFoodChatStatus, ApiFoodSource } from './api/food'
 
-const KEY = 'preppath.foodchat.v1'
+const KEY = 'preppath.foodchat.v2'
+
+export type FoodChatAnswer = {
+  status: ApiFoodChatStatus
+  message?: string | null
+  matchedQuery?: string | null
+  matchedSource?: ApiFoodSource | null
+  dish?: ApiDish | null
+  choices?: ApiDishChoice[] | null
+}
 
 export type FoodChatMsg = {
   id: string
   role: 'user' | 'bot'
   text?: string
-  labelKey?: StringKey
-  answer?: ChatAnswer
+  pending?: boolean
+  answer?: FoodChatAnswer
 }
 
 type Stored = {
@@ -22,7 +30,7 @@ export function loadFoodChat(sessionId: string): FoodChatMsg[] {
     if (!raw) return []
     const parsed = JSON.parse(raw) as Stored
     if (parsed.sessionId !== sessionId || !Array.isArray(parsed.messages)) return []
-    return parsed.messages
+    return parsed.messages.filter((m) => !m.pending)
   } catch {
     return []
   }

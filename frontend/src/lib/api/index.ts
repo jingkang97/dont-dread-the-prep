@@ -28,3 +28,16 @@ export type {
   ApiTimeline,
   ApiTimelineEvent,
 } from './timeline'
+export { getApiDish, getApiMealPrep, postApiFoodChat } from './food'
+export type {
+  ApiDish,
+  ApiDishChoice,
+  ApiDishVerdict,
+  ApiFoodChatResponse,
+  ApiFoodChatStatus,
+  ApiFoodClassification,
+  ApiFoodSource,
+  ApiIngredient,
+  ApiMealPrep,
+  ApiMealType,
+} from './food'

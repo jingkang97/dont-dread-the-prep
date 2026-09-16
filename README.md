@@ -29,6 +29,21 @@ API docs: http://127.0.0.1:8000/docs · health: http://127.0.0.1:8000/health · 
 
 Set `DATABASE_URL` in `backend/.env` to your Supabase Postgres URI (Project Settings → Database → Connection string → URI). Prefer **Session mode** pooler or **Direct** connection for local uvicorn. `/docs` is served only when `DEBUG=true`.
 
+### Google API key (Food chat, free tier)
+
+The food chat tab (`POST /api/food/chat`) calls Google AI Studio's Gemini endpoint through an OpenAI-compatible client. Without a key, the tab just responds "not configured" — everything else in the app still works.
+
+1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and sign in with any Google account.
+2. Click **Create API key** → **Create key in new project** (or pick an existing project if you have one).
+3. Copy the key into `backend/.env`:
+
+   ```bash
+   GOOGLE_API_KEY=your-key-here
+   ```
+
+4. That's it — `GOOGLE_API_URL` and `GOOGLE_MODEL` in `.env.example` already default to Gemini's free-tier Flash model, no billing/credit card required. Google AI Studio keys start on the **free tier** automatically; check current request-per-minute/day limits at [ai.google.dev/gemini-api/docs/rate-limits](https://ai.google.dev/gemini-api/docs/rate-limits). If you hit the daily cap, swap `GOOGLE_MODEL` to another Flash/Flash-Lite model from the [model catalogue](https://ai.google.dev/gemini-api/docs/models) — Flash-Lite has the highest free quota.
+5. Never commit the real key — `backend/.env` is gitignored; only `.env.example` (with empty values) is tracked.
+
 ## Deploy
 
 Frontend is on Vercel at [dont-dread-the-prep.vercel.app](https://dont-dread-the-prep.vercel.app/). Backend deploys as a long-lived FastAPI process on [Railway](https://docs.railway.com/builds/build-configuration).
