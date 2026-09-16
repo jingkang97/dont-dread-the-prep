@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -8,7 +8,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session as DbSession
 
-from app.db.models import Protocol, ProtocolStep, ProtocolVersion, Session
+from app.db.models import HospitalMedStop, Protocol, ProtocolStep, ProtocolVersion, Session
 from app.schemas.timeline import TimelineEventOut, TimelineOut
 
 SG = ZoneInfo("Asia/Singapore")
@@ -98,18 +98,36 @@ def get_timeline(db: DbSession, public_code: str) -> TimelineOut:
         )
         events.append(
             TimelineEventOut(
-                id=step.step_key,
+                id=str(step.id),
                 at=at,
                 kind=kind,  # type: ignore[arg-type]
                 title=step.title,
                 detail=step.detail,
                 tentative=step.tentative,
-                dose_label=step.dose_label,
-                mix_volume_ml=step.mix_volume_ml,
-                follow_fluid_ml=step.follow_fluid_ml,
                 agent=step.agent,
                 prep_image_label=step.prep_image_label,
                 sort_order=step.sort_order,
+            )
+        )
+
+    stops = list(
+        db.scalars(
+            select(HospitalMedStop)
+            .where(HospitalMedStop.hospital_id == row.hospital_id)
+            .order_by(HospitalMedStop.sort_order, HospitalMedStop.id)
+        ).all()
+    )
+    for stop in stops:
+        day = row.procedure_date + timedelta(days=int(stop.day_offset))
+        events.append(
+            TimelineEventOut(
+                id=str(stop.id),
+                at=datetime.combine(day, time(0, 0), tzinfo=SG),
+                kind="med",
+                title=stop.title,
+                detail=stop.detail,
+                all_day=True,
+                sort_order=stop.sort_order,
             )
         )
 
@@ -137,7 +155,7 @@ def dose_reminders_for(db: DbSession, row: Session) -> list[dict]:
         db.scalars(
             select(ProtocolStep)
             .where(ProtocolStep.protocol_version_id == version.id)
-            .where(ProtocolStep.kind == "dose")
+            .where(ProtocolStep.kind == "prep")
             .where(or_(ProtocolStep.slot == "any", ProtocolStep.slot == row.slot))
             .order_by(ProtocolStep.sort_order, ProtocolStep.id)
         ).all()
@@ -157,7 +175,7 @@ def dose_reminders_for(db: DbSession, row: Session) -> list[dict]:
             continue
         doses.append(
             {
-                "key": step.step_key,
+                "key": str(step.id),
                 "at": at,
                 "title": step.title,
                 "agent": step.agent or "picoprep",

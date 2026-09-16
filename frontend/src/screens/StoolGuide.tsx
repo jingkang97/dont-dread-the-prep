@@ -1,11 +1,9 @@
-import { ArrowRight, Bell, Phone } from 'lucide-react'
-import { formatPhone, telHref } from '../data/hospitals'
-import { STOOL_STAGES } from '../data/stool'
+import { ArrowRight, Bell } from 'lucide-react'
 import { ScreenHeader } from '../components/ScreenHeader'
-import { Card, PrimaryButton, SectionLabel } from '../components/ui'
-import { hospContactOr, hospCopyOr, stoolStageKey } from '../i18n/keys'
+import { Card } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
 import { useSessionHospital } from '../hooks/useSessionHospital'
+import type { ApiStoolReady, ApiStoolScaleStage } from '../lib/api'
 import type { PrepSession } from '../lib/session'
 import { cn } from '../lib/cn'
 
@@ -17,78 +15,35 @@ export function StoolGuide({
   onReminders: () => void
 }) {
   const { t } = useLang()
-  const { hospital, short } = useSessionHospital(session)
-  const contacts = hospital?.contacts ?? []
+  const { hospital, loading } = useSessionHospital(session)
+  const scale = hospital?.stool_scale
+  const showBadges = scale?.show_ready_badges === true
+  const notReadyAction = scale?.not_ready_action?.trim() || null
 
   return (
     <div className="px-5 pb-10 pt-6">
       <ScreenHeader
         kicker={t('stool.kicker')}
         title={t('stool.title')}
-        lead={hospCopyOr(t, session.hospitalId, 'stoolAction', '')}
+        lead={t('stool.lead')}
       />
 
       <div className="mt-5 grid gap-2">
-        {STOOL_STAGES.map((stage) => (
-          <Card key={stage.n} className="flex items-center gap-3 p-3">
-            <Cup color={stage.color} clear={stage.n >= 5} />
-            <div className="flex-1">
-              <p className="text-[15px] font-semibold text-ink">
-                {stage.n}. {t(stoolStageKey(stage.n, 'n'))}
-              </p>
-              <p className="text-[12px] text-muted">{t(stoolStageKey(stage.n, 'l'))}</p>
-            </div>
-            <span
-              className={cn(
-                'rounded-full px-2 py-1 text-[10px] font-bold tracking-wide',
-                stage.ready === 'ready' && 'bg-yes-bg text-yes',
-                stage.ready === 'almost' && 'bg-ask-bg text-ask',
-                stage.ready === 'not' && 'bg-no-bg text-no',
-              )}
-            >
-              {stage.ready === 'ready' ? t('stool.ready') : stage.ready === 'almost' ? t('stool.almost') : t('stool.notReady')}
-            </span>
-          </Card>
+        {scale?.stages.map((stage) => (
+          <StageCard key={stage.n} stage={stage} showBadge={showBadges} t={t} />
         ))}
       </div>
 
-      <Card className="mt-4 border-ask/30 bg-ask-bg/40 p-4">
-        <p className="text-[14px] font-semibold text-ask">{t('stool.ifNotReady')}</p>
-        <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
-          {t('stool.ifNotReadyBody', { hospital: short })}
-        </p>
-      </Card>
-
-      <div className="mt-5">
-        <SectionLabel>{t('stool.contactFor', { hospital: short })}</SectionLabel>
-      </div>
-      <p className="mt-1 text-[12px] leading-relaxed text-muted">
-        {hospCopyOr(t, session.hospitalId, 'formGap', '')}
-      </p>
-
-      <div className="mt-3 grid gap-2.5">
-        {contacts.map((c, i) => (
-          <Card key={c.phone} className="p-4">
-            <p className="text-[12px] font-semibold tracking-wide text-muted">
-              {hospContactOr(t, session.hospitalId, i, 'label', c.label)}
-            </p>
-            <p className="font-display mt-0.5 text-[28px] text-navy">{formatPhone(c.phone)}</p>
-            <p className="text-[12px] text-ink-soft">
-              {hospContactOr(t, session.hospitalId, i, 'hours', c.hours ?? '')}
-            </p>
-            <p className="mt-2 text-[12px] leading-relaxed text-muted">
-              {hospContactOr(t, session.hospitalId, i, 'note', c.note ?? '')}
-            </p>
-            <a href={telHref(c.phone)}>
-              <PrimaryButton className="mt-3">
-                <span className="inline-flex items-center gap-2">
-                  <Phone size={16} /> {t('stool.call', { phone: formatPhone(c.phone) })}
-                </span>
-              </PrimaryButton>
-            </a>
-          </Card>
-        ))}
-      </div>
+      {!loading && scale ? (
+        <Card className="mt-4 border-ask/30 bg-ask-bg/40 p-4">
+          <p className="text-[14px] font-semibold text-ask">
+            {t(notReadyAction ? 'stool.ifNotReady' : 'stool.ifUnsure')}
+          </p>
+          <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
+            {notReadyAction ?? t('stool.ifUnsureBody')}
+          </p>
+        </Card>
+      ) : null}
 
       <button type="button" onClick={onReminders} className="mt-5 w-full text-left">
         <Card className="flex items-center gap-3 p-4">
@@ -104,6 +59,85 @@ export function StoolGuide({
       </button>
     </div>
   )
+}
+
+function StageCard({
+  stage,
+  showBadge,
+  t,
+}: {
+  stage: ApiStoolScaleStage
+  showBadge: boolean
+  t: (key: 'stool.ready' | 'stool.almost' | 'stool.notReady') => string
+}) {
+  const ready = stage.ready
+
+  return (
+    <Card className="flex items-center gap-3 p-3">
+      <StageVisual stage={stage} />
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] font-semibold text-ink">
+          {stage.n}. {stage.name}
+        </p>
+        {stage.look?.trim() ? <p className="text-[12px] text-muted">{stage.look}</p> : null}
+      </div>
+      {showBadge && ready ? <ReadyBadge ready={ready}>{readyLabel(t, ready)}</ReadyBadge> : null}
+    </Card>
+  )
+}
+
+function StageVisual({
+  stage,
+}: {
+  stage: ApiStoolScaleStage
+}) {
+  if (stage.photo) {
+    return (
+      <img
+        src={`/stool/${stage.photo}`}
+        alt={`${stage.n}. ${stage.name}`}
+        className="h-[88px] w-[72px] shrink-0 rounded-[14px] bg-white object-contain"
+      />
+    )
+  }
+  if (stage.color) {
+    return <Cup color={stage.color} clear={stage.ready === 'ready' || stage.ready === 'almost'} />
+  }
+  return (
+    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cream text-[15px] font-bold text-navy">
+      {stage.n}
+    </span>
+  )
+}
+
+function ReadyBadge({
+  ready,
+  children,
+}: {
+  ready: ApiStoolReady
+  children: string
+}) {
+  return (
+    <span
+      className={cn(
+        'rounded-full px-2 py-1 text-[10px] font-bold tracking-wide',
+        ready === 'ready' && 'bg-yes-bg text-yes',
+        ready === 'almost' && 'bg-ask-bg text-ask',
+        ready === 'not' && 'bg-no-bg text-no',
+      )}
+    >
+      {children}
+    </span>
+  )
+}
+
+function readyLabel(
+  t: (key: 'stool.ready' | 'stool.almost' | 'stool.notReady') => string,
+  ready: ApiStoolReady,
+) {
+  if (ready === 'ready') return t('stool.ready')
+  if (ready === 'almost') return t('stool.almost')
+  return t('stool.notReady')
 }
 
 function Cup({ color, clear }: { color: string; clear: boolean }) {

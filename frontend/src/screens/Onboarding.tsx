@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 // import { Camera } from 'lucide-react'
 import type { OnboardingResult } from '../data/onboarding'
-import { ApiError } from '../lib/api'
+import { ApiError, defaultProtocolName } from '../lib/api'
 import { DateSlotPicker } from '../components/DateSlotPicker'
 import { HospitalPicker } from '../components/HospitalPicker'
 import { Card, GeneratingPane, GhostButton, PrimaryButton, SectionLabel } from '../components/ui'
@@ -44,7 +44,8 @@ export function Onboarding({
   )
   const hospitalShort = apiHospital?.short_name ?? ''
   const protocols = apiHospital?.protocols ?? []
-  const needsProtocolChoice = protocols.length > 1
+  // Show prep chips whenever the hospital has listed protocols (including a single Picoprep).
+  const needsProtocolChoice = protocols.length > 0
   const selectedProtocol = protocols.find((p) => p.name === draft.protocolName) ?? null
   const canFinish = Boolean(
     draft.hospitalId &&
@@ -53,6 +54,14 @@ export function Onboarding({
       draft.slot &&
       (!needsProtocolChoice || draft.protocolName),
   )
+
+  // If hospitals refresh after pick (e.g. SKH protocol added), fill the default chip.
+  useEffect(() => {
+    if (!apiHospital || draft.protocolName) return
+    const name = defaultProtocolName(apiHospital.protocols, apiHospital.code)
+    if (!name) return
+    setDraft((d) => (d.protocolName ? d : { ...d, protocolName: name }))
+  }, [apiHospital, draft.protocolName, setDraft])
 
   async function generate() {
     if (!canFinish || !draft.hospitalId || !draft.slot || busy) return

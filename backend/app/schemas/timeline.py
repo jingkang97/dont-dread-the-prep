@@ -6,7 +6,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 
-EventKind = Literal["diet", "dose", "meal", "fast", "arrive", "stool"]
+EventKind = Literal["diet", "prep", "med", "meal", "fast", "arrive", "stool"]
 
 
 class TimelineEventOut(BaseModel):
@@ -16,11 +16,9 @@ class TimelineEventOut(BaseModel):
     title: str
     detail: str = ""
     tentative: bool = False
-    dose_label: Optional[str] = None
-    mix_volume_ml: Optional[int] = None
-    follow_fluid_ml: Optional[int] = None
     agent: Optional[str] = None
     prep_image_label: Optional[str] = None
+    all_day: bool = False
     sort_order: int = 0
 
 

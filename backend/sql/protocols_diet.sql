@@ -1,6 +1,6 @@
 -- Diet fields the Protocol ORM already maps. Older DBs created protocols
 -- without these columns (see mvp.sql). Safe to re-run.
--- Depends on: mvp.sql (protocols + three_way)
+-- Depends on: mvp.sql (protocols)
 
 ALTER TABLE protocols ADD COLUMN IF NOT EXISTS last_meal TEXT;
 ALTER TABLE protocols ADD COLUMN IF NOT EXISTS last_meal_note TEXT NOT NULL DEFAULT '';

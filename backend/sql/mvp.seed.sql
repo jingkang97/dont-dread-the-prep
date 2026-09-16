@@ -104,9 +104,9 @@ VALUES
   'Tan Tock Seng Hospital',
   'NHG',
   '[
-    {"label":"Endo PACE","phone":"63573766","hours":"Mon–Fri 8:00am–5:00pm","note":"TTSH Medical Centre, Level 2."},
-    {"label":"Endoscopy Centre","phone":"63578485","hours":"Mon–Fri 8:00am–5:00pm; closed weekends & PH","note":"Level 2, TTSH Atrium Block."},
-    {"label":"Central hotline","phone":"63577000","hours":"Mon–Fri 8:00am–5:00pm; Sat 8:00am–12:00pm","note":"Printed on the TTSH brochure footer."}
+    {"label":"Endoscopy Centre Main Line","phone":"63578485","hours":"Mon–Fri 8:00am–5:00pm; closed weekends & PH"},
+    {"label":"Endo PACE","phone":"63573766","hours":"Mon–Fri 8:00am–5:00pm"},
+    {"label":"Central Hotline","phone":"63577000","hours":"Mon–Fri 8:00am–5:00pm; Sat 8:00am–12:00pm"}
   ]'::jsonb
 );
 

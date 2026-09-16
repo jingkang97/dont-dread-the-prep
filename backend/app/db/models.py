@@ -18,7 +18,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import ENUM, JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, ENUM, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -27,17 +27,6 @@ class Base(DeclarativeBase):
 
 
 slot_enum = ENUM("am", "pm", name="slot", create_type=False)
-three_way_enum = ENUM("yes", "no", "ask", name="three_way", create_type=False)
-event_kind_enum = ENUM(
-    "diet",
-    "dose",
-    "meal",
-    "fast",
-    "arrive",
-    "stool",
-    name="event_kind",
-    create_type=False,
-)
 timing_mode_enum = ENUM(
     "day_clock",
     "report_relative",
@@ -45,6 +34,13 @@ timing_mode_enum = ENUM(
     create_type=False,
 )
 step_slot_enum = ENUM("any", "am", "pm", name="step_slot", create_type=False)
+food_classification_enum = ENUM(
+    "can", "cannot", "review", name="food_classification", create_type=False
+)
+food_source_enum = ENUM("SGH", "TTSH", "CGH", "DIETICIAN", name="food_source", create_type=False)
+dish_meal_type_enum = ENUM(
+    "breakfast", "lunch", "dinner", "snack", "drink", name="dish_meal_type", create_type=False
+)
 
 
 class Protocol(Base):
@@ -54,11 +50,6 @@ class Protocol(Base):
     name: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
     prep_agent: Mapped[str] = mapped_column(Text, nullable=False)
     prep_agent_label: Mapped[str] = mapped_column(Text, nullable=False)
-    diet_days: Mapped[int] = mapped_column(nullable=False)
-    milk_in_coffee: Mapped[str] = mapped_column(three_way_enum, nullable=False)
-    fruit_juice: Mapped[str] = mapped_column(three_way_enum, nullable=False)
-    rice_cereal: Mapped[str] = mapped_column(three_way_enum, nullable=False)
-    coffee_tea: Mapped[str] = mapped_column(three_way_enum, nullable=False)
     listed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     reporting_from: Mapped[Optional[time]] = mapped_column(Time)
     reporting_until: Mapped[Optional[time]] = mapped_column(Time)
@@ -74,6 +65,45 @@ class Protocol(Base):
     )
 
 
+class StoolScale(Base):
+    __tablename__ = "stool_scales"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    key: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    show_ready_badges: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    not_ready_action: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    stages: Mapped[list["StoolScaleStage"]] = relationship(
+        "StoolScaleStage",
+        back_populates="scale",
+        viewonly=True,
+        order_by="StoolScaleStage.n",
+    )
+
+
+class StoolScaleStage(Base):
+    __tablename__ = "stool_scale_stages"
+    __table_args__ = (
+        UniqueConstraint("scale_id", "n", name="stool_scale_stages_scale_id_n_key"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    scale_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("stool_scales.id", ondelete="CASCADE"), nullable=False
+    )
+    n: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    look: Mapped[Optional[str]] = mapped_column(Text)
+    ready: Mapped[Optional[str]] = mapped_column(Text)
+    color: Mapped[Optional[str]] = mapped_column(Text)
+    photo: Mapped[Optional[str]] = mapped_column(Text)
+
+    scale: Mapped[StoolScale] = relationship(StoolScale, back_populates="stages")
+
+
 class Hospital(Base):
     __tablename__ = "hospitals"
 
@@ -83,6 +113,9 @@ class Hospital(Base):
     name: Mapped[str] = mapped_column(Text, nullable=False)
     cluster: Mapped[str] = mapped_column(Text, nullable=False)
     contacts: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    stool_scale_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("stool_scales.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -92,6 +125,13 @@ class Hospital(Base):
         secondary="hospital_protocols",
         viewonly=True,
         order_by=Protocol.id,
+    )
+    stool_scale: Mapped[Optional[StoolScale]] = relationship(StoolScale, viewonly=True)
+    med_stops: Mapped[list["HospitalMedStop"]] = relationship(
+        "HospitalMedStop",
+        back_populates="hospital",
+        viewonly=True,
+        order_by="HospitalMedStop.sort_order",
     )
 
 
@@ -129,7 +169,6 @@ class Session(Base):
     slot: Mapped[str] = mapped_column(slot_enum, nullable=False)
     reporting_time: Mapped[time] = mapped_column(Time, nullable=False)
     first_name: Mapped[Optional[str]] = mapped_column(Text)
-    wa_opt_in: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     telegram_chat_id: Mapped[Optional[int]] = mapped_column(BigInteger)
     push_endpoint: Mapped[Optional[str]] = mapped_column(Text)
     push_p256dh: Mapped[Optional[str]] = mapped_column(Text)
@@ -163,7 +202,6 @@ class ProtocolVersion(Base):
     version_id: Mapped[int] = mapped_column(Integer, nullable=False)
     version_label: Mapped[str] = mapped_column(Text, nullable=False)
     effective_from: Mapped[Optional[date]] = mapped_column(Date)
-    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -179,21 +217,12 @@ class ProtocolVersion(Base):
 
 class ProtocolStep(Base):
     __tablename__ = "protocol_steps"
-    __table_args__ = (
-        UniqueConstraint(
-            "protocol_version_id",
-            "step_key",
-            "slot",
-            name="protocol_steps_protocol_version_id_step_key_slot_key",
-        ),
-    )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     protocol_version_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("protocol_versions.id", ondelete="CASCADE"), nullable=False
     )
-    step_key: Mapped[str] = mapped_column(Text, nullable=False)
-    kind: Mapped[str] = mapped_column(event_kind_enum, nullable=False)
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
     slot: Mapped[str] = mapped_column(step_slot_enum, nullable=False, default="any")
     timing_mode: Mapped[str] = mapped_column(timing_mode_enum, nullable=False)
     day_offset: Mapped[Optional[int]] = mapped_column(Integer)
@@ -203,16 +232,60 @@ class ProtocolStep(Base):
     detail: Mapped[str] = mapped_column(Text, nullable=False, default="")
     tentative: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    dose_label: Mapped[Optional[str]] = mapped_column(Text)
-    mix_volume_ml: Mapped[Optional[int]] = mapped_column(Integer)
-    follow_fluid_ml: Mapped[Optional[int]] = mapped_column(Integer)
     agent: Mapped[Optional[str]] = mapped_column(Text)
     prep_image_label: Mapped[Optional[str]] = mapped_column(Text)
-    meta: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
     version: Mapped[ProtocolVersion] = relationship(
         ProtocolVersion, back_populates="steps"
+    )
+
+
+class HospitalMedStop(Base):
+    __tablename__ = "hospital_med_stops"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    hospital_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("hospitals.id", ondelete="CASCADE"), nullable=False
+    )
+    day_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    detail: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    hospital: Mapped[Hospital] = relationship(Hospital, back_populates="med_stops")
+class Ingredient(Base):
+    __tablename__ = "ingredient_tab"
+    __table_args__ = (
+        UniqueConstraint("name", "source_hospital", name="ingredient_tab_name_source_hospital_key"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    classification: Mapped[str] = mapped_column(food_classification_enum, nullable=False)
+    classification_reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    source_hospital: Mapped[str] = mapped_column(food_source_enum, nullable=False)
+    source_document: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+class Dish(Base):
+    __tablename__ = "dishes_tab"
+    __table_args__ = (
+        UniqueConstraint("name", "source_hospital", name="dishes_tab_name_source_hospital_key"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    meal_type: Mapped[list[str]] = mapped_column(ARRAY(dish_meal_type_enum), nullable=False, default=list)
+    source_hospital: Mapped[str] = mapped_column(food_source_enum, nullable=False)
+    ingredient_list: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )

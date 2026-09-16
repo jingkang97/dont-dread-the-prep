@@ -15,15 +15,24 @@ export function useSessionTimeline(session: PrepSession) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     const hit = getCachedTimeline(key)
     if (hit) {
       setEvents(hit.events)
       setLoading(false)
       setError(null)
-      return
+      void loadTimeline(session, { force: true })
+        .then((next) => {
+          if (!cancelled) setEvents(next)
+        })
+        .catch(() => {
+          /* keep the cached timeline */
+        })
+      return () => {
+        cancelled = true
+      }
     }
 
-    let cancelled = false
     setLoading(true)
     setError(null)
 
