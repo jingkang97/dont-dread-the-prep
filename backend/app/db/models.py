@@ -210,20 +210,11 @@ class ProtocolVersion(Base):
 
 class ProtocolStep(Base):
     __tablename__ = "protocol_steps"
-    __table_args__ = (
-        UniqueConstraint(
-            "protocol_version_id",
-            "step_key",
-            "slot",
-            name="protocol_steps_protocol_version_id_step_key_slot_key",
-        ),
-    )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     protocol_version_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("protocol_versions.id", ondelete="CASCADE"), nullable=False
     )
-    step_key: Mapped[str] = mapped_column(Text, nullable=False)
     kind: Mapped[str] = mapped_column(Text, nullable=False)
     slot: Mapped[str] = mapped_column(step_slot_enum, nullable=False, default="any")
     timing_mode: Mapped[str] = mapped_column(timing_mode_enum, nullable=False)
@@ -247,17 +238,11 @@ class ProtocolStep(Base):
 
 class HospitalMedStop(Base):
     __tablename__ = "hospital_med_stops"
-    __table_args__ = (
-        UniqueConstraint(
-            "hospital_id", "step_key", name="hospital_med_stops_hospital_id_step_key_key"
-        ),
-    )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     hospital_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("hospitals.id", ondelete="CASCADE"), nullable=False
     )
-    step_key: Mapped[str] = mapped_column(Text, nullable=False)
     day_offset: Mapped[int] = mapped_column(Integer, nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     detail: Mapped[str] = mapped_column(Text, nullable=False, default="")
