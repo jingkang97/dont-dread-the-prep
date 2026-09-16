@@ -7,8 +7,6 @@ export const CLINICAL_EN = {
   'hosp.nccs.stoolAction':
     'The SGH/NCCS form has no stool chart. This guide uses the Bristol stool scale so you can compare appearance.',
   'hosp.nccs.formGap': 'Medication stop dates live on a separate handwritten annex, not the yellow form.',
-  'hosp.skh.stoolAction':
-    'SKH’s form has a 5-point cup chart. This guide uses the Bristol stool scale so you can compare appearance.',
   'hosp.skh.formGap':
     'SKH already generates a personalised timeline on its website — this microsite mirrors that pattern for demo.',
   'hosp.cgh.stoolAction':

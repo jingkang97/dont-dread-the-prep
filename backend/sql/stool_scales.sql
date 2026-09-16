@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS stool_scale_stages (
   scale_id     BIGINT NOT NULL REFERENCES stool_scales(id) ON DELETE CASCADE,
   n            INT NOT NULL CHECK (n > 0),
   name         TEXT NOT NULL,                 -- 'Stool 1' / 'Type 1'
-  look         TEXT NOT NULL,                 -- 'Dark brownish and solid'
+  look         TEXT,                          -- optional when photo shows the stage
   ready        TEXT CHECK (ready IN ('not', 'almost', 'ready')),  -- NULL for Bristol
   color        TEXT,                          -- cup fill when there is no photo
   photo        TEXT,                          -- optional stage thumbnail filename
@@ -33,6 +33,8 @@ ALTER TABLE hospitals
   ADD COLUMN IF NOT EXISTS stool_scale_id BIGINT REFERENCES stool_scales(id);
 
 ALTER TABLE hospitals DROP COLUMN IF EXISTS stool_not_ready_action;
+
+ALTER TABLE stool_scale_stages ALTER COLUMN look DROP NOT NULL;
 
 CREATE INDEX IF NOT EXISTS hospitals_stool_scale_id_idx
   ON hospitals (stool_scale_id);

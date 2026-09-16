@@ -96,7 +96,7 @@ class StoolScaleStage(Base):
     )
     n: Mapped[int] = mapped_column(Integer, nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    look: Mapped[str] = mapped_column(Text, nullable=False)
+    look: Mapped[Optional[str]] = mapped_column(Text)
     ready: Mapped[Optional[str]] = mapped_column(Text)
     color: Mapped[Optional[str]] = mapped_column(Text)
     photo: Mapped[Optional[str]] = mapped_column(Text)
@@ -217,20 +217,11 @@ class ProtocolVersion(Base):
 
 class ProtocolStep(Base):
     __tablename__ = "protocol_steps"
-    __table_args__ = (
-        UniqueConstraint(
-            "protocol_version_id",
-            "step_key",
-            "slot",
-            name="protocol_steps_protocol_version_id_step_key_slot_key",
-        ),
-    )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     protocol_version_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("protocol_versions.id", ondelete="CASCADE"), nullable=False
     )
-    step_key: Mapped[str] = mapped_column(Text, nullable=False)
     kind: Mapped[str] = mapped_column(Text, nullable=False)
     slot: Mapped[str] = mapped_column(step_slot_enum, nullable=False, default="any")
     timing_mode: Mapped[str] = mapped_column(timing_mode_enum, nullable=False)
@@ -254,17 +245,11 @@ class ProtocolStep(Base):
 
 class HospitalMedStop(Base):
     __tablename__ = "hospital_med_stops"
-    __table_args__ = (
-        UniqueConstraint(
-            "hospital_id", "step_key", name="hospital_med_stops_hospital_id_step_key_key"
-        ),
-    )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     hospital_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("hospitals.id", ondelete="CASCADE"), nullable=False
     )
-    step_key: Mapped[str] = mapped_column(Text, nullable=False)
     day_offset: Mapped[int] = mapped_column(Integer, nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     detail: Mapped[str] = mapped_column(Text, nullable=False, default="")
@@ -274,13 +259,6 @@ class HospitalMedStop(Base):
     )
 
     hospital: Mapped[Hospital] = relationship(Hospital, back_populates="med_stops")
-    items: Mapped[list["HospitalMedStopItem"]] = relationship(
-        "HospitalMedStopItem",
-        back_populates="stop",
-        viewonly=True,
-        order_by="HospitalMedStopItem.sort_order",
-    )
-
 class Ingredient(Base):
     __tablename__ = "ingredient_tab"
     __table_args__ = (
@@ -296,25 +274,6 @@ class Ingredient(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-
-
-class HospitalMedStopItem(Base):
-    __tablename__ = "hospital_med_stop_items"
-    __table_args__ = (
-        UniqueConstraint(
-            "stop_id", "med_key", name="hospital_med_stop_items_stop_id_med_key_key"
-        ),
-    )
-
-    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    stop_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("hospital_med_stops.id", ondelete="CASCADE"), nullable=False
-    )
-    med_key: Mapped[str] = mapped_column(Text, nullable=False)
-    name: Mapped[str] = mapped_column(Text, nullable=False)
-    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-
-    stop: Mapped[HospitalMedStop] = relationship(HospitalMedStop, back_populates="items")
 
 class Dish(Base):
     __tablename__ = "dishes_tab"

@@ -7,16 +7,7 @@ import { useLang } from '../../i18n/LanguageContext'
 import { cn } from '../../lib/cn'
 import { fromNowDays, resolveEventText, type TimelineEvent } from '../../lib/timeline'
 import { KIND_KEY, KIND_TONE } from './kinds'
-import { PicoprepMixSheet } from './PicoprepMixSheet'
-import { PegMixSheet } from './PegMixSheet'
-
-function mixAgent(event: TimelineEvent) {
-  if (event.kind !== 'prep') return null
-  if (event.agent === 'peg') {
-    return event.prepImageLabel ? 'peg' : null
-  }
-  return 'picoprep'
-}
+import { mixHelpFor } from './mixHelp'
 
 export function EventCard({
   event,
@@ -34,7 +25,7 @@ export function EventCard({
   const cardRef = useRef<HTMLDivElement>(null)
   const [pane, setPane] = useState<HTMLElement | null>(null)
   const [mixOpen, setMixOpen] = useState(false)
-  const mix = mixAgent(event)
+  const mix = mixHelpFor(event)
   const stoolLink = event.kind === 'stool' && onOpenStool
   const until = isNext ? fromNowDays(event.at, new Date(), t) : ''
 
@@ -72,7 +63,7 @@ export function EventCard({
             {mix && (
               <button
                 type="button"
-                aria-label={t(mix === 'peg' ? 'tl.pegMixHint' : 'tl.mixHint')}
+                aria-label={mix.hint}
                 onClick={() => setMixOpen(true)}
                 className="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-teal-deep transition active:bg-teal/15"
               >
@@ -83,7 +74,7 @@ export function EventCard({
         )}
       </div>
       <p className="mt-1.5 text-[16px] font-semibold text-ink">{title}</p>
-      <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">{detail}</p>
+      <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">{detail}</p>
       {stoolLink && (
         <p className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-ask">
           {t('tl.openStool')} <ArrowRight size={16} />
@@ -91,6 +82,8 @@ export function EventCard({
       )}
     </Card>
   )
+
+  const MixSheet = mix?.Sheet
 
   return (
     <div ref={cardRef} data-tl-card className="mt-1">
@@ -104,10 +97,8 @@ export function EventCard({
       {pane &&
         createPortal(
           <AnimatePresence>
-            {mixOpen && mix === 'peg' ? (
-              <PegMixSheet onClose={() => setMixOpen(false)} prepImageLabel={event.prepImageLabel} />
-            ) : mixOpen && mix === 'picoprep' ? (
-              <PicoprepMixSheet onClose={() => setMixOpen(false)} />
+            {mixOpen && MixSheet ? (
+              <MixSheet onClose={() => setMixOpen(false)} prepImageLabel={event.prepImageLabel} />
             ) : null}
           </AnimatePresence>,
           pane,

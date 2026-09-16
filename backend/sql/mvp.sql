@@ -1,17 +1,11 @@
 CREATE TYPE slot AS ENUM ('am', 'pm');
 -- prep_agent is plain text so new families (e.g. peg-4l) are insert-only — no ALTER TYPE.
-CREATE TYPE three_way AS ENUM ('yes', 'no', 'ask');
 
 CREATE TABLE protocols (
   id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   name              TEXT NOT NULL UNIQUE,
   prep_agent        TEXT NOT NULL,           -- family key: 'picoprep' | 'picoprep-peg' | 'peg-2l' | 'peg-3l' | …
   prep_agent_label  TEXT NOT NULL,           -- picker chip label
-  diet_days         INT NOT NULL CHECK (diet_days > 0),
-  milk_in_coffee    three_way NOT NULL,
-  fruit_juice       three_way NOT NULL,
-  rice_cereal       three_way NOT NULL,
-  coffee_tea        three_way NOT NULL,
   -- Which prep? shows listed rows only. AM/PM sheets share prep_agent; afternoon is listed=false.
   listed            BOOLEAN NOT NULL DEFAULT true,
   -- Inclusive start / exclusive end of reporting_time for this sheet. Both null = any time.

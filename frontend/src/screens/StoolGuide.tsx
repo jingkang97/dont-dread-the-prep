@@ -1,7 +1,6 @@
 import { ArrowRight, Bell } from 'lucide-react'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { Card } from '../components/ui'
-import { hospCopyOr } from '../i18n/keys'
 import { useLang } from '../i18n/LanguageContext'
 import { useSessionHospital } from '../hooks/useSessionHospital'
 import type { ApiStoolReady, ApiStoolScaleStage } from '../lib/api'
@@ -21,14 +20,12 @@ export function StoolGuide({
   const showBadges = scale?.show_ready_badges === true
   const notReadyAction = scale?.not_ready_action?.trim() || null
 
-  const hospitalNote = hospCopyOr(t, session.hospitalId, 'stoolAction', '')
-
   return (
     <div className="px-5 pb-10 pt-6">
       <ScreenHeader
         kicker={t('stool.kicker')}
         title={t('stool.title')}
-        lead={hospitalNote ? `${t('stool.lead')} ${hospitalNote}` : t('stool.lead')}
+        lead={t('stool.lead')}
       />
 
       <div className="mt-5 grid gap-2">
@@ -82,7 +79,7 @@ function StageCard({
         <p className="text-[15px] font-semibold text-ink">
           {stage.n}. {stage.name}
         </p>
-        <p className="text-[12px] text-muted">{stage.look}</p>
+        {stage.look?.trim() ? <p className="text-[12px] text-muted">{stage.look}</p> : null}
       </div>
       {showBadge && ready ? <ReadyBadge ready={ready}>{readyLabel(t, ready)}</ReadyBadge> : null}
     </Card>
@@ -99,7 +96,7 @@ function StageVisual({
       <img
         src={`/stool/${stage.photo}`}
         alt={`${stage.n}. ${stage.name}`}
-        className="h-[72px] w-[72px] shrink-0 rounded-[14px] bg-white object-contain"
+        className="h-[88px] w-[72px] shrink-0 rounded-[14px] bg-white object-contain"
       />
     )
   }

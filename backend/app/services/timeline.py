@@ -98,7 +98,7 @@ def get_timeline(db: DbSession, public_code: str) -> TimelineOut:
         )
         events.append(
             TimelineEventOut(
-                id=step.step_key,
+                id=str(step.id),
                 at=at,
                 kind=kind,  # type: ignore[arg-type]
                 title=step.title,
@@ -121,11 +121,12 @@ def get_timeline(db: DbSession, public_code: str) -> TimelineOut:
         day = row.procedure_date + timedelta(days=int(stop.day_offset))
         events.append(
             TimelineEventOut(
-                id=stop.step_key,
+                id=str(stop.id),
                 at=datetime.combine(day, time(0, 0), tzinfo=SG),
                 kind="med",
                 title=stop.title,
                 detail=stop.detail,
+                all_day=True,
                 sort_order=stop.sort_order,
             )
         )
@@ -174,7 +175,7 @@ def dose_reminders_for(db: DbSession, row: Session) -> list[dict]:
             continue
         doses.append(
             {
-                "key": step.step_key,
+                "key": str(step.id),
                 "at": at,
                 "title": step.title,
                 "agent": step.agent or "picoprep",

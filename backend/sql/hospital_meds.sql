@@ -14,26 +14,14 @@
 CREATE TABLE IF NOT EXISTS hospital_med_stops (
   id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   hospital_id   BIGINT NOT NULL REFERENCES hospitals(id) ON DELETE CASCADE,
-  step_key      TEXT NOT NULL,              -- 'med-7' | 'med-2'
   day_offset    INT NOT NULL,               -- −7 = seven days before procedure
   title         TEXT NOT NULL,
   detail        TEXT NOT NULL DEFAULT '',
   sort_order    INT NOT NULL DEFAULT 0,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (hospital_id, step_key)
-);
-
-CREATE TABLE IF NOT EXISTS hospital_med_stop_items (
-  id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  stop_id      BIGINT NOT NULL REFERENCES hospital_med_stops(id) ON DELETE CASCADE,
-  med_key      TEXT NOT NULL,               -- 'iron' | 'plavix' | 'sglt2' | …
-  name         TEXT NOT NULL,
-  sort_order   INT NOT NULL DEFAULT 0,
-  UNIQUE (stop_id, med_key)
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS hospital_med_stops_hospital_id_idx
   ON hospital_med_stops (hospital_id, sort_order, id);
 
 ALTER TABLE hospital_med_stops ENABLE ROW LEVEL SECURITY;
-ALTER TABLE hospital_med_stop_items ENABLE ROW LEVEL SECURITY;

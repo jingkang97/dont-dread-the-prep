@@ -18,6 +18,7 @@ class TimelineEventOut(BaseModel):
     tentative: bool = False
     agent: Optional[str] = None
     prep_image_label: Optional[str] = None
+    all_day: bool = False
     sort_order: int = 0
 
 
