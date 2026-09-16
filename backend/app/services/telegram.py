@@ -145,7 +145,6 @@ def _link_session(chat_id: int, code: str) -> dict[str, Any] | None:
         if row is None:
             return None
         row.telegram_chat_id = chat_id
-        row.wa_opt_in = True
         skipped: list[str] = []
         nxt = None
         if demo_mode():

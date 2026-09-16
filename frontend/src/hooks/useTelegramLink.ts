@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { getApiSession } from '../lib/api'
-import { fromApiSession, markWaOptIn, saveSession, type PrepSession } from '../lib/session'
+import { fromApiSession, saveSession, type PrepSession } from '../lib/session'
 
 const POLL_MS = 2000
 const TIMEOUT_MS = 90_000
@@ -43,7 +43,6 @@ export function useTelegramLink(session: PrepSession, onSession: (s: PrepSession
     setTimedOut(false)
     setWaiting(true)
     try {
-      onSession(await markWaOptIn(session))
       const deadline = Date.now() + TIMEOUT_MS
       while (Date.now() < deadline && waitGen.current === gen) {
         await new Promise((resolve) => setTimeout(resolve, POLL_MS))

@@ -9,6 +9,7 @@ import {
   type PickerCluster,
   type PickerHospital,
 } from '../data/hospitalPicker'
+import { HOSPITAL_LOGOS } from '../data/hospitalLogos'
 import type { HospitalId } from '../data/hospitals'
 import { hospCopyOr } from '../i18n/keys'
 import { useLang } from '../i18n/LanguageContext'
@@ -145,6 +146,7 @@ function HospitalRow({
 }) {
   const { t } = useLang()
   const name = hospCopyOr(t, h.hospitalId, 'name', h.name)
+  const logo = HOSPITAL_LOGOS[h.hospitalId]
   return (
     <button
       type="button"
@@ -152,12 +154,18 @@ function HospitalRow({
       onPointerUp={(e) => e.currentTarget.blur()}
       className="flex items-center gap-3 overflow-hidden rounded-[20px] bg-paper-2 px-4 py-3.5 text-left outline-none transition [-webkit-tap-highlight-color:transparent] focus:outline-none focus-visible:outline-none focus:ring-0"
     >
-      <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
-        style={{ background: h.accent }}
-      >
-        <Hospital size={18} />
-      </span>
+      {logo ? (
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08)]">
+          <img src={logo} alt="" className="h-full w-full object-contain p-1" />
+        </span>
+      ) : (
+        <span
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
+          style={{ background: h.accent }}
+        >
+          <Hospital size={18} />
+        </span>
+      )}
       <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-semibold text-ink">{h.short}</span>
         <span className="block text-[12px] text-muted">{name}</span>

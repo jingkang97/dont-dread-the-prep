@@ -1,15 +1,28 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { ArrowDown, Send } from 'lucide-react'
-import { classify, SUGGESTIONS, type ChatAnswer } from '../data/foods'
-import { BotCard } from '../components/food/BotCard'
+import { BotCard, ThinkingCard } from '../components/food/BotCard'
+import { MealPrep } from '../components/food/MealPrep'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { SegmentedControl } from '../components/SegmentedControl'
+import { Card } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
-import type { StringKey } from '../i18n/strings'
-import { loadFoodChat, saveFoodChat, type FoodChatMsg } from '../lib/foodChat'
+import { ApiError, getApiDish, postApiFoodChat, type ApiDishChoice } from '../lib/api'
+import { loadFoodChat, saveFoodChat, type FoodChatAnswer, type FoodChatMsg } from '../lib/foodChat'
 import { clearFoodChatUi, loadFoodChatUi, saveFoodChatUi } from '../lib/foodChatUi'
 import type { PrepSession } from '../lib/session'
 import { easeOut, fadeY } from '../lib/motion'
+import { cn } from '../lib/cn'
+
+const CHAT_SUGGESTIONS = [
+  'Chicken rice',
+  'Kopi with milk',
+  'Apple juice',
+  'Milo',
+  'White bread',
+  'Thosai',
+  'Char kway teow',
+]
 
 function scrollToLatestTurn(el: HTMLElement, behavior: ScrollBehavior) {
   const turn = el.querySelector('[data-food-turn]')
@@ -40,8 +53,11 @@ function animateScrollTop(el: HTMLElement, ms: number) {
   return () => cancelAnimationFrame(raf)
 }
 
+type Tab = 'mealPrep' | 'chat'
+
 export function FoodChat({ session }: { session: PrepSession }) {
   const { t } = useLang()
+  const [tab, setTab] = useState<Tab>('mealPrep')
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<FoodChatMsg[]>(() => loadFoodChat(session.id))
   const listRef = useRef<HTMLDivElement>(null)
@@ -51,15 +67,6 @@ export function FoodChat({ session }: { session: PrepSession }) {
   const [clearing, setClearing] = useState(false)
   const clearingRef = useRef(false)
   const clearAnim = useRef<() => void>(() => {})
-
-  const intro: ChatAnswer = {
-    verdict: 'ask',
-    title: t('food.introTitle', { hospital: session.hospitalShort }),
-    body: t('food.introBody'),
-    source: 'Doc 03 Low-residue ruleset — DRAFT, not dietitian-approved',
-    rules: ['HOSP'],
-    matched: 'intro',
-  }
 
   useLayoutEffect(() => {
     saveFoodChat(session.id, messages)
@@ -114,16 +121,68 @@ export function FoodChat({ session }: { session: PrepSession }) {
     }
   }, [session.id, messages])
 
-  function ask(shown: string, query = shown, labelKey?: StringKey) {
+  async function ask(shown: string, query = shown) {
     const text = shown.trim()
     if (!text) return
-    const answer = classify(query.trim(), session.hospitalId, session.hospitalShort)
+    const queryText = query.trim()
+    const pendingId = crypto.randomUUID()
     setMessages((m) => [
       ...m,
-      { id: crypto.randomUUID(), role: 'user', text, labelKey },
-      { id: crypto.randomUUID(), role: 'bot', answer },
+      { id: crypto.randomUUID(), role: 'user', text },
+      { id: pendingId, role: 'bot', pending: true },
     ])
     setInput('')
+
+    let answer: FoodChatAnswer
+    try {
+      const res = await postApiFoodChat(queryText, session.hospitalId)
+      answer = {
+        status: res.status,
+        message: res.message,
+        matchedQuery: res.matched_query,
+        matchedSource: res.matched_source,
+        dish: res.dish,
+        choices: res.choices,
+      }
+    } catch (err) {
+      answer = {
+        status: 'not_configured',
+        message: err instanceof ApiError ? err.detail : t('food.networkError'),
+      }
+    }
+
+    setMessages((m) =>
+      m.map((msg) => (msg.id === pendingId ? { ...msg, pending: false, answer } : msg)),
+    )
+  }
+
+  async function selectChoice(choice: ApiDishChoice) {
+    const pendingId = crypto.randomUUID()
+    setMessages((m) => [
+      ...m,
+      { id: crypto.randomUUID(), role: 'user', text: choice.name },
+      { id: pendingId, role: 'bot', pending: true },
+    ])
+
+    let answer: FoodChatAnswer
+    try {
+      const dish = await getApiDish(choice.id)
+      answer = {
+        status: 'ok',
+        matchedQuery: dish.name,
+        matchedSource: dish.source_hospital,
+        dish,
+      }
+    } catch (err) {
+      answer = {
+        status: 'not_configured',
+        message: err instanceof ApiError ? err.detail : t('food.networkError'),
+      }
+    }
+
+    setMessages((m) =>
+      m.map((msg) => (msg.id === pendingId ? { ...msg, pending: false, answer } : msg)),
+    )
   }
 
   const lastUserId = messages.filter((m) => m.role === 'user').at(-1)?.id
@@ -159,10 +218,10 @@ export function FoodChat({ session }: { session: PrepSession }) {
         <ScreenHeader
           kicker={t('food.kicker')}
           title={t('food.title')}
-          lead={t('food.lead', { hospital: session.hospitalShort })}
+          lead={tab === 'chat' ? t('food.lead', { hospital: session.hospitalShort }) : t('food.mealLead', { hospital: session.hospitalShort })}
           leadClassName="mt-1 text-[13px] text-ink-soft"
           trailing={
-            messages.length > 0 && !clearing ? (
+            tab === 'chat' && messages.length > 0 && !clearing ? (
               <button
                 type="button"
                 onClick={clearChat}
@@ -173,87 +232,120 @@ export function FoodChat({ session }: { session: PrepSession }) {
             ) : null
           }
         />
+        <div className="mt-3">
+          <SegmentedControl
+            value={tab}
+            onChange={setTab}
+            options={[
+              { id: 'mealPrep', label: t('food.tabMealPrep') },
+              { id: 'chat', label: t('food.tabChat') },
+            ]}
+          />
+        </div>
       </div>
 
       <div className="relative min-h-0 flex-1">
-        <div ref={listRef} className="h-full min-h-0 space-y-3 overflow-y-auto overflow-anchor-none overscroll-y-contain px-5 py-4">
-          <BotCard answer={intro} />
-          {messages.length > 0 && (
-            <motion.div
-              initial={false}
-              animate={{ opacity: clearing ? 0 : 1 }}
-              transition={{ duration: 0.32, ease: easeOut }}
-              className="grid gap-3"
-            >
-                {messages.map((msg) =>
-                  msg.role === 'user' ? (
-                    <motion.div
-                      key={msg.id}
-                      data-food-turn={msg.id === lastUserId ? '' : undefined}
-                      className="flex justify-end"
-                      {...(skipEnter.current ? {} : fadeY)}
-                    >
-                      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-navy px-3.5 py-2.5 text-[14px] text-white">
-                        {msg.labelKey ? t(msg.labelKey) : msg.text}
-                      </div>
-                    </motion.div>
-                  ) : (
-                    msg.answer && (
-                      <motion.div key={msg.id} {...(skipEnter.current ? {} : fadeY)}>
-                        <BotCard answer={msg.answer} />
-                      </motion.div>
-                    )
-                  ),
-                )}
-            </motion.div>
-          )}
-        </div>
-        {showJump && (
-          <div className="pointer-events-none absolute bottom-3 right-4 z-10">
-            <div className="pointer-events-auto">
-              <FoodJumpFabs
-                onUp={() => jumpTo(0)}
-                onDown={() => jumpTo(listRef.current?.scrollHeight ?? 0)}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="shrink-0 border-t border-line bg-paper-2 px-4 pb-3 pt-3">
-        <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s.label}
-              type="button"
-              onClick={() => ask(t(s.label), s.query, s.label)}
-              className="shrink-0 rounded-full border border-line bg-paper px-3 py-1.5 text-[12px] font-medium text-navy"
-            >
-              {t(s.label)}
-            </button>
-          ))}
-        </div>
-        <form
-          className="flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault()
-            ask(input)
-          }}
+        <div
+          aria-hidden={tab !== 'mealPrep'}
+          className={cn('absolute inset-0', tab !== 'mealPrep' && 'invisible pointer-events-none')}
         >
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={t('food.placeholder')}
-            className="flex-1 rounded-2xl border border-line bg-paper px-3.5 py-3 text-[16px] outline-none focus:border-navy"
-          />
-          <button
-            type="submit"
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-teal text-white"
-            aria-label={t('food.send')}
-          >
-            <Send size={18} />
-          </button>
-        </form>
+          <MealPrep session={session} />
+        </div>
+
+        <div
+          aria-hidden={tab !== 'chat'}
+          className={cn('absolute inset-0 flex min-h-0 flex-col', tab !== 'chat' && 'invisible pointer-events-none')}
+        >
+          <div className="relative min-h-0 flex-1">
+            <div ref={listRef} className="h-full min-h-0 space-y-3 overflow-y-auto overflow-anchor-none overscroll-y-contain px-5 py-4">
+              <Card className="p-3.5">
+                <p className="text-[16px] font-semibold text-ink">
+                  {t('food.introTitle', { hospital: session.hospitalShort })}
+                </p>
+                <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
+                  {t('food.introBody')}
+                </p>
+              </Card>
+              {messages.length > 0 && (
+                <motion.div
+                  initial={false}
+                  animate={{ opacity: clearing ? 0 : 1 }}
+                  transition={{ duration: 0.32, ease: easeOut }}
+                  className="grid gap-3"
+                >
+                  {messages.map((msg) =>
+                    msg.role === 'user' ? (
+                      <motion.div
+                        key={msg.id}
+                        data-food-turn={msg.id === lastUserId ? '' : undefined}
+                        className="flex justify-end"
+                        {...(skipEnter.current ? {} : fadeY)}
+                      >
+                        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-navy px-3.5 py-2.5 text-[14px] text-white">
+                          {msg.text}
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div key={msg.id} {...(skipEnter.current ? {} : fadeY)}>
+                        {msg.pending || !msg.answer ? (
+                          <ThinkingCard />
+                        ) : (
+                          <BotCard answer={msg.answer} onSelectChoice={selectChoice} />
+                        )}
+                      </motion.div>
+                    ),
+                  )}
+                </motion.div>
+              )}
+            </div>
+            {showJump && (
+              <div className="pointer-events-none absolute bottom-3 right-4 z-10">
+                <div className="pointer-events-auto">
+                  <FoodJumpFabs
+                    onUp={() => jumpTo(0)}
+                    onDown={() => jumpTo(listRef.current?.scrollHeight ?? 0)}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="shrink-0 border-t border-line bg-paper-2 px-4 pb-3 pt-3">
+            <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
+              {CHAT_SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => ask(s)}
+                  className="shrink-0 rounded-full border border-line bg-paper px-3 py-1.5 text-[12px] font-medium text-navy"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault()
+                ask(input)
+              }}
+            >
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={t('food.placeholder')}
+                className="flex-1 rounded-2xl border border-line bg-paper px-3.5 py-3 text-[16px] outline-none focus:border-navy"
+              />
+              <button
+                type="submit"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-teal text-white"
+                aria-label={t('food.send')}
+              >
+                <Send size={18} />
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   )

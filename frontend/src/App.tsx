@@ -6,6 +6,7 @@ import { Home } from './screens/Home'
 import { Timeline } from './screens/Timeline'
 import { FoodChat } from './screens/FoodChat'
 import { StoolGuide } from './screens/StoolGuide'
+import { Contacts } from './screens/Contacts'
 import { Reminders } from './screens/Reminders'
 import { SessionBar } from './components/SessionBar'
 import { PitchRail } from './components/PitchRail'
@@ -76,6 +77,7 @@ export default function App() {
                   ['timeline', <Timeline session={session} onOpenStool={() => setScreen('stool')} />],
                   ['food', <FoodChat session={session} />],
                   ['stool', <StoolGuide session={session} onReminders={() => setScreen('reminders')} />],
+                  ['contacts', <Contacts session={session} />],
                   ['reminders', <Reminders session={session} onSession={setSession} onShortcut={setShortcut} />],
                 ] as const
               ).map(([id, node]) => (

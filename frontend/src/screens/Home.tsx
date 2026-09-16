@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { format, formatDistanceStrict, isAfter } from 'date-fns'
-import { ArrowRight, Bell, Droplets, EllipsisVertical, Sparkles, Utensils } from 'lucide-react'
+import { ArrowRight, Bell, Droplets, EllipsisVertical, Phone, Sparkles, Utensils } from 'lucide-react'
 import { Card, SectionLabel } from '../components/ui'
 import { cn } from '../lib/cn'
 import { useLang } from '../i18n/LanguageContext'
@@ -24,12 +24,6 @@ export function Home({
   const { hospital, events, loading, error, now, next, nextWhen, report, started } = usePrepSummary(session)
   const remaining = report ? formatDistanceStrict(report, now, { addSuffix: true, locale }) : ''
   const remindersOn = session.telegramLinked || session.pushOptIn
-  const juice =
-    hospital.fruitJuice === 'yes'
-      ? t('home.juiceYes')
-      : hospital.fruitJuice === 'no'
-        ? t('home.juiceNo')
-        : t('home.juiceAsk')
 
   return (
     <div className="px-5 pb-8 pt-6">
@@ -145,6 +139,14 @@ export function Home({
           body={t('home.stoolBody')}
           onClick={() => onOpen('stool')}
         />
+        <div className="ml-[68px] h-px bg-line" />
+        <Tile
+          icon={<Phone size={18} />}
+          iconClass="bg-teal/15 text-teal-deep"
+          title={t('home.contactsTitle')}
+          body={t('home.contactsBody')}
+          onClick={() => onOpen('contacts')}
+        />
       </Card>
 
       <Card data-tour="home-shortcut" className="mt-4 p-4">
@@ -153,11 +155,7 @@ export function Home({
           <div>
             <p className="text-[13px] font-semibold text-navy">{t('home.faithful')}</p>
             <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
-              {t('home.faithfulBody', {
-                hospital: hospital.short,
-                milk: hospital.milkInCoffee === 'yes' ? t('home.milkYes') : t('home.milkNo'),
-                juice,
-              })}
+              {t('home.faithfulBody', { hospital: hospital.short })}
             </p>
           </div>
         </div>

@@ -1,8 +1,8 @@
-import { differenceInCalendarDays, startOfDay } from 'date-fns'
+import { differenceInCalendarDays, endOfDay, isBefore, startOfDay } from 'date-fns'
 import type { HospitalId, Slot } from '../data/hospitals'
 import type { StringKey } from '../i18n/strings'
 
-export type EventKind = 'diet' | 'dose' | 'meal' | 'fast' | 'arrive' | 'stool'
+export type EventKind = 'diet' | 'prep' | 'med' | 'meal' | 'fast' | 'arrive' | 'stool'
 
 export type TimelineEvent = {
   id: string
@@ -20,10 +20,22 @@ export type TimelineEvent = {
   kind: EventKind
   source: string
   tentative?: boolean
-  /** Prep agent on dose steps: 'picoprep' | 'peg' | null. */
+  /** Prep agent on bowel-prep steps: 'picoprep' | 'peg' | null. */
   agent?: string | null
   /** PNG filename under public/timeline (protocol_steps.prep_image_label). */
   prepImageLabel?: string | null
+  /** Day-scoped (e.g. med stops). `at` is still midnight for sorting. */
+  allDay?: boolean
+}
+
+/** Past for timed events = clock passed; for all-day = calendar day ended. */
+export function isEventPast(event: TimelineEvent, now: Date) {
+  if (event.allDay) return isBefore(endOfDay(event.at), now)
+  return isBefore(event.at, now)
+}
+
+export function isEventUpcoming(event: TimelineEvent, now: Date) {
+  return !isEventPast(event, now)
 }
 
 export type SessionInput = {

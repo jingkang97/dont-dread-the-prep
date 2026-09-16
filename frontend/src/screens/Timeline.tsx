@@ -12,7 +12,7 @@ import { JumpNextFab, type JumpDir } from '../components/timeline/JumpNextFab'
 import { useLang } from '../i18n/LanguageContext'
 import type { PrepSession } from '../lib/session'
 import { parseYmd } from '../lib/dates'
-import type { TimelineEvent } from '../lib/timeline'
+import { isEventPast, type TimelineEvent } from '../lib/timeline'
 import { loadTimelineUi, saveTimelineUi, type TimelineView } from '../lib/timelineUi'
 import { cn } from '../lib/cn'
 import { SegmentedControl } from '../components/SegmentedControl'
@@ -236,14 +236,14 @@ export function Timeline({
                     <span
                       className={cn(
                         'absolute -left-[27px] top-1.5 h-3.5 w-3.5 rounded-full border-2 border-paper-2',
-                        isBefore(event.at, now) ? 'bg-muted' : event.tentative ? 'bg-ask' : 'bg-teal',
+                        isEventPast(event, now) ? 'bg-muted' : event.tentative ? 'bg-ask' : 'bg-teal',
                       )}
                     />
                     <EventStamp event={event} />
                     <EventCard
                       event={event}
                       isNext={event.id === nextId}
-                      isPast={isBefore(event.at, now)}
+                      isPast={isEventPast(event, now)}
                       onOpenStool={onOpenStool}
                     />
                   </li>
@@ -304,7 +304,7 @@ export function Timeline({
                     <EventCard
                       event={event}
                       isNext={event.id === nextId}
-                      isPast={isBefore(event.at, now)}
+                      isPast={isEventPast(event, now)}
                       onOpenStool={onOpenStool}
                     />
                   </div>

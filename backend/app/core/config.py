@@ -53,6 +53,18 @@ class Settings(BaseSettings):
     vapid_private_key: str = ""
     vapid_mailto: str = "mailto:preppath@localhost"
 
+    # Food chat LLM — any OpenAI-compatible Chat Completions API. Defaults to
+    # Google AI Studio's Gemini endpoint (generous free daily limits on Flash
+    # models). Key left unset on purpose — the chat endpoint reports
+    # "not configured" until GOOGLE_API_KEY is set.
+    google_api_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    google_api_key: str = ""
+    google_model: str = "gemini-3.8-flash"
+
+    @property
+    def food_chat_configured(self) -> bool:
+        return bool(self.google_api_key.strip() and self.google_model.strip())
+
     @property
     def cors_origin_list(self) -> list[str]:
         seen: set[str] = set()
