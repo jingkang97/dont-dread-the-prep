@@ -30,11 +30,7 @@ export function BotCard({
   const { t } = useLang()
 
   if (answer.status === 'ok' && answer.dish) {
-    const footnote =
-      answer.matchedSource === 'DIETICIAN'
-        ? t('food.matchedDietician')
-        : t('food.matchedHospital', { hospital: answer.matchedSource ?? '' })
-    return <DishCard dish={answer.dish} footnote={footnote} />
+    return <DishCard dish={answer.dish} />
   }
 
   if (answer.status === 'choices' && answer.choices?.length) {

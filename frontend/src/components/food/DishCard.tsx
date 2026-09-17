@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ApiDish, ApiDishVerdict, ApiFoodClassification } from '../../lib/api'
 import type { Verdict } from '../../data/foods'
 import { useLang } from '../../i18n/LanguageContext'
+import { cn } from '../../lib/cn'
 import { Card, VerdictPill } from '../ui'
 
 // Ingredients are Yes or No, never "Possible": anything the sheet has not
@@ -48,48 +49,94 @@ function Reason({ text }: { text: string }) {
   )
 }
 
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={cn('mt-1 shrink-0 text-muted transition-transform', open && 'rotate-180')}
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      aria-hidden
+    >
+      <path
+        d="M3 5.25 7 9.25l4-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 export function DishCard({
   dish,
-  footnote,
   hideApproved = false,
+  collapsible = false,
 }: {
   dish: ApiDish
-  footnote?: string
   hideApproved?: boolean
+  /**
+   * Meal prep only: collapse the ingredient rows behind the dish name so a long
+   * list scrolls as names. The chat cards (BotCard) leave this off and keep
+   * rendering exactly as before — an answer to "can I eat this?" is the reason,
+   * so it is never hidden behind a tap.
+   */
+  collapsible?: boolean
 }) {
   const { t } = useLang()
+  const [expanded, setExpanded] = useState(false)
+  const open = !collapsible || expanded
   const dishVerdict = toDishVerdict(dish.verdict)
   const showDishPill = !(hideApproved && dishVerdict === 'yes')
   return (
     <Card className="p-3.5">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-[16px] font-semibold text-ink">{dish.name}</p>
-        {showDishPill ? <VerdictPill verdict={dishVerdict} /> : null}
-      </div>
+      {collapsible ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          aria-label={expanded ? t('food.hideIngredients') : t('food.showIngredients')}
+          className="flex w-full items-start justify-between gap-2 text-left"
+        >
+          <p className="text-[16px] font-semibold text-ink">{dish.name}</p>
+          <span className="flex shrink-0 items-start gap-1.5">
+            {showDishPill ? <VerdictPill verdict={dishVerdict} /> : null}
+            <Chevron open={expanded} />
+          </span>
+        </button>
+      ) : (
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-[16px] font-semibold text-ink">{dish.name}</p>
+          {showDishPill ? <VerdictPill verdict={dishVerdict} /> : null}
+        </div>
+      )}
       {dish.verdict === 'possible' && dish.remove_ingredients.length > 0 && (
         <p className="mt-1 text-[13px] font-medium text-possible">
           {t('food.possibleNote', { ingredients: dish.remove_ingredients.join(', ') })}
         </p>
       )}
-      <div className="mt-2.5 grid gap-1.5">
-        {dish.ingredients.map((ingredient) => {
-          const verdict = toIngredientVerdict(ingredient.classification)
-          const showPill = !(hideApproved && verdict === 'yes')
-          return (
-            <div
-              key={ingredient.id}
-              className="flex items-start justify-between gap-2 rounded-xl bg-paper px-3 py-2"
-            >
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-ink">{ingredient.name}</p>
-                <Reason text={ingredient.classification_reason} />
+      {open && (
+        <div className="mt-2.5 grid gap-1.5">
+          {dish.ingredients.map((ingredient) => {
+            const verdict = toIngredientVerdict(ingredient.classification)
+            const showPill = !(hideApproved && verdict === 'yes')
+            return (
+              <div
+                key={ingredient.id}
+                className="flex items-start justify-between gap-2 rounded-xl bg-paper px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold text-ink">{ingredient.name}</p>
+                  <Reason text={ingredient.classification_reason} />
+                </div>
+                {showPill ? <VerdictPill verdict={verdict} compact /> : null}
               </div>
-              {showPill ? <VerdictPill verdict={verdict} compact /> : null}
-            </div>
-          )
-        })}
-      </div>
-      {footnote && <p className="mt-2.5 text-[11px] text-muted">{footnote}</p>}
+            )
+          })}
+        </div>
+      )}
     </Card>
   )
 }

@@ -45,12 +45,7 @@ export function MealPrep({ session }: { session: PrepSession }) {
         {!loading && !error && dishes.length > 0 && (
           <div className="grid gap-3">
             {dishes.map((dish) => (
-              <DishCard
-                key={dish.id}
-                dish={dish}
-                hideApproved
-                footnote={t('food.forHospital', { hospital: session.hospitalShort })}
-              />
+              <DishCard key={dish.id} dish={dish} hideApproved collapsible />
             ))}
           </div>
         )}
