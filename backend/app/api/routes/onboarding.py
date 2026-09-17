@@ -10,7 +10,7 @@ router = APIRouter(tags=["onboarding"])
 
 @router.get("/hospitals", response_model=list[HospitalOut])
 def get_hospitals(db: Session = Depends(get_db)) -> list[HospitalOut]:
-    """Step 1: pick SGH, NCCS, or TTSH. Protocols are listed chips only."""
+    """Step 1: pick a hospital. Protocols are listed chips only."""
     return sessions_service.list_hospitals_out(db)
 
 

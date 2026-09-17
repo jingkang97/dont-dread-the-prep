@@ -66,7 +66,7 @@ class HospitalOut(BaseModel):
 
 
 class SessionCreate(BaseModel):
-    hospital_code: str = Field(..., examples=["sgh", "nccs", "ttsh"])
+    hospital_code: str = Field(..., examples=["ttsh", "skh"])
     procedure_date: date
     slot: Slot
     reporting_time: Optional[time] = None
@@ -75,7 +75,7 @@ class SessionCreate(BaseModel):
         description="Optional. Pass the listed chip name from GET /hospitals. "
         "The server remaps to the sheet whose reporting_from/until contains "
         "reporting_time among protocols that share the same prep_agent. "
-        "Auto-picked when the hospital has one listed protocol (SGH/NCCS).",
+        "Auto-picked when the hospital has one listed protocol.",
     )
     first_name: Optional[str] = Field(default=None, max_length=24)
 

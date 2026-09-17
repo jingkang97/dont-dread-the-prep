@@ -1,6 +1,6 @@
 # PrepPath
 
-No-install colonoscopy prep microsite for HackitRx 2026 (OAS × LSS). Patients scan a QR on the SGH/NCCS yellow form.
+No-install colonoscopy prep microsite for HackitRx 2026 (OAS × LSS). Pick your hospital and appointment for a personalised prep timeline.
 
 ## Run
 
@@ -73,10 +73,9 @@ Schema and seed (`backend/sql/mvp.sql`, `mvp.seed.sql`, `telegram.sql`, `push.sq
 ## What is in the MVP
 
 - **3-tap setup** — hospital, date, AM/PM (plus reporting time)
-- **Scan demo** — rehearsed yellow-form OCR moment (not the reliable path)
-- **AM/PM timeline** — hospital-faithful; SGH afternoon packet times are flagged as gaps
+- **AM/PM timeline** — hospital-faithful prep steps from that site’s protocol
 - **Food lookup** — retrieval-only classifier (Yes / No / Ask your care team) from Doc 03
-- **Stool + call** — 6-point scale and publicly listed hospital numbers
+- **Stool + call** — hospital stool scale and publicly listed hospital numbers
 - **Telegram + phone reminders** — `t.me/Bot?start=SESSION_ID` links the chat; Add to Home Screen enables the same T−72 / T−24 / T−6 as a notification. Live schedule is T−72 / T−24 / T−6. Demo mode (`TELEGRAM_REMINDER_TEST=true`) sends now / +1 min / +2 min, then 3 hourly, then 3 daily. Set `TELEGRAM_BOT_TOKEN`, VAPID keys, and `VITE_TELEGRAM_BOT_USERNAME`.
 
 Draft ruleset. Not medical advice. Not dietitian-approved.

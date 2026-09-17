@@ -1,12 +1,6 @@
 /** Stool/contact, food-system, and rule-title copy. Hospital source lines stay in English. */
 
 export const CLINICAL_EN = {
-  'hosp.sgh.stoolAction':
-    'SGH form has no stool chart. This guide uses the Bristol stool scale so you can compare appearance.',
-  'hosp.sgh.formGap': 'Times for Picoprep are handwritten blanks. Afternoon slots are not printed.',
-  'hosp.nccs.stoolAction':
-    'The SGH/NCCS form has no stool chart. This guide uses the Bristol stool scale so you can compare appearance.',
-  'hosp.nccs.formGap': 'Medication stop dates live on a separate handwritten annex, not the yellow form.',
   'hosp.skh.formGap':
     'SKH already generates a personalised timeline on its website — this microsite mirrors that pattern for demo.',
   'hosp.cgh.stoolAction':

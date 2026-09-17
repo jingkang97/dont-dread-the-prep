@@ -95,6 +95,9 @@ def session_to_out(row: Session, hospital: Hospital, protocol: Protocol, db: DbS
 
 BRISTOL_SCALE_KEY = "bristol"
 
+# Still in the DB for now — hide from picker / new sessions until rows are dropped.
+HIDDEN_HOSPITAL_CODES = frozenset({"sgh", "nccs"})
+
 
 def list_hospitals(db: DbSession) -> list[Hospital]:
     stmt = (
@@ -103,6 +106,7 @@ def list_hospitals(db: DbSession) -> list[Hospital]:
             selectinload(Hospital.protocols),
             selectinload(Hospital.stool_scale).selectinload(StoolScale.stages),
         )
+        .where(Hospital.code.notin_(HIDDEN_HOSPITAL_CODES))
         .order_by(Hospital.id)
     )
     return list(db.scalars(stmt).unique().all())
@@ -194,10 +198,17 @@ def resolve_protocol(
 
 
 def create_session(db: DbSession, body: SessionCreate) -> SessionOut:
+    code = body.hospital_code.strip().lower()
+    if code in HIDDEN_HOSPITAL_CODES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Hospital '{body.hospital_code}' is not available",
+        )
+
     hospital = db.scalar(
         select(Hospital)
         .options(selectinload(Hospital.protocols))
-        .where(Hospital.code == body.hospital_code)
+        .where(Hospital.code == code)
     )
     if hospital is None:
         raise HTTPException(

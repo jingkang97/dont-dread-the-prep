@@ -10,9 +10,9 @@ export type Contact = {
 
 /** Picker chip colours — not in the hospitals table. */
 const ACCENT_BY_CODE: Record<string, string> = {
-  sgh: '#c4921a',
-  nccs: '#1b7a6e',
   ttsh: '#1b4d8c',
+  skh: '#c45f18',
+  cgh: '#0b6e4f',
 }
 
 const ACCENT_BY_CLUSTER: Record<string, string> = {

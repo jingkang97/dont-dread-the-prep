@@ -2,6 +2,7 @@ import { apiFetch } from './client'
 
 export type ApiFoodClassification = 'can' | 'cannot' | 'review'
 export type ApiDishVerdict = ApiFoodClassification | 'possible'
+/** Matches DB food_source; SGH kept for legacy ingredient/dish rows. */
 export type ApiFoodSource = 'SGH' | 'TTSH' | 'CGH' | 'DIETICIAN'
 export type ApiMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink'
 
