@@ -63,9 +63,11 @@ function jumpToward(scroller: HTMLElement, el: HTMLElement, topPad: number): Jum
 export function Timeline({
   session,
   onOpenStool,
+  onOpenFood,
 }: {
   session: PrepSession
   onOpenStool: () => void
+  onOpenFood: () => void
 }) {
   const { t } = useLang()
   const { hospital, events, loading, error, now, nextUpcoming } = usePrepSummary(session)
@@ -245,6 +247,7 @@ export function Timeline({
                       isNext={event.id === nextId}
                       isPast={isEventPast(event, now)}
                       onOpenStool={onOpenStool}
+                      onOpenFood={onOpenFood}
                     />
                   </li>
                 ))}
@@ -306,6 +309,7 @@ export function Timeline({
                       isNext={event.id === nextId}
                       isPast={isEventPast(event, now)}
                       onOpenStool={onOpenStool}
+                      onOpenFood={onOpenFood}
                     />
                   </div>
                 ))}

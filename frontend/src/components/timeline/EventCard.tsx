@@ -7,26 +7,30 @@ import { useLang } from '../../i18n/LanguageContext'
 import { cn } from '../../lib/cn'
 import { fromNowDays, resolveEventText, type TimelineEvent } from '../../lib/timeline'
 import { KIND_KEY, KIND_TONE } from './kinds'
-import { mixHelpFor } from './mixHelp'
+import { eventHelpFor } from './mixHelp'
 
 export function EventCard({
   event,
   isNext,
   isPast,
   onOpenStool,
+  onOpenFood,
 }: {
   event: TimelineEvent
   isNext?: boolean
   isPast?: boolean
   onOpenStool?: () => void
+  onOpenFood?: () => void
 }) {
   const { t } = useLang()
   const { title, detail } = resolveEventText(event, t)
   const cardRef = useRef<HTMLDivElement>(null)
   const [pane, setPane] = useState<HTMLElement | null>(null)
-  const [mixOpen, setMixOpen] = useState(false)
-  const mix = mixHelpFor(event)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const help = eventHelpFor(event)
   const stoolLink = event.kind === 'stool' && onOpenStool
+  const foodLink = event.kind === 'diet' && onOpenFood
+  const cardLink = stoolLink ? onOpenStool : foodLink ? onOpenFood : null
   const until = isNext ? fromNowDays(event.at, new Date(), t) : ''
 
   useLayoutEffect(() => {
@@ -55,16 +59,19 @@ export function EventCard({
         {event.tentative && (
           <span className="text-[10px] font-bold tracking-wide text-ask">{t('tl.notOnForm')}</span>
         )}
-        {(until || mix) && (
+        {(until || help) && (
           <span className="ml-auto flex shrink-0 items-center gap-1">
             {until ? (
               <span className="text-[12px] font-semibold text-teal-deep">{until}</span>
             ) : null}
-            {mix && (
+            {help && (
               <button
                 type="button"
-                aria-label={mix.hint}
-                onClick={() => setMixOpen(true)}
+                aria-label={help.hint}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setHelpOpen(true)
+                }}
                 className="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-teal-deep transition active:bg-teal/15"
               >
                 <CircleHelp size={18} strokeWidth={2.2} />
@@ -74,21 +81,28 @@ export function EventCard({
         )}
       </div>
       <p className="mt-1.5 text-[16px] font-semibold text-ink">{title}</p>
-      <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">{detail}</p>
+      {detail ? (
+        <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">{detail}</p>
+      ) : null}
       {stoolLink && (
         <p className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-ask">
           {t('tl.openStool')} <ArrowRight size={16} />
         </p>
       )}
+      {foodLink && (
+        <p className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-ask">
+          {t('tl.openFood')} <ArrowRight size={16} />
+        </p>
+      )}
     </Card>
   )
 
-  const MixSheet = mix?.Sheet
+  const HelpSheet = help?.Sheet
 
   return (
     <div ref={cardRef} data-tl-card className="mt-1">
-      {stoolLink ? (
-        <button type="button" onClick={onOpenStool} className="w-full text-left">
+      {cardLink ? (
+        <button type="button" onClick={cardLink} className="w-full text-left">
           {card}
         </button>
       ) : (
@@ -97,8 +111,8 @@ export function EventCard({
       {pane &&
         createPortal(
           <AnimatePresence>
-            {mixOpen && MixSheet ? (
-              <MixSheet onClose={() => setMixOpen(false)} prepImageLabel={event.prepImageLabel} />
+            {helpOpen && HelpSheet ? (
+              <HelpSheet onClose={() => setHelpOpen(false)} prepImageLabel={event.prepImageLabel} />
             ) : null}
           </AnimatePresence>,
           pane,

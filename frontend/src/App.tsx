@@ -118,7 +118,7 @@ export default function App() {
               </div>
               {(
                 [
-                  ['timeline', <Timeline session={session} onOpenStool={() => setScreen('stool')} />],
+                  ['timeline', <Timeline session={session} onOpenStool={() => setScreen('stool')} onOpenFood={() => setScreen('food')} />],
                   ['food', <FoodChat session={session} />],
                   ['stool', <StoolGuide session={session} />],
                   ['contacts', <Contacts session={session} />],

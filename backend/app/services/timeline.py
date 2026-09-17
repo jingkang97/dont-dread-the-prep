@@ -117,6 +117,7 @@ def get_timeline(db: DbSession, public_code: str) -> TimelineOut:
                 tentative=step.tentative,
                 agent=step.agent,
                 prep_image_label=step.prep_image_label,
+                all_day=kind == "diet",
                 sort_order=step.sort_order,
             )
         )
@@ -137,6 +138,7 @@ def get_timeline(db: DbSession, public_code: str) -> TimelineOut:
                 kind="med",
                 title=stop.title,
                 detail=stop.detail,
+                agent="med-7d" if int(stop.day_offset) == -7 else None,
                 all_day=True,
                 sort_order=stop.sort_order,
             )
