@@ -72,49 +72,18 @@ export function Reminders({
         <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">
           {t(demo ? 'wa.welcomeBodyDemo' : 'wa.welcomeBody')}
         </p>
+        {push.needsInstall && !session.pushOptIn && (
+          <p
+            role="note"
+            className="mt-3 flex items-start gap-2 rounded-xl bg-cream px-3 py-2.5 text-[13px] leading-snug text-teal-deep"
+          >
+            <Info size={16} className="mt-0.5 shrink-0" aria-hidden />
+            <span>{t('wa.pushNeedInstall')}</span>
+          </p>
+        )}
       </Card>
 
-      <Card className="mt-4 p-4">
-        <p className="text-[13px] font-semibold text-navy">{t('wa.times')}</p>
-        <ul className="mt-2 divide-y divide-line">
-          {items.map((item) => (
-            <li key={item.key} className="py-2.5">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[14px] font-semibold text-ink">
-                  {item.title}
-                </span>
-                <span className="text-[12px] text-muted">
-                  {item.sent
-                    ? t('wa.sent')
-                    : item.at && !isAfter(item.at, new Date())
-                      ? t('wa.passed')
-                      : item.at
-                        ? format(item.at, 'd MMM, h:mm a', { locale: DATE_LOCALES[lang] })
-                        : item.delayLabel}
-                </span>
-              </div>
-              <p className="text-[12px] text-ink-soft">{item.body}</p>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-2 text-[12px] text-muted">
-          {demo
-            ? t('wa.computedDemo')
-            : t('wa.computed', { hospital: session.hospitalShort, time: session.reportingTime })}
-        </p>
-      </Card>
-
-      <p className="mt-5 text-[13px] font-semibold text-muted">{t('wa.channels')}</p>
-      {push.needsInstall && !session.pushOptIn && (
-        <p
-          role="note"
-          className="mt-2 flex items-start gap-2 rounded-xl bg-cream px-3 py-2.5 text-[13px] leading-snug text-teal-deep"
-        >
-          <Info size={16} className="mt-0.5 shrink-0" aria-hidden />
-          <span>{t('wa.pushNeedInstall')}</span>
-        </p>
-      )}
-      <div className="mt-2 grid grid-cols-2 gap-3">
+      <div className="mt-4 grid grid-cols-2 gap-3">
         <Card className="flex flex-col p-3.5">
           <div className="flex items-start justify-between gap-2">
             <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-teal/15 text-teal-deep">
@@ -180,6 +149,36 @@ export function Reminders({
       {telegram.timedOut && !session.telegramLinked && (
         <p className="mt-3 text-[13px] font-semibold text-no">{t('wa.waitingTimeout')}</p>
       )}
+
+      <Card className="mt-5 p-4">
+        <p className="text-[13px] font-semibold text-navy">{t('wa.times')}</p>
+        <ul className="mt-2 divide-y divide-line">
+          {items.map((item) => (
+            <li key={item.key} className="py-2.5">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[14px] font-semibold text-ink">
+                  {item.title}
+                </span>
+                <span className="text-[12px] text-muted">
+                  {item.sent
+                    ? t('wa.sent')
+                    : item.at && !isAfter(item.at, new Date())
+                      ? t('wa.passed')
+                      : item.at
+                        ? format(item.at, 'd MMM, h:mm a', { locale: DATE_LOCALES[lang] })
+                        : item.delayLabel}
+                </span>
+              </div>
+              <p className="text-[12px] text-ink-soft">{item.body}</p>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-[12px] text-muted">
+          {demo
+            ? t('wa.computedDemo')
+            : t('wa.computed', { hospital: session.hospitalShort, time: session.reportingTime })}
+        </p>
+      </Card>
     </div>
   )
 }
