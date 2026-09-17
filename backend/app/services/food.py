@@ -38,31 +38,30 @@ def hospital_source(hospital_code: str) -> str | None:
     return HOSPITAL_SOURCE_MAP.get(hospital_code.strip().lower())
 
 
-POSSIBLE_MIN_INGREDIENTS = 3
-
-
 def _dish_verdict(ingredients: list[Ingredient]) -> tuple[str, list[str]]:
-    """Verdict + the ingredients to drop when the verdict is 'possible'.
+    """Verdict + the ingredients to leave out when the verdict is 'possible'.
 
-    Priority stays cannot > review > can, same as before. The one addition:
-    a dish that would be 'cannot' is downgraded to 'possible' when it has at
-    least 3 ingredients and the 'can' ones outnumber the 'cannot' ones — e.g.
-    "Teochew steamed fish with rice" is fine minus the achar garnish.
+    Ingredients are read as two-state: 'can' is a yes, and both 'cannot' and
+    'review' are a no — an item the sheet has not cleared is one to leave out,
+    not one to assume. Every ingredient yes makes the dish 'can'; more yes than
+    no makes it 'possible', naming the no ingredients to leave out (e.g.
+    "Teochew steamed fish with rice" minus the achar garnish); otherwise the
+    dish is 'cannot'.
+
+    More yes than no requires at least two yes against one no, so 'possible'
+    already implies 3+ ingredients — the old explicit floor is now redundant.
     """
     if not ingredients:
         return "review", []
 
-    cannot = [i for i in ingredients if i.classification == "cannot"]
-    if cannot:
-        can_count = sum(1 for i in ingredients if i.classification == "can")
-        if len(ingredients) >= POSSIBLE_MIN_INGREDIENTS and can_count > len(cannot):
-            return "possible", [i.name for i in cannot]
-        return "cannot", []
+    leave_out = [i for i in ingredients if i.classification != "can"]
+    if not leave_out:
+        return "can", []
 
-    if any(i.classification == "review" for i in ingredients):
-        return "review", []
+    if len(ingredients) - len(leave_out) > len(leave_out):
+        return "possible", [i.name for i in leave_out]
 
-    return "can", []
+    return "cannot", []
 
 
 def _resolve_ingredients(db: DbSession, dish: Dish) -> list[Ingredient]:

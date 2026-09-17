@@ -1,17 +1,51 @@
+import { useState } from 'react'
 import type { ApiDish, ApiDishVerdict, ApiFoodClassification } from '../../lib/api'
 import type { Verdict } from '../../data/foods'
 import { useLang } from '../../i18n/LanguageContext'
 import { Card, VerdictPill } from '../ui'
 
-function toVerdict(classification: ApiFoodClassification): Verdict {
-  if (classification === 'can') return 'yes'
-  if (classification === 'cannot') return 'no'
-  return 'ask'
+// Ingredients are Yes or No, never "Possible": anything the sheet has not
+// cleared ('review' included) is shown as a No, i.e. something to leave out.
+// "Possible" is a dish-level answer — see toDishVerdict.
+function toIngredientVerdict(classification: ApiFoodClassification): Verdict {
+  return classification === 'can' ? 'yes' : 'no'
 }
 
+// 'review' only reaches here for a dish with no ingredients on file; it reads
+// as "Possible" rather than "Ask your care team", same wording as a dish the
+// backend downgraded.
 function toDishVerdict(verdict: ApiDishVerdict): Verdict {
-  if (verdict === 'possible') return 'possible'
-  return toVerdict(verdict)
+  if (verdict === 'can') return 'yes'
+  if (verdict === 'cannot') return 'no'
+  return 'possible'
+}
+
+// Roughly two lines at this type size. Longer reasons collapse so the card stays
+// scannable; the full wording is one tap away rather than truncated, because a
+// half-shown clinical reason is worse than a short one.
+const REASON_CLAMP_CHARS = 110
+
+function Reason({ text }: { text: string }) {
+  const { t } = useLang()
+  const [expanded, setExpanded] = useState(false)
+  const clampable = text.length > REASON_CLAMP_CHARS
+
+  if (!clampable) {
+    return <p className="mt-0.5 text-[12px] leading-snug text-muted">{text}</p>
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => setExpanded((v) => !v)}
+      className="mt-0.5 block text-left text-[12px] leading-snug text-muted"
+      aria-expanded={expanded}
+    >
+      <span className={expanded ? undefined : 'line-clamp-2'}>{text}</span>
+      <span className="mt-0.5 block font-medium text-navy">
+        {expanded ? t('food.reasonLess') : t('food.reasonMore')}
+      </span>
+    </button>
+  )
 }
 
 export function DishCard({
@@ -39,7 +73,7 @@ export function DishCard({
       )}
       <div className="mt-2.5 grid gap-1.5">
         {dish.ingredients.map((ingredient) => {
-          const verdict = toVerdict(ingredient.classification)
+          const verdict = toIngredientVerdict(ingredient.classification)
           const showPill = !(hideApproved && verdict === 'yes')
           return (
             <div
@@ -48,9 +82,7 @@ export function DishCard({
             >
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold text-ink">{ingredient.name}</p>
-                <p className="mt-0.5 text-[12px] leading-snug text-muted">
-                  {ingredient.classification_reason}
-                </p>
+                <Reason text={ingredient.classification_reason} />
               </div>
               {showPill ? <VerdictPill verdict={verdict} compact /> : null}
             </div>

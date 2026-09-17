@@ -44,5 +44,7 @@ export const CLINICAL_EN = {
   'food.matchedHospital': 'From {hospital}’s own sheet.',
   'food.matchedDietician': 'Your hospital sheet is silent here — showing the dietitian baseline instead.',
   'food.possibleNote': 'Possible if you leave out {ingredients}.',
+  'food.reasonMore': 'Why',
+  'food.reasonLess': 'Hide',
   'food.networkError': 'Could not reach the food service. Check your connection and try again.',
 } as const

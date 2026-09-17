@@ -68,7 +68,7 @@ export const EN = {
   'home.openTimeline': 'Open full timeline',
   'home.foodTitle': 'Can I eat this?',
   'home.foodBody':
-    'Type a food. Every answer is Yes, No, or Ask your care team — with the line we used.',
+    'Type a food. Every answer is Yes, No, or Possible — with the line we used.',
   'home.stoolTitle': 'Stool scale',
   'home.stoolBody': 'Match your stool to the guide, and the number for your hospital.',
   'home.contactsTitle': 'Hospital contacts',
@@ -254,7 +254,7 @@ export const EN = {
   'pitch.2t': 'Your hospital only',
   'pitch.2d': 'We never mix another site’s rules into yours.',
   'pitch.3t': 'Can I eat this?',
-  'pitch.3d': 'A meal plan of cleared dishes, or type a food. Yes, No, or Ask your care team.',
+  'pitch.3d': 'A meal plan of cleared dishes, or type a food. Yes, No, or Possible.',
   'pitch.4t': 'Reminders, on time',
   'pitch.4d': 'App or Telegram — meds, diet, each dose, stool check, and fasting.',
   'pitch.scan': 'Scan to open PrepPath',

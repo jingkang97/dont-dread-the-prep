@@ -75,7 +75,7 @@ Schema and seed (`backend/sql/mvp.sql`, `mvp.seed.sql`, `telegram.sql`, `push.sq
 - **3-tap setup** — hospital, date, AM/PM (plus reporting time)
 - **Scan demo** — rehearsed yellow-form OCR moment (not the reliable path)
 - **AM/PM timeline** — hospital-faithful; SGH afternoon packet times are flagged as gaps
-- **Food lookup** — retrieval-only classifier (Yes / No / Ask your care team) from Doc 03
+- **Food lookup** — retrieval-only classifier: ingredients are Yes / No, a dish with more Yes than No is Possible (naming what to leave out)
 - **Stool + call** — 6-point scale and publicly listed hospital numbers
 - **Telegram + phone reminders** — `t.me/Bot?start=SESSION_ID` links the chat; Add to Home Screen enables the same T−72 / T−24 / T−6 as a notification. Live schedule is T−72 / T−24 / T−6. Demo mode (`TELEGRAM_REMINDER_TEST=true`) sends now / +1 min / +2 min, then 3 hourly, then 3 daily. Set `TELEGRAM_BOT_TOKEN`, VAPID keys, and `VITE_TELEGRAM_BOT_USERNAME`.
 
