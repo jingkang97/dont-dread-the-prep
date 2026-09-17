@@ -40,10 +40,8 @@ export function BotCard({
   if (answer.status === 'choices' && answer.choices?.length) {
     return (
       <Card className="p-3.5">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-[16px] font-semibold text-ink">{t('food.choicesTitle')}</p>
-          <VerdictPill verdict="ask" />
-        </div>
+        {/* No verdict pill: this card asks which dish you meant, it does not answer. */}
+        <p className="text-[16px] font-semibold text-ink">{t('food.choicesTitle')}</p>
         <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
           {answer.message || t('food.choicesTitle')}
         </p>
@@ -63,11 +61,15 @@ export function BotCard({
     )
   }
 
+  // Only 'not_found' is a clinical answer ("we have no line on this, ask someone").
+  // 'multiple' / 'irrelevant' / 'not_configured' are input or plumbing problems,
+  // so they carry no verdict pill.
+  const showAskPill = answer.status === 'not_found'
   return (
     <Card className="p-3.5">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[16px] font-semibold text-ink">{t(statusTitleKey(answer.status))}</p>
-        <VerdictPill verdict="ask" />
+        {showAskPill ? <VerdictPill verdict="ask" /> : null}
       </div>
       <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
         {answer.message || t('food.notFoundTitle')}
