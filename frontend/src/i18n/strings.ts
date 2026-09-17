@@ -129,6 +129,7 @@ export const EN = {
   'tl.scopeDay': 'Colonoscopy day',
   'tl.hasSteps': 'Prep due',
   'tl.openStool': 'Open stool scale',
+  'tl.openFood': 'Open food guide',
   'kind.diet': 'Diet',
   'kind.prep': 'Prep',
   'kind.med': 'Medication',

@@ -74,7 +74,7 @@ export default function App() {
               {(
                 [
                   ['home', <Home session={session} onOpen={setScreen} onShortcut={setShortcut} />],
-                  ['timeline', <Timeline session={session} onOpenStool={() => setScreen('stool')} />],
+                  ['timeline', <Timeline session={session} onOpenStool={() => setScreen('stool')} onOpenFood={() => setScreen('food')} />],
                   ['food', <FoodChat session={session} />],
                   ['stool', <StoolGuide session={session} onReminders={() => setScreen('reminders')} />],
                   ['contacts', <Contacts session={session} />],
