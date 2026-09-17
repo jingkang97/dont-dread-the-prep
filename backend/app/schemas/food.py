@@ -20,6 +20,8 @@ class DishVerdict(str, Enum):
 
 
 class FoodSource(str, Enum):
+    """Matches DB food_source enum. SGH kept for legacy ingredient/dish rows."""
+
     sgh = "SGH"
     ttsh = "TTSH"
     cgh = "CGH"
@@ -66,7 +68,7 @@ class MealPrepOut(BaseModel):
 
 class FoodChatRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=200)
-    hospital_code: str = Field(..., examples=["sgh", "ttsh", "cgh"])
+    hospital_code: str = Field(..., examples=["ttsh", "skh", "cgh"])
 
 
 class FoodChatStatus(str, Enum):

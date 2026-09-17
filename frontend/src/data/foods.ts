@@ -50,7 +50,7 @@ export const RULES: Record<RuleId, { title: string; text: string }> = {
   },
   R3: {
     title: 'No plant fibre',
-    text: 'Fruit, vegetables, pulses, nuts and seeds excluded across SGH, SKH and CGH sheets.',
+    text: 'Fruit, vegetables, pulses, nuts and seeds excluded on hospital low-residue sheets.',
   },
   R4: {
     title: 'No dairy, no plant milks',
@@ -58,23 +58,23 @@ export const RULES: Record<RuleId, { title: string; text: string }> = {
   },
   R5: {
     title: 'Nothing fried',
-    text: 'Fried food is explicitly excluded on the SGH yellow form.',
+    text: 'Fried food is excluded on hospital low-residue sheets.',
   },
   R6: {
     title: 'No skins',
-    text: 'Potato and yam allowed only peeled. Stated on the SGH form.',
+    text: 'Potato and yam allowed only peeled where the hospital sheet says so.',
   },
   Q1: {
     title: 'Open: light fruit juice',
-    text: 'SKH permits light-coloured juice (apple, pear). SGH forbids all fruit juices. Pending gastroenterologist ruling.',
+    text: 'Hospitals disagree on light fruit juice (e.g. SKH allows; others forbid). Pending gastroenterologist ruling.',
   },
   Q2: {
     title: 'Open: rice cereal',
-    text: 'SKH permits rice cereal. SGH forbids cereal without qualification.',
+    text: 'Hospitals disagree on rice cereal (e.g. SKH allows; others forbid).',
   },
   Q3: {
     title: 'Open: plain prata',
-    text: 'SGH lists prata as allowed and separately forbids fried food. Prata is cooked in oil.',
+    text: 'Some sheets list prata as allowed while also forbidding fried food. Prata is cooked in oil.',
   },
   Q4: {
     title: 'Open: cheese',
@@ -86,31 +86,31 @@ export const RULES: Record<RuleId, { title: string; text: string }> = {
   },
   Q6: {
     title: 'Open: strained clear soup',
-    text: 'SGH says clear soup with no vegetables. SKH says clear soup. Ambiguous in practice.',
+    text: 'Clear soup wording varies by hospital (with/without vegetables). Ambiguous in practice.',
   },
   Q7: {
     title: 'Open: white sweets',
-    text: 'SGH mentions Mentos and Polo only if hungry or dizzy — not as a general food.',
+    text: 'Some sheets mention Mentos/Polo only if hungry or dizzy — not as a general food.',
   },
   F1: {
     title: 'Conflict: Plavix / clopidogrel timing',
-    text: 'TTSH: stop Plavix 7 days before. SGH/NCCS annex: 5 days for clopidogrel. Clinical variation — this tool never adjudicates.',
+    text: 'Hospitals differ on Plavix/clopidogrel stop timing. Clinical variation — this tool never adjudicates.',
   },
   F2: {
     title: 'Gap: SGLT2 inhibitors',
-    text: 'TTSH: stop 2 days before. SGH yellow form is silent. Until SGH position is confirmed, return ask your care team.',
+    text: 'TTSH: stop 2 days before. Other sheets may be silent — ask your care team.',
   },
   F5: {
     title: 'Conflict: milk in coffee/tea',
-    text: 'TTSH permits coffee/tea with or without milk. SGH: no milk. SKH: no milk (and avoids coffee/tea as dark liquids). CGH: Milo without milk.',
+    text: 'TTSH permits coffee/tea with or without milk. SKH/CGH differ on milk and dark liquids.',
   },
   F6: {
     title: 'Conflict: fruit juice',
-    text: 'SKH permits light-coloured juice. SGH forbids all fruit juices.',
+    text: 'SKH permits light-coloured juice; other hospitals may forbid all fruit juices.',
   },
   F7: {
     title: 'Gap: prata vs fried food',
-    text: 'Internal contradiction on the SGH form itself.',
+    text: 'Internal contradiction on some hospital sheets (allowed vs fried).',
   },
   HOSP: {
     title: 'Follow this hospital only',
@@ -129,8 +129,8 @@ export const FOODS: FoodEntry[] = [
     aliases: ['white bread', 'plain bread', 'toast', 'bread'],
     defaultVerdict: 'yes',
     rules: ['R1'],
-    source: 'SGH/NCCS yellow form — Can eat: plain white bread / biscuit',
-    why: 'Refined starch. On the day of an SGH morning slot, bread must be plain — no kaya, butter, or jam.',
+    source: 'hospital diet sheet — Can eat: plain white bread / biscuit',
+    why: 'Refined starch. On the day of a morning slot, bread must be plain — no kaya, butter, or jam.',
   },
   {
     id: 'kaya-toast',
@@ -138,20 +138,8 @@ export const FOODS: FoodEntry[] = [
     aliases: ['kaya', 'kaya toast', 'butter toast', 'jam'],
     defaultVerdict: 'ask',
     rules: ['R1', 'HOSP'],
-    source: 'SGH/NCCS yellow form — 3 days before: kaya/butter okay; day of: no kaya/butter/jam',
-    why: 'Allowed during the 3-day low-residue window at SGH, but not on the morning of the scope.',
-    byHospital: {
-      sgh: {
-        verdict: 'ask',
-        why: 'SGH allows kaya/butter on the 3-day diet, but forbids them on the morning of the scope. Which day are you asking about?',
-        source: 'SGH/NCCS yellow form',
-      },
-      nccs: {
-        verdict: 'ask',
-        why: 'Shared SGH/NCCS form: kaya/butter okay on diet days, not on the morning of scope.',
-        source: 'SGH/NCCS yellow form',
-      },
-    },
+    source: 'hospital diet sheet — 3 days before: kaya/butter okay; day of: no kaya/butter/jam',
+    why: 'Allowed during the 3-day low-residue window, but not on the morning of the scope.'
   },
   {
     id: 'white-rice',
@@ -159,7 +147,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['white rice', 'rice'],
     defaultVerdict: 'yes',
     rules: ['R1'],
-    source: 'SGH/NCCS yellow form — Can eat: white rice. SKH diet advice — white rice / porridge allowed.',
+    source: 'hospital diet sheet — Can eat: white rice. SKH diet advice — white rice / porridge allowed.',
     why: 'Refined starch. Brown rice is not allowed.',
   },
   {
@@ -168,7 +156,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['chicken rice rice', 'chicken rice (rice)'],
     defaultVerdict: 'yes',
     rules: ['R1'],
-    source: 'SGH/NCCS yellow form — white rice allowed',
+    source: 'hospital diet sheet — white rice allowed',
     why: 'The rice itself is a refined starch. Skip cucumber, chilli, dark soy, and oily rice if you can ask for plain.',
   },
   {
@@ -177,7 +165,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['cucumber', 'chicken rice cucumber'],
     defaultVerdict: 'no',
     rules: ['R3'],
-    source: 'SGH/NCCS yellow form — Cannot eat: fruits, vegetables',
+    source: 'hospital diet sheet — Cannot eat: fruits, vegetables',
     why: 'Vegetables are excluded under the no-plant-fibre rule.',
   },
   {
@@ -195,7 +183,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['porridge', 'plain porridge', 'congee', 'fish porridge', 'chicken porridge'],
     defaultVerdict: 'yes',
     rules: ['R1', 'R2'],
-    source: 'SGH/NCCS yellow form — Can eat: porridge (fish/chicken)',
+    source: 'hospital diet sheet — Can eat: porridge (fish/chicken)',
     why: 'Plain white porridge with fish or chicken is listed. Keep vegetables and century-egg garnishes off.',
   },
   {
@@ -213,7 +201,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['mee goreng', 'mi goreng', 'fried noodles'],
     defaultVerdict: 'no',
     rules: ['R5', 'R3'],
-    source: 'SGH/NCCS yellow form — Cannot eat: fried food; vegetables',
+    source: 'hospital diet sheet — Cannot eat: fried food; vegetables',
     why: 'Fried, and typically cooked with vegetables.',
   },
   {
@@ -222,7 +210,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['char kway teow', 'ckt', 'char kway', 'fried kway teow'],
     defaultVerdict: 'no',
     rules: ['R5', 'R3'],
-    source: 'SGH/NCCS yellow form — Cannot eat: fried food',
+    source: 'hospital diet sheet — Cannot eat: fried food',
     why: 'Fried noodle dish. Plain (not fried) kway teow soup is listed as allowed.',
   },
   {
@@ -231,7 +219,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['bak chor mee', 'bcm', 'minced meat noodles'],
     defaultVerdict: 'no',
     rules: ['R3', 'R5'],
-    source: 'SGH/NCCS yellow form — Cannot eat: vegetables, fried food',
+    source: 'hospital diet sheet — Cannot eat: vegetables, fried food',
     why: 'Typically served with vegetables, vinegar, and fried shallots — none of which the sheet permits.',
   },
   {
@@ -240,7 +228,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['fishball', 'fish ball', 'fishball noodle', 'fishball noodles'],
     defaultVerdict: 'ask',
     rules: ['R1', 'R2', 'R3'],
-    source: 'SGH/NCCS yellow form — plain kway teow / mee sua / bee hoon soup allowed',
+    source: 'hospital diet sheet — plain kway teow / mee sua / bee hoon soup allowed',
     why: 'Plain noodle soup and fish (lean protein) can be yes. Hawker fishball soup almost always includes vegetables. Ask for no veg, or ask your care team.',
   },
   {
@@ -249,7 +237,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['bee hoon', 'mee sua', 'kway teow', 'plain noodles', 'pasta', 'plain pasta', 'noodle soup'],
     defaultVerdict: 'yes',
     rules: ['R1'],
-    source: 'SGH/NCCS yellow form — plain pasta/noodles; plain kway teow / mee sua / bee hoon soup',
+    source: 'hospital diet sheet — plain pasta/noodles; plain kway teow / mee sua / bee hoon soup',
     why: 'Refined noodles, not fried, no vegetables.',
   },
   {
@@ -258,8 +246,8 @@ export const FOODS: FoodEntry[] = [
     aliases: ['prata', 'roti prata', 'roti canai', 'plain prata'],
     defaultVerdict: 'ask',
     rules: ['Q3', 'F7', 'R5'],
-    source: 'SGH/NCCS yellow form lists prata as allowed AND forbids fried food. Doc 03 Q3.',
-    why: 'Prata is cooked in oil. This is an internal contradiction on the SGH form, not something this tool will guess.',
+    source: 'hospital diet sheet lists prata as allowed AND forbids fried food. Doc 03 Q3.',
+    why: 'Prata is cooked in oil. This is an internal contradiction on the hospital diet sheet, not something this tool will guess.',
   },
   {
     id: 'prata-dhal',
@@ -276,20 +264,8 @@ export const FOODS: FoodEntry[] = [
     aliases: ['thosai', 'dosa', 'plain thosai', 'plain dosa'],
     defaultVerdict: 'ask',
     rules: ['R1', 'HOSP'],
-    source: 'SGH/NCCS yellow form — Can eat: plain thosai / prata / idiyappam (white sugar only)',
-    why: 'Named as allowed on the SGH form. Not named on SKH/TTSH/CGH sheets.',
-    byHospital: {
-      sgh: {
-        verdict: 'yes',
-        why: 'Explicitly listed on the SGH/NCCS yellow form, white sugar only. Skip coconut chutney and dhal.',
-        source: 'SGH/NCCS yellow form — Can eat: plain thosai',
-      },
-      nccs: {
-        verdict: 'yes',
-        why: 'Shared SGH/NCCS yellow form lists plain thosai.',
-        source: 'SGH/NCCS yellow form',
-      },
-    },
+    source: 'hospital diet sheet — Can eat: plain thosai / prata / idiyappam (white sugar only)',
+    why: 'Named as allowed on the hospital diet sheet. Not named on SKH/TTSH/CGH sheets.'
   },
   {
     id: 'idli',
@@ -297,7 +273,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['idli', 'idly'],
     defaultVerdict: 'yes',
     rules: ['R1'],
-    source: 'SGH form (idiyappam/thosai family) and SKH diet advice — idli allowed',
+    source: 'hospital diet sheet (idiyappam/thosai family) and SKH diet advice — idli allowed',
     why: 'Refined steamed starch. Skip coconut chutney and sambar (pulses/vegetables).',
   },
   {
@@ -306,8 +282,8 @@ export const FOODS: FoodEntry[] = [
     aliases: ['idiyappam', 'iddiyappam', 'putu mayam', 'string hopper'],
     defaultVerdict: 'yes',
     rules: ['R1'],
-    source: 'SGH/NCCS yellow form; SKH diet advice — iddiyappam (putu mayam)',
-    why: 'Named refined starch. White sugar only on the SGH form.',
+    source: 'hospital diet sheet; SKH diet advice — iddiyappam (putu mayam)',
+    why: 'Named refined starch. White sugar only on the hospital diet sheet.',
   },
   {
     id: 'chapati',
@@ -324,7 +300,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['nasi lemak'],
     defaultVerdict: 'no',
     rules: ['R3', 'R5', 'R4'],
-    source: 'SGH/NCCS yellow form — vegetables, fried food, coconut/milk products not permitted',
+    source: 'hospital diet sheet — vegetables, fried food, coconut/milk products not permitted',
     why: 'Cucumber, sambal, fried items, and coconut milk sit outside the allowed list.',
   },
   {
@@ -360,7 +336,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['soy milk', 'soya milk', 'soy', 'soya', 'plant milk', 'almond milk', 'oat milk'],
     defaultVerdict: 'no',
     rules: ['R4'],
-    source: 'SGH/NCCS yellow form — Cannot drink: milk products (cow, goat, soy, almond, oat)',
+    source: 'hospital diet sheet — Cannot drink: milk products (cow, goat, soy, almond, oat)',
     why: 'Plant milks are excluded alongside dairy.',
   },
   {
@@ -370,18 +346,8 @@ export const FOODS: FoodEntry[] = [
     defaultVerdict: 'ask',
     rules: ['HOSP', 'F5'],
     source: 'Hospital instruction audit — coffee/tea rules differ',
-    why: 'Depends on hospital. SGH allows coffee/tea with no milk. SKH avoids coffee/tea as dark liquids.',
+    why: 'Depends on hospital. Some sheets allow coffee/tea with no milk. SKH avoids coffee/tea as dark liquids.',
     byHospital: {
-      sgh: {
-        verdict: 'yes',
-        why: 'SGH allows coffee/tea with no milk, and tea-O with sugar on the morning of scope.',
-        source: 'SGH/NCCS yellow form — Can drink: coffee/tea (no milk); day of: tea ’O’ + sugar',
-      },
-      nccs: {
-        verdict: 'yes',
-        why: 'Shared SGH/NCCS form allows coffee/tea with no milk.',
-        source: 'SGH/NCCS yellow form',
-      },
       ttsh: {
         verdict: 'yes',
         why: 'TTSH permits coffee or tea with or without milk during the three-day period.',
@@ -406,18 +372,8 @@ export const FOODS: FoodEntry[] = [
     defaultVerdict: 'ask',
     rules: ['F5', 'R4', 'HOSP'],
     source: 'F5 — hospitals disagree on milk in coffee/tea. This tool never adjudicates.',
-    why: 'TTSH allows milk. SGH, SKH and CGH do not. Your hospital’s sheet is the only answer.',
+    why: 'TTSH allows milk. SKH and CGH do not. Your hospital’s sheet is the only answer.',
     byHospital: {
-      sgh: {
-        verdict: 'no',
-        why: 'SGH specifies coffee and tea with no milk.',
-        source: 'SGH/NCCS yellow form — Can drink: coffee/tea (no milk)',
-      },
-      nccs: {
-        verdict: 'no',
-        why: 'Shared SGH/NCCS form: no milk in coffee/tea.',
-        source: 'SGH/NCCS yellow form',
-      },
       ttsh: {
         verdict: 'yes',
         why: 'TTSH explicitly permits coffee and tea with or without milk. Other hospitals do not — this is not an error, it is TTSH’s sheet.',
@@ -441,12 +397,12 @@ export const FOODS: FoodEntry[] = [
     aliases: ['milo', 'horlicks', 'ovaltine', 'malted'],
     defaultVerdict: 'no',
     rules: ['R4'],
-    source: 'SGH/NCCS yellow form — Cannot drink: Milo, Ovaltine. SKH: malted drinks. R4.',
+    source: 'hospital diet sheet — Cannot drink: Milo, Ovaltine. SKH: malted drinks. R4.',
     why: 'Malted milk drinks are excluded on every sheet we have.',
     byHospital: {
       cgh: {
         verdict: 'ask',
-        why: 'CGH specifies Milo without milk — which is a different instruction from SGH (Milo forbidden). Ask your CGH care team which they mean, rather than this tool averaging the two.',
+        why: 'CGH specifies Milo without milk — which is a different instruction from some hospitals (Milo forbidden). Ask your CGH care team which they mean, rather than this tool averaging the two.',
         source: 'Hospital instruction audit v2 — CGH: Milo without milk',
       },
     },
@@ -457,7 +413,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['bandung', 'sirap bandung', 'rose syrup'],
     defaultVerdict: 'no',
     rules: ['R4'],
-    source: 'R4 no dairy. SGH forbids milk products.',
+    source: 'R4 no dairy. Some sheets forbid milk products.',
     why: 'Bandung is milk plus rose syrup.',
   },
   {
@@ -466,7 +422,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['100 plus', '100plus', '100+', 'pocari', 'sprite', '7-up', '7up', 'isotonic', 'colourless soft drink'],
     defaultVerdict: 'yes',
     rules: ['HOSP'],
-    source: 'SGH/NCCS yellow form — colourless soft drinks (100Plus, Pocari, Sprite, 7-Up)',
+    source: 'hospital diet sheet — colourless soft drinks (100Plus, Pocari, Sprite, 7-Up)',
     why: 'Named clear fluids. Avoid red or dark-coloured drinks.',
   },
   {
@@ -475,19 +431,9 @@ export const FOODS: FoodEntry[] = [
     aliases: ['apple juice', 'pear juice', 'fruit juice', 'juice', 'orange juice', 'grape juice'],
     defaultVerdict: 'ask',
     rules: ['Q1', 'F6', 'HOSP'],
-    source: 'Doc 03 Q1. SKH permits light-coloured juice. SGH forbids all fruit juices.',
-    why: 'Hospital conflict. This tool will not average SGH and SKH.',
+    source: 'Doc 03 Q1. SKH permits light-coloured juice; other hospitals may forbid all fruit juices.',
+    why: 'Hospital conflict. This tool will not average hospitals.',
     byHospital: {
-      sgh: {
-        verdict: 'no',
-        why: 'SGH explicitly forbids all fruit juices.',
-        source: 'SGH/NCCS yellow form — Cannot drink: fruit juices',
-      },
-      nccs: {
-        verdict: 'no',
-        why: 'Shared SGH/NCCS form forbids fruit juices.',
-        source: 'SGH/NCCS yellow form',
-      },
       skh: {
         verdict: 'yes',
         why: 'SKH permits light-coloured juice (apple, pear). Dark juices (grape, prune, tomato) are still avoided.',
@@ -511,8 +457,8 @@ export const FOODS: FoodEntry[] = [
     aliases: ['barley', 'barley water'],
     defaultVerdict: 'yes',
     rules: ['HOSP'],
-    source: 'SGH/NCCS yellow form — Can drink: barley water (no pearls)',
-    why: 'Named on the SGH form. No pearls, no grass jelly.',
+    source: 'hospital diet sheet — Can drink: barley water (no pearls)',
+    why: 'Named on the hospital diet sheet. No pearls, no grass jelly.',
   },
   {
     id: 'steamed-fish',
@@ -520,7 +466,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['steamed fish', 'fish', 'steam fish'],
     defaultVerdict: 'yes',
     rules: ['R2'],
-    source: 'SGH/NCCS yellow form — Can eat: fish. SKH: fish allowed.',
+    source: 'hospital diet sheet — Can eat: fish. SKH: fish allowed.',
     why: 'Lean protein. Not fried. Skip chilli, vegetables, and thick sauces.',
   },
   {
@@ -529,7 +475,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['steamed egg', 'boiled egg', 'poached egg', 'egg', 'eggs'],
     defaultVerdict: 'yes',
     rules: ['R2'],
-    source: 'SGH/NCCS yellow form — eggs (boiled, poached). SKH: eggs allowed.',
+    source: 'hospital diet sheet — eggs (boiled, poached). SKH: eggs allowed.',
     why: 'Lean protein. Fried eggs are a different question (R5).',
   },
   {
@@ -538,7 +484,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['fried egg', 'sunny side', 'omelette', 'omelet'],
     defaultVerdict: 'no',
     rules: ['R5'],
-    source: 'SGH/NCCS yellow form — Cannot eat: fried food',
+    source: 'hospital diet sheet — Cannot eat: fried food',
     why: 'Nothing fried.',
   },
   {
@@ -565,8 +511,8 @@ export const FOODS: FoodEntry[] = [
     aliases: ['tofu', 'taukwa', 'tau kwa', 'beancurd', 'bean curd'],
     defaultVerdict: 'yes',
     rules: ['R2'],
-    source: 'SGH/NCCS yellow form — plain tofu. SKH: tofu, taukwa, vegetarian mock meat.',
-    why: 'Named lean protein. Not fried. Mock meat is allowed if it is not wholegrain/gluten-heavy — SGH says vegetarian mock meat (no gluten).',
+    source: 'hospital diet sheet — plain tofu. SKH: tofu, taukwa, vegetarian mock meat.',
+    why: 'Named lean protein. Not fried. Mock meat is allowed if it is not wholegrain/gluten-heavy — Some sheets say vegetarian mock meat (no gluten).',
   },
   {
     id: 'chicken',
@@ -574,7 +520,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['chicken', 'pork', 'seafood', 'prawn', 'prawns', 'shrimp', 'shellfish'],
     defaultVerdict: 'yes',
     rules: ['R2'],
-    source: 'SGH/NCCS yellow form — fish / chicken / pork / seafood. SKH same.',
+    source: 'hospital diet sheet — fish / chicken / pork / seafood. SKH same.',
     why: 'Lean protein, not fried, no skin-on fatty cuts. Red meat is a different answer.',
   },
   {
@@ -583,7 +529,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['beef', 'mutton', 'lamb', 'duck', 'steak', 'red meat'],
     defaultVerdict: 'no',
     rules: ['R2'],
-    source: 'SGH/NCCS yellow form — Cannot eat: red meat (beef, mutton, duck)',
+    source: 'hospital diet sheet — Cannot eat: red meat (beef, mutton, duck)',
     why: 'Red meat is excluded even though chicken and pork are allowed.',
   },
   {
@@ -592,7 +538,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['fruit', 'apple', 'banana', 'orange', 'papaya', 'watermelon', 'grape', 'berries'],
     defaultVerdict: 'no',
     rules: ['R3'],
-    source: 'SGH/NCCS yellow form — Cannot eat: fruits. SKH: avoid ALL fruits and vegetables.',
+    source: 'hospital diet sheet — Cannot eat: fruits. SKH: avoid ALL fruits and vegetables.',
     why: 'No plant fibre. Juice is a separate, hospital-specific question.',
   },
   {
@@ -601,7 +547,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['vegetable', 'vegetables', 'salad', 'broccoli', 'spinach', 'kai lan', 'chye', 'lettuce', 'tomato'],
     defaultVerdict: 'no',
     rules: ['R3'],
-    source: 'SGH/NCCS yellow form — Cannot eat: vegetables. SKH: avoid ALL fruits and vegetables.',
+    source: 'hospital diet sheet — Cannot eat: vegetables. SKH: avoid ALL fruits and vegetables.',
     why: 'No plant fibre, including garnishes.',
   },
   {
@@ -610,7 +556,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['brown rice', 'wholemeal', 'wholegrain', 'oats', 'oatmeal', 'bran', 'cereal', 'muesli'],
     defaultVerdict: 'no',
     rules: ['R1', 'Q2'],
-    source: 'SGH: cereal not allowed. SKH: rice cereal allowed, brown rice/oats not.',
+    source: 'Some sheets: cereal not allowed. SKH: rice cereal allowed, brown rice/oats not.',
     why: 'Wholegrain is out. Rice cereal is a hospital-specific exception — ask as “rice cereal”.',
   },
   {
@@ -619,19 +565,9 @@ export const FOODS: FoodEntry[] = [
     aliases: ['rice cereal', 'rice bubbles', 'rice krispies'],
     defaultVerdict: 'ask',
     rules: ['Q2', 'HOSP'],
-    source: 'Doc 03 Q2. SKH permits rice cereal. SGH forbids cereal without qualification.',
+    source: 'Doc 03 Q2. Hospitals disagree on rice cereal (e.g. SKH allows; others forbid).',
     why: 'Hospital conflict / gap.',
     byHospital: {
-      sgh: {
-        verdict: 'no',
-        why: 'SGH forbids cereal without qualification.',
-        source: 'SGH/NCCS yellow form — Cannot eat: cereal, oats, wholemeal bread',
-      },
-      nccs: {
-        verdict: 'no',
-        why: 'Shared SGH/NCCS form forbids cereal.',
-        source: 'SGH/NCCS yellow form',
-      },
       skh: {
         verdict: 'yes',
         why: 'SKH diet advice lists rice cereal as allowed.',
@@ -664,7 +600,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['milk', 'fresh milk', 'cow milk', 'dairy'],
     defaultVerdict: 'no',
     rules: ['R4'],
-    source: 'SGH/NCCS yellow form — milk products excluded',
+    source: 'hospital diet sheet — milk products excluded',
     why: 'Dairy is out. Milk-in-kopi is a separate hospital-specific question.',
   },
   {
@@ -682,7 +618,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['potato', 'yam', 'mashed potato'],
     defaultVerdict: 'yes',
     rules: ['R6'],
-    source: 'SGH/NCCS yellow form — potato / yam (no skin)',
+    source: 'hospital diet sheet — potato / yam (no skin)',
     why: 'Allowed only peeled. Fries are fried (R5) and are no.',
   },
   {
@@ -691,7 +627,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['fries', 'french fries', 'fried', 'goreng', 'you tiao', 'youtiao'],
     defaultVerdict: 'no',
     rules: ['R5'],
-    source: 'SGH/NCCS yellow form — Cannot eat: fried food',
+    source: 'hospital diet sheet — Cannot eat: fried food',
     why: 'Nothing fried.',
   },
   {
@@ -700,8 +636,8 @@ export const FOODS: FoodEntry[] = [
     aliases: ['clear soup', 'soup', 'broth'],
     defaultVerdict: 'ask',
     rules: ['Q6'],
-    source: 'Doc 03 Q6 — SGH: clear soup with no vegetables. SKH: clear soup. Ambiguous once vegetables are strained.',
-    why: 'If the soup is clear and has no vegetables in the bowl, SGH’s line supports it. Straining vegetables out is the open question.',
+    source: 'Doc 03 Q6 — Some sheets: clear soup with no vegetables. SKH: clear soup. Ambiguous once vegetables are strained.',
+    why: 'If the soup is clear and has no vegetables in the bowl, hospital wording supports it. Straining vegetables out is the open question.',
   },
   {
     id: 'mentos',
@@ -709,7 +645,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['mentos', 'polo', 'sweet', 'sweets', 'candy'],
     defaultVerdict: 'ask',
     rules: ['Q7'],
-    source: 'SGH/NCCS yellow form mentions Mentos/Polo only if hungry or dizzy',
+    source: 'hospital diet sheet mentions Mentos/Polo only if hungry or dizzy',
     why: 'Not a general snack. Only the “hungry or dizzy” line names them.',
   },
   {
@@ -718,7 +654,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['water', 'plain water', 'ice', 'ice cubes'],
     defaultVerdict: 'yes',
     rules: ['HOSP'],
-    source: 'SGH/NCCS yellow form — Can drink: plain water. Stop according to your hospital’s fluid cutoff.',
+    source: 'hospital diet sheet — Can drink: plain water. Stop according to your hospital’s fluid cutoff.',
     why: 'Always the default clear fluid, until your fasting cutoff.',
   },
   {
@@ -727,7 +663,7 @@ export const FOODS: FoodEntry[] = [
     aliases: ['alcohol', 'beer', 'wine', 'whisky', 'soju'],
     defaultVerdict: 'no',
     rules: ['HOSP'],
-    source: 'SGH/NCCS yellow form — Cannot drink: alcoholic beverages',
+    source: 'hospital diet sheet — Cannot drink: alcoholic beverages',
     why: 'Named exclusion.',
   },
 ]
@@ -738,23 +674,13 @@ export const MED_PATTERNS: { test: RegExp; id: string; name: string; rules: Rule
     id: 'sglt2',
     name: 'SGLT2 inhibitors',
     rules: ['F2'],
-    source: 'TTSH brochure March 2026; SGH yellow form is silent',
-    why: 'TTSH: stop 2 days before. SGH form does not mention this class. Gap → ask your care team for SGH/NCCS.',
+    source: 'TTSH brochure March 2026; hospital diet sheet is silent',
+    why: 'TTSH: stop 2 days before. hospital diet sheet does not mention this class. Gap → ask your care team.',
     byHospital: {
       ttsh: {
         verdict: 'ask',
         why: 'TTSH instructs stopping SGLT2 inhibitors 2 days before — still confirm against the list your counsellor wrote down. This is a medication instruction, not a food rule.',
         source: 'TTSH brochure March 2026',
-      },
-      sgh: {
-        verdict: 'ask',
-        why: 'The SGH yellow form is silent on SGLT2 inhibitors. Silent ≠ continue, and silent ≠ stop. Ask your care team.',
-        source: 'SGH/NCCS yellow form (silent) · F2',
-      },
-      nccs: {
-        verdict: 'ask',
-        why: 'Shared SGH/NCCS form is silent on SGLT2 inhibitors. Ask your care team.',
-        source: 'SGH/NCCS yellow form (silent) · F2',
       },
     },
   },
@@ -763,19 +689,9 @@ export const MED_PATTERNS: { test: RegExp; id: string; name: string; rules: Rule
     id: 'blood-thinners',
     name: 'Blood thinners / iron / anti-diarrhoeals',
     rules: ['F1'],
-    source: 'SGH/NCCS handwritten annex (5 days); TTSH brochure (Plavix 7 days)',
+    source: 'hospital medication annex (5 days); TTSH brochure (Plavix 7 days)',
     why: 'Hospitals differ, and the right stop date depends on why you are on the drug. This tool never adjudicates F1.',
     byHospital: {
-      sgh: {
-        verdict: 'ask',
-        why: 'SGH/NCCS annex: 5 days for clopidogrel, plus aspirin/warfarin/anticoagulants — but that annex is handwritten and separate from the yellow form. Follow what was written for you, not a generic number.',
-        source: 'SGH/NCCS handwritten medication annex · F1 / F3',
-      },
-      nccs: {
-        verdict: 'ask',
-        why: 'Same SGH/NCCS annex. Follow the handwritten stop dates you were given.',
-        source: 'SGH/NCCS handwritten medication annex · F1 / F3',
-      },
       ttsh: {
         verdict: 'ask',
         why: 'TTSH: iron, Plavix and anti-diarrhoeals at 7 days. That is TTSH’s sheet, not a universal rule. Confirm against your brochure.',

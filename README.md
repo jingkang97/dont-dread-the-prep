@@ -1,6 +1,6 @@
 # PrepPath
 
-No-install colonoscopy prep microsite for HackitRx 2026 (OAS × LSS). Patients scan a QR on the SGH/NCCS yellow form.
+No-install colonoscopy prep microsite for HackitRx 2026 (OAS × LSS). Pick your hospital and appointment for a personalised prep timeline.
 
 ## Run
 
@@ -73,7 +73,6 @@ Schema and seed (`backend/sql/mvp.sql`, `mvp.seed.sql`, `telegram.sql`, `push.sq
 ## What is in the MVP
 
 - **3-tap setup** — hospital, date, AM/PM (plus reporting time)
-- **Scan demo** — rehearsed yellow-form OCR moment (not the reliable path)
 - **AM/PM timeline** — hospital-faithful; SGH afternoon packet times are flagged as gaps
 - **Food lookup** — retrieval-only classifier: ingredients are Yes / No, a dish with more Yes than No is Possible (naming what to leave out)
 - **Stool + call** — 6-point scale and publicly listed hospital numbers
