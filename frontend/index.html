@@ -12,6 +12,21 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('preppath.session.v1')
+          if (!raw) return
+          var id = JSON.parse(raw).id
+          if (!id) return
+          var url = new URL(location.href)
+          if (url.searchParams.get('s') === id) return
+          url.searchParams.set('s', id)
+          url.searchParams.delete('p')
+          history.replaceState(history.state, '', url.pathname + url.search + url.hash)
+        } catch (e) {}
+      })()
+    </script>
     <meta
       name="description"
       content="No-install colonoscopy prep companion. Timeline, grounded food lookup, stool guide. Not medical advice."

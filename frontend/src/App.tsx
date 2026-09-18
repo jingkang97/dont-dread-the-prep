@@ -184,6 +184,5 @@ export default function App() {
 }
 
 function openedFromExternalLink() {
-  const query = new URLSearchParams(window.location.search)
-  return Boolean(query.get('s') || query.get('go'))
+  return Boolean(new URLSearchParams(window.location.search).get('go'))
 }
