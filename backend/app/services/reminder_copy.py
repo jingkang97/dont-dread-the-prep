@@ -11,7 +11,7 @@ class ReminderCopy(TypedDict, total=False):
     extra: str
 
 
-# Fallback labels for demo extras and older clients.
+# Fallback labels for older clients.
 ITEMS: dict[str, ReminderCopy] = {
     "t14": {
         "title": "14 days before · Check your medications",

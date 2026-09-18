@@ -22,7 +22,6 @@ export type ApiSession = {
   first_name: string | null
   push_opt_in: boolean
   telegram_linked?: boolean
-  reminder_mode?: 'demo' | 'live'
   reminder_plan?: ApiReminderPlanItem[]
   created_at: string
 }
