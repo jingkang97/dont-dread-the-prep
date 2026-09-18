@@ -18,7 +18,7 @@ from app.schemas.session import (
     Slot,
     StoolScaleOut,
 )
-from app.services.reminder_schedule import demo_mode, reminder_plan, reset_reminder_clock
+from app.services.reminder_schedule import reminder_plan, reset_reminder_clock
 from app.services.timeline import live_reminder_events_for
 
 PUBLIC_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -80,7 +80,7 @@ def session_to_out(row: Session, hospital: Hospital, protocol: Protocol, db: DbS
         first_name=row.first_name,
         push_opt_in=bool(row.push_endpoint),
         telegram_linked=row.telegram_chat_id is not None,
-        reminder_mode="demo" if demo_mode() else "live",
+        reminder_mode="live",
         reminder_plan=reminder_plan(row, live_reminder_events_for(db, row)),
         created_at=row.created_at,
     )

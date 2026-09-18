@@ -14,11 +14,9 @@ from app.core.config import get_settings
 from app.db.models import Session
 from app.db.session import session_scope
 from app.services.reminder_schedule import (
-    demo_mode,
     late_notice_html,
     next_unsent_event,
     skip_late_events,
-    start_demo_clock,
 )
 from app.services.timeline import live_reminder_events_for
 
@@ -26,9 +24,6 @@ log = logging.getLogger(__name__)
 
 API = "https://api.telegram.org/bot{token}/{method}"
 
-WELCOME_TEST = (
-    "Demo clock: each reminder from your timeline, one minute apart, then hourly and daily extras."
-)
 NEED_CODE = (
     "Open PrepPath and tap Set reminders so I can attach this chat to your session."
 )
@@ -113,22 +108,17 @@ def parse_start_code(text: str) -> str | None:
 
 def _show_session_debug() -> bool:
     settings = get_settings()
-    if settings.telegram_reminder_test:
-        return True
-    return not can_use_url_button(settings.resolved_site_url)
+    return settings.debug or not can_use_url_button(settings.resolved_site_url)
 
 
 def welcome_text(code: str, first_name: str | None) -> str:
     name = html.escape((first_name or "").strip())
     headline = f"You're set for reminders, {name}." if name else "You're set for reminders."
     bits: list[str] = []
-    if get_settings().telegram_reminder_test:
-        cadence = WELCOME_TEST
-    else:
-        cadence = (
-            "You'll get reminders timed to your timeline: medicines, diet, each prep dose, "
-            "a stool check, and when to stop fluids."
-        )
+    cadence = (
+        "You'll get reminders timed to your timeline: medicines, diet, each prep dose, "
+        "a stool check, and when to stop fluids."
+    )
     if _show_session_debug():
         bits.append(f"Session {html.escape(code)}.")
     tail = f"\n\n{' '.join(bits)}" if bits else ""
@@ -148,15 +138,12 @@ def _link_session(chat_id: int, code: str) -> dict[str, Any] | None:
         row.telegram_chat_id = chat_id
         skipped: list[dict[str, Any]] = []
         nxt = None
-        if demo_mode():
-            start_demo_clock(row, restart=True)
-        else:
-            now = datetime.now(timezone.utc)
-            events = live_reminder_events_for(db, row)
-            skipped = skip_late_events(row, now, events)
-            nxt = next_unsent_event(row, events)
-            if skipped:
-                row.reminder_late_notice_sent_at = now
+        now = datetime.now(timezone.utc)
+        events = live_reminder_events_for(db, row)
+        skipped = skip_late_events(row, now, events)
+        nxt = next_unsent_event(row, events)
+        if skipped:
+            row.reminder_late_notice_sent_at = now
         return {
             "public_code": row.public_code,
             "first_name": row.first_name,
