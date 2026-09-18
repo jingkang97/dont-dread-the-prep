@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import type { ApiDish, ApiDishVerdict, ApiFoodClassification } from '../../lib/api'
 import type { Verdict } from '../../data/foods'
 import { useLang } from '../../i18n/LanguageContext'
 import { cn } from '../../lib/cn'
+import { easeOut } from '../../lib/motion'
 import { Card, VerdictPill } from '../ui'
 
 // Ingredients are Yes or No, never "Possible": anything the sheet has not
@@ -52,7 +54,7 @@ function Reason({ text }: { text: string }) {
 function Chevron({ open }: { open: boolean }) {
   return (
     <svg
-      className={cn('mt-1 shrink-0 text-muted transition-transform', open && 'rotate-180')}
+      className={cn('mt-1 shrink-0 text-muted transition-transform duration-200', open && 'rotate-180')}
       width="14"
       height="14"
       viewBox="0 0 14 14"
@@ -87,9 +89,36 @@ export function DishCard({
 }) {
   const { t } = useLang()
   const [expanded, setExpanded] = useState(false)
-  const open = !collapsible || expanded
   const dishVerdict = toDishVerdict(dish.verdict)
   const showDishPill = !(hideApproved && dishVerdict === 'yes')
+  const details = (
+    <>
+      {dish.verdict === 'possible' && dish.remove_ingredients.length > 0 && (
+        <p className="mt-1 text-[13px] font-medium text-possible">
+          {t('food.possibleNote', { ingredients: dish.remove_ingredients.join(', ') })}
+        </p>
+      )}
+      <div className="mt-2.5 grid gap-1.5">
+        {dish.ingredients.map((ingredient) => {
+          const verdict = toIngredientVerdict(ingredient.classification)
+          const showPill = !(hideApproved && verdict === 'yes')
+          return (
+            <div
+              key={ingredient.id}
+              className="flex items-start justify-between gap-2 rounded-xl bg-paper px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-ink">{ingredient.name}</p>
+                <Reason text={ingredient.classification_reason} />
+              </div>
+              {showPill ? <VerdictPill verdict={verdict} compact /> : null}
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+
   return (
     <Card className="p-3.5">
       {collapsible ? (
@@ -112,31 +141,27 @@ export function DishCard({
           {showDishPill ? <VerdictPill verdict={dishVerdict} /> : null}
         </div>
       )}
-      {dish.verdict === 'possible' && dish.remove_ingredients.length > 0 && (
-        <p className="mt-1 text-[13px] font-medium text-possible">
-          {t('food.possibleNote', { ingredients: dish.remove_ingredients.join(', ') })}
-        </p>
-      )}
-      {open && (
-        <div className="mt-2.5 grid gap-1.5">
-          {dish.ingredients.map((ingredient) => {
-            const verdict = toIngredientVerdict(ingredient.classification)
-            const showPill = !(hideApproved && verdict === 'yes')
-            return (
-              <div
-                key={ingredient.id}
-                className="flex items-start justify-between gap-2 rounded-xl bg-paper px-3 py-2"
-              >
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-ink">{ingredient.name}</p>
-                  <Reason text={ingredient.classification_reason} />
-                </div>
-                {showPill ? <VerdictPill verdict={verdict} compact /> : null}
-              </div>
-            )
-          })}
-        </div>
+      {collapsible ? (
+        <AnimatePresence initial={false}>
+          {expanded && <AccordionPanel>{details}</AccordionPanel>}
+        </AnimatePresence>
+      ) : (
+        details
       )}
     </Card>
+  )
+}
+
+function AccordionPanel({ children }: { children: ReactNode }) {
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={{ duration: 0.28, ease: easeOut }}
+      className="overflow-hidden"
+    >
+      {children}
+    </motion.div>
   )
 }
