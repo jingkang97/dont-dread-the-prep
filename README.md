@@ -61,6 +61,7 @@ Frontend is on Vercel at [dont-dread-the-prep.vercel.app](https://dont-dread-the
    | `TELEGRAM_BOT_TOKEN` | BotFather token |
    | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Web Push pair (`npx web-push generate-vapid-keys`) |
    | `VAPID_MAILTO` | `mailto:you@example.com` |
+   | `GOOGLE_TRANSLATE_API_KEY` | Cloud Translation API key (not `GOOGLE_API_KEY` / Gemini). Restart the API service after setting it. |
 
    Railway injects `RAILWAY_PUBLIC_DOMAIN`; on boot the API registers a Telegram webhook at `/api/telegram/webhook`. Set `PUBLIC_API_URL` only if that domain is missing. Keep **Serverless / App Sleeping off** and **replicas = 1** so the reminder loop can run. Leave `TELEGRAM_POLL` unset on Railway. Local uvicorn should not poll the same bot (it would drop the webhook).
 

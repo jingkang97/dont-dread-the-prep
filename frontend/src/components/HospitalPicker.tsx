@@ -27,7 +27,7 @@ export function HospitalPicker({
   onPick: (id: HospitalId) => void
   loading?: boolean
 }) {
-  const { t, tx, translating } = useLang()
+  const { t, tx } = useLang()
   const [query, setQuery] = useState('')
   const [openClusters, setOpenClusters] = useState<Set<PickerCluster>>(
     () => new Set(PICKER_CLUSTERS),
@@ -57,7 +57,7 @@ export function HospitalPicker({
     <div>
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key="hospitals" {...fadeY}>
-          {loading || translating ? (
+          {loading ? (
             <div className="mt-3 grid gap-2.5">
               {[0, 1, 2].map((i) => (
                 <div key={i} className="h-[68px] animate-pulse rounded-[20px] bg-paper-2" />
