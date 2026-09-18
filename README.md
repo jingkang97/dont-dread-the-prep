@@ -59,7 +59,6 @@ Frontend is on Vercel at [dont-dread-the-prep.vercel.app](https://dont-dread-the
    | `DEBUG` | `false` |
    | `SITE_URL` | `https://dont-dread-the-prep.vercel.app` (Telegram buttons; defaults to this when `DEBUG=false`) |
    | `TELEGRAM_BOT_TOKEN` | BotFather token |
-   | `TELEGRAM_REMINDER_TEST` | Retired / ignored. Reminders always follow live hospital times. Leave unset or `false`. |
    | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Web Push pair (`npx web-push generate-vapid-keys`) |
    | `VAPID_MAILTO` | `mailto:you@example.com` |
 

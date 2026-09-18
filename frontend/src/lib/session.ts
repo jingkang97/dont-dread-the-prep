@@ -31,7 +31,6 @@ export type PrepSession = SessionInput & {
   createdAt: string
   pushOptIn: boolean
   telegramLinked: boolean
-  reminderMode?: 'demo' | 'live'
   reminderPlan?: ReminderPlanItem[]
   protocolName?: string
 }
@@ -68,7 +67,6 @@ export function fromApiSession(row: ApiSession): PrepSession {
     createdAt: row.created_at,
     pushOptIn: Boolean(row.push_opt_in),
     telegramLinked: Boolean(row.telegram_linked),
-    reminderMode: row.reminder_mode === 'demo' ? 'demo' : 'live',
     reminderPlan: (row.reminder_plan ?? []).map((item) => ({
       key: item.key,
       title: item.title,
@@ -99,7 +97,6 @@ function parseSession(raw: unknown): PrepSession | null {
     createdAt: String(s.createdAt),
     pushOptIn: Boolean(s.pushOptIn),
     telegramLinked: Boolean(s.telegramLinked),
-    reminderMode: s.reminderMode === 'demo' ? 'demo' : 'live',
     reminderPlan: Array.isArray(s.reminderPlan) ? s.reminderPlan : undefined,
     protocolName: s.protocolName ? String(s.protocolName) : undefined,
   }

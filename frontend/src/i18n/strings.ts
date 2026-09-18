@@ -166,15 +166,11 @@ export const EN = {
   'wa.welcome': 'How reminders work',
   'wa.welcomeBody':
     'Pick app push notifications, Telegram, or both. Reminders follow your timeline — medicines, diet, each prep dose, a stool check, and when to stop fluids.',
-  'wa.welcomeBodyDemo':
-    'Demo clock: each reminder from your timeline, one minute apart, then hourly and daily extras.',
   'wa.times': 'Your reminder times',
   'wa.passed': 'passed',
   'wa.sent': 'sent',
   'wa.computed':
     'Times follow the {hospital} sheet from reporting time {time}, including each Picoprep or PEG dose.',
-  'wa.computedDemo':
-    'Demo times start when you link: each timeline reminder one minute apart, then hourly and daily extras.',
   'wa.sandbox': 'Telegram',
   'wa.sandboxBody':
     "Opens the bot with this appointment. Tap 'start' once so we can send your timeline reminders.",

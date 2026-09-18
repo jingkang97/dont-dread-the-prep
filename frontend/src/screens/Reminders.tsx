@@ -23,7 +23,6 @@ export function Reminders({
   onBack: () => void
 }) {
   const { t, lang } = useLang()
-  const demo = session.reminderMode === 'demo'
   const plan = session.reminderPlan
   const items = plan?.length
     ? plan.map((item) => ({
@@ -50,10 +49,7 @@ export function Reminders({
         .catch(() => undefined)
     }
     pull()
-    if (!demo || (!session.telegramLinked && !session.pushOptIn)) return
-    const timer = window.setInterval(pull, 10_000)
-    return () => window.clearInterval(timer)
-  }, [demo, session.id, session.telegramLinked, session.pushOptIn, onSession])
+  }, [session.id, onSession])
 
   return (
     <div className="px-5 pb-10 pt-6">
@@ -70,7 +66,7 @@ export function Reminders({
       <Card className="mt-5 p-4">
         <p className="text-[13px] font-semibold text-navy">{t('wa.welcome')}</p>
         <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">
-          {t(demo ? 'wa.welcomeBodyDemo' : 'wa.welcomeBody')}
+          {t('wa.welcomeBody')}
         </p>
         {push.needsInstall && !session.pushOptIn && (
           <p
@@ -174,9 +170,7 @@ export function Reminders({
           ))}
         </ul>
         <p className="mt-2 text-[12px] text-muted">
-          {demo
-            ? t('wa.computedDemo')
-            : t('wa.computed', { hospital: session.hospitalShort, time: session.reportingTime })}
+          {t('wa.computed', { hospital: session.hospitalShort, time: session.reportingTime })}
         </p>
       </Card>
     </div>
