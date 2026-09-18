@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     telegram_webhook_secret: str = ""
     # Local getUpdates. Deletes this bot's webhook — leave false when Railway owns it.
     telegram_poll: bool = False
+    # None = send on Railway (DEBUG=false), never from local DEBUG. Stops this
+    # laptop from texting the production bot / pushing to the same sessions.
+    reminders_send: bool | None = None
     # Patient site origin. Empty → localhost when DEBUG, else Vercel.
     site_url: str = ""
     # Public API origin for setWebhook. Empty → https://$RAILWAY_PUBLIC_DOMAIN.
@@ -77,6 +80,12 @@ class Settings(BaseSettings):
     def cors_origin_regex_or_none(self) -> str | None:
         pattern = self.cors_origin_regex.strip()
         return pattern or None
+
+    @property
+    def should_send_reminders(self) -> bool:
+        if self.reminders_send is not None:
+            return self.reminders_send
+        return not self.debug
 
     @property
     def resolved_site_url(self) -> str:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
@@ -9,6 +10,15 @@ from sqlalchemy.orm.attributes import flag_modified
 SG = ZoneInfo("Asia/Singapore")
 # Still send as a live reminder if the window became due in the last couple of minutes.
 LATE_GRACE = timedelta(minutes=2)
+# Old demo ladder titles: "Minute 1/16 · 14 days before · …"
+_DEMO_LADDER_TITLE = re.compile(r"(?i)\b(?:minute|hour|day)\s+\d+\s*/\s*\d+\s*·")
+
+
+def is_demo_ladder_event(event: dict[str, Any] | None) -> bool:
+    if not event:
+        return False
+    blob = f"{event.get('title') or ''} {event.get('html') or ''}"
+    return _DEMO_LADDER_TITLE.search(blob) is not None
 
 if TYPE_CHECKING:
     from app.db.models import Session
