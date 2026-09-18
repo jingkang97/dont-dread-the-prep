@@ -28,6 +28,8 @@ export type {
   ApiTimeline,
   ApiTimelineEvent,
 } from './timeline'
+export { postApiTranslations } from './translations'
+export type { TargetLang, TranslationOut } from './translations'
 export { getApiDish, getApiMealPrep, postApiFoodChat } from './food'
 export type {
   ApiDish,

@@ -24,22 +24,23 @@ const ROWS = [
 ] as const
 
 export function Med7dSheet({ onClose }: { onClose: () => void }) {
-  const { t } = useLang()
+  const { t, tx } = useLang()
   return (
     <SheetFrame onDismiss={onClose} dismissLabel={t('on.back')}>
       <div className="max-h-[min(80vh,640px)] overflow-y-auto overscroll-contain">
         <p className="font-display text-[22px] leading-tight tracking-tight text-ink">
-          Medicines to review 7 days before
+          {tx('Medicines to review 7 days before')}
         </p>
         <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
-          Do not stop any medication unless your doctor or hospital has told you to. If unsure, ask your
-          care team.
+          {tx(
+            'Do not stop any medication unless your doctor or hospital has told you to. If unsure, ask your care team.',
+          )}
         </p>
         <div className="mt-4 grid gap-3">
           {ROWS.map((row) => (
             <div key={row.category} className="rounded-2xl bg-paper-2 px-3.5 py-3">
-              <p className="text-[14px] font-semibold text-ink">{row.category}</p>
-              <p className="mt-1 text-[12px] leading-relaxed text-muted">{row.examples}</p>
+              <p className="text-[14px] font-semibold text-ink">{tx(row.category)}</p>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted">{tx(row.examples)}</p>
               {/* <p className="mt-2 text-[13px] font-medium text-teal-deep">{row.stop}</p> */}
             </div>
           ))}

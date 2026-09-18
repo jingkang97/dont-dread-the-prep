@@ -1,4 +1,4 @@
-/** Stool/contact, food-system, and rule-title copy. Hospital source lines stay in English. */
+/** Stool/contact, food-system, and rule-title copy. */
 
 export const CLINICAL_EN = {
   'hosp.skh.formGap':
@@ -39,4 +39,11 @@ export const CLINICAL_EN = {
   'food.showIngredients': 'Show ingredients',
   'food.hideIngredients': 'Hide ingredients',
   'food.networkError': 'Could not reach the food service. Check your connection and try again.',
+  'food.suggest.chickenRice': 'Chicken rice',
+  'food.suggest.kopiMilk': 'Kopi with milk',
+  'food.suggest.appleJuice': 'Apple juice',
+  'food.suggest.milo': 'Milo',
+  'food.suggest.whiteBread': 'White bread',
+  'food.suggest.thosai': 'Thosai',
+  'food.suggest.ckt': 'Char kway teow',
 } as const

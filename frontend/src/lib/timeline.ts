@@ -12,7 +12,7 @@ export type TimelineEvent = {
   detailKey?: StringKey
   detailVars?: Record<string, string>
   fluidKey?: StringKey
-  /** Hospital source line — stays in English. */
+  /** Hospital source line (English from the API; shown through tx()). */
   citedDetail?: string
   /** Resolved copy from the API (preferred over titleKey / detailKey). */
   title?: string

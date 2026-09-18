@@ -3,6 +3,7 @@ import { GeneratingPane } from '../ui'
 import { DishCard } from './DishCard'
 import { useMealPrep } from '../../hooks/useMealPrep'
 import { useLang } from '../../i18n/LanguageContext'
+import { mealPrepLiveCopy, usePrimeLiveCopy } from '../../i18n/liveCopy'
 import type { StringKey } from '../../i18n/strings'
 import { cn } from '../../lib/cn'
 import type { ApiDish } from '../../lib/api'
@@ -19,8 +20,9 @@ const MEALS: { id: MealKey; label: StringKey }[] = [
 ]
 
 export function MealPrep({ session }: { session: PrepSession }) {
-  const { t } = useLang()
+  const { t, tx } = useLang()
   const { mealPrep, loading, error } = useMealPrep(session.hospitalId)
+  usePrimeLiveCopy(mealPrepLiveCopy(mealPrep))
   const [meal, setMeal] = useState<MealKey>('breakfast')
 
   const dishes: ApiDish[] = mealPrep ? mealPrep[meal] : []
@@ -57,10 +59,10 @@ export function MealPrep({ session }: { session: PrepSession }) {
         {loading && (
           <GeneratingPane
             title={t('food.mealLoadingTitle')}
-            hint={t('food.mealLoadingHint', { hospital: session.hospitalShort })}
+            hint={t('food.mealLoadingHint', { hospital: tx(session.hospitalShort) })}
           />
         )}
-        {!loading && error && <p className="px-1 text-[14px] leading-relaxed text-ink-soft">{error}</p>}
+        {!loading && error && <p className="px-1 text-[14px] leading-relaxed text-ink-soft">{tx(error)}</p>}
         {!loading && !error && dishes.length === 0 && (
           <p className="px-1 text-[14px] leading-relaxed text-ink-soft">{t('food.mealEmpty')}</p>
         )}

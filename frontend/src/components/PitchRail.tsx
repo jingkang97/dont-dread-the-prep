@@ -1,5 +1,6 @@
 import { useLang } from '../i18n/LanguageContext'
 import type { StringKey } from '../i18n/strings'
+import { formatYmd } from '../lib/dates'
 import type { PrepSession } from '../lib/session'
 import pitchQr from '../assets/pitch-qr.png'
 
@@ -8,10 +9,11 @@ const POINTS: { title: StringKey; body: StringKey }[] = [
   { title: 'pitch.2t', body: 'pitch.2d' },
   { title: 'pitch.3t', body: 'pitch.3d' },
   { title: 'pitch.4t', body: 'pitch.4d' },
+  { title: 'pitch.5t', body: 'pitch.5d' },
 ]
 
 export function PitchRail({ session }: { session: PrepSession | null }) {
-  const { t } = useLang()
+  const { t, lang, tx } = useLang()
 
   return (
     <aside className="relative hidden min-h-0 overflow-y-auto bg-black px-12 py-14 text-white xl:flex xl:flex-col">
@@ -43,9 +45,9 @@ export function PitchRail({ session }: { session: PrepSession | null }) {
             {session ? (
               <>
                 <p className="font-display text-[22px] leading-[1.2] tracking-tight text-white">
-                  {session.hospitalShort} · {session.slot.toUpperCase()}
+                  {tx(session.hospitalShort)} · {session.slot === 'am' ? t('on.am') : t('on.pm')}
                 </p>
-                <p className="mt-1 text-[15px] text-white/70">{session.date}</p>
+                <p className="mt-1 text-[15px] text-white/70">{formatYmd(session.date, lang)}</p>
                 <p className="mt-3 text-[12px] leading-snug text-white/45">{t('pitch.scan')}</p>
               </>
             ) : (

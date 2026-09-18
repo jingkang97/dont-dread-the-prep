@@ -7,7 +7,7 @@ import { useSessionHospital } from '../hooks/useSessionHospital'
 import type { PrepSession } from '../lib/session'
 
 export function Contacts({ session }: { session: PrepSession }) {
-  const { t } = useLang()
+  const { t, tx } = useLang()
   const { hospital, short } = useSessionHospital(session)
   const contacts = hospital?.contacts ?? []
 
@@ -15,17 +15,17 @@ export function Contacts({ session }: { session: PrepSession }) {
     <div className="px-5 pb-10 pt-6">
       <ScreenHeader
         kicker={t('contacts.kicker')}
-        title={t('contacts.title', { hospital: short })}
+        title={t('contacts.title', { hospital: tx(short) })}
         lead={t('contacts.lead')}
       />
 
       <div className="mt-5 grid gap-2.5">
         {contacts.map((c) => (
           <Card key={c.phone} className="p-4">
-            <p className="text-[12px] font-semibold tracking-wide text-muted">{c.label}</p>
+            <p className="text-[12px] font-semibold tracking-wide text-muted">{tx(c.label)}</p>
             <p className="font-display mt-0.5 text-[28px] text-navy">{formatPhone(c.phone)}</p>
-            {c.hours ? <p className="text-[12px] text-ink-soft">{c.hours}</p> : null}
-            {c.note ? <p className="mt-2 text-[12px] leading-relaxed text-muted">{c.note}</p> : null}
+            {c.hours ? <p className="text-[12px] text-ink-soft">{tx(c.hours)}</p> : null}
+            {c.note ? <p className="mt-2 text-[12px] leading-relaxed text-muted">{tx(c.note)}</p> : null}
             <a href={telHref(c.phone)}>
               <PrimaryButton className="mt-3">
                 <span className="inline-flex items-center gap-2">

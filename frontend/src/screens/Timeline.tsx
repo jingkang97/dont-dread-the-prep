@@ -10,6 +10,7 @@ import { EventCard } from '../components/timeline/EventCard'
 import { EventStamp } from '../components/timeline/EventStamp'
 import { JumpNextFab, type JumpDir } from '../components/timeline/JumpNextFab'
 import { useLang } from '../i18n/LanguageContext'
+import { timelineLiveCopy, usePrimeLiveCopy } from '../i18n/liveCopy'
 import type { PrepSession } from '../lib/session'
 import { parseYmd } from '../lib/dates'
 import { isEventPast, type TimelineEvent } from '../lib/timeline'
@@ -69,8 +70,9 @@ export function Timeline({
   onOpenStool: () => void
   onOpenFood: () => void
 }) {
-  const { t } = useLang()
+  const { t, tx } = useLang()
   const { hospital, events, loading, error, now, nextUpcoming } = usePrepSummary(session)
+  usePrimeLiveCopy(timelineLiveCopy(events))
   const nextId = nextUpcoming?.id
   const days = useMemo(() => groupByDay(events), [events])
   const saved = loadTimelineUi(session.id, session.date)
@@ -172,7 +174,7 @@ export function Timeline({
     <>
     <div ref={bindRoot} className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 px-5 pt-6">
-        <ScreenHeader kicker={t('tl.for', { hospital: hospital.short })} title={t('tl.title')} />
+        <ScreenHeader kicker={t('tl.for', { hospital: tx(hospital.short) })} title={t('tl.title')} />
       </div>
 
       <div data-tl-bar className="shrink-0 bg-paper px-5 py-2">
@@ -193,7 +195,7 @@ export function Timeline({
         <p className="mt-6 text-[14px] text-muted">{t('app.regenerating')}</p>
       ) : null}
       {!loading && error ? (
-        <p className="mt-6 text-[14px] text-no">{error}</p>
+        <p className="mt-6 text-[14px] text-no">{tx(error)}</p>
       ) : null}
       {!loading && !error && events.length === 0 ? (
         <p className="mt-6 text-[14px] text-muted">{t('tl.noEvents')}</p>

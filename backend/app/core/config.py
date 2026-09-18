@@ -60,6 +60,8 @@ class Settings(BaseSettings):
     google_api_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
     google_api_key: str = ""
     google_model: str = "gemini-3.8-flash"
+    # Cloud Translation API (NMT). Separate from the Gemini food-chat key.
+    google_translate_api_key: str = ""
 
     @property
     def food_chat_configured(self) -> bool:

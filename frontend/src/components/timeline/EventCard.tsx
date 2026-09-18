@@ -22,7 +22,7 @@ export function EventCard({
   onOpenStool?: () => void
   onOpenFood?: () => void
 }) {
-  const { t } = useLang()
+  const { t, tx } = useLang()
   const { title, detail } = resolveEventText(event, t)
   const cardRef = useRef<HTMLDivElement>(null)
   const [pane, setPane] = useState<HTMLElement | null>(null)
@@ -67,7 +67,7 @@ export function EventCard({
             {help && (
               <button
                 type="button"
-                aria-label={help.hint}
+                aria-label={tx(help.hint)}
                 onClick={(e) => {
                   e.stopPropagation()
                   setHelpOpen(true)
@@ -80,9 +80,9 @@ export function EventCard({
           </span>
         )}
       </div>
-      <p className="mt-1.5 text-[16px] font-semibold text-ink">{title}</p>
+      <p className="mt-1.5 text-[16px] font-semibold text-ink">{tx(title)}</p>
       {detail ? (
-        <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">{detail}</p>
+        <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-ink-soft">{tx(detail)}</p>
       ) : null}
       {stoolLink && (
         <p className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-ask">

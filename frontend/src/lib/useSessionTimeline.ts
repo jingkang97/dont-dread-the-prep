@@ -4,6 +4,7 @@ import {
   loadTimeline,
   timelineCacheKey,
 } from './timelineCache'
+import { EN } from '../i18n/strings'
 import type { PrepSession } from './session'
 import type { TimelineEvent } from './timeline'
 
@@ -44,7 +45,7 @@ export function useSessionTimeline(session: PrepSession) {
       .catch((err) => {
         if (cancelled) return
         setEvents([])
-        setError(err instanceof Error ? err.message : 'Failed to load timeline')
+        setError(err instanceof Error ? err.message : EN['err.timeline'])
       })
       .finally(() => {
         if (!cancelled) setLoading(false)

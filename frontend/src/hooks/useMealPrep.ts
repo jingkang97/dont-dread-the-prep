@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ApiError, getApiMealPrep, type ApiMealPrep } from '../lib/api'
 import { HARD_CODED_MEAL_PREP } from '../data/ttshMealPlan'
+import { EN } from '../i18n/strings'
 
 const cache = new Map<string, ApiMealPrep>()
 const errorCache = new Map<string, string>()
@@ -34,7 +35,7 @@ export function useMealPrep(hospitalId: string) {
       } catch (err) {
         if (cancelled) return
         const detail =
-          err instanceof ApiError ? err.detail : 'Could not load meal suggestions. Try again shortly.'
+          err instanceof ApiError ? err.detail : EN['err.mealPrep']
         errorCache.set(hospitalId, detail)
         setError(detail)
       } finally {

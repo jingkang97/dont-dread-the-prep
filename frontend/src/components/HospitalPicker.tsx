@@ -13,6 +13,7 @@ import { HOSPITAL_LOGOS } from '../data/hospitalLogos'
 import type { HospitalId } from '../data/hospitals'
 import { hospCopyOr } from '../i18n/keys'
 import { useLang } from '../i18n/LanguageContext'
+import { hospitalLiveCopy, usePrimeLiveCopy } from '../i18n/liveCopy'
 import type { ApiHospital } from '../lib/api/hospitals'
 import { cn } from '../lib/cn'
 import { easeOut, fadeY } from '../lib/motion'
@@ -26,13 +27,14 @@ export function HospitalPicker({
   onPick: (id: HospitalId) => void
   loading?: boolean
 }) {
-  const { t } = useLang()
+  const { t, tx, translating } = useLang()
   const [query, setQuery] = useState('')
   const [openClusters, setOpenClusters] = useState<Set<PickerCluster>>(
     () => new Set(PICKER_CLUSTERS),
   )
 
   const catalog = useMemo(() => pickerHospitalsFromApi(hospitals), [hospitals])
+  usePrimeLiveCopy(hospitals.flatMap(hospitalLiveCopy))
   const filtered = useMemo(
     () =>
       catalog.filter((h) =>
@@ -55,7 +57,7 @@ export function HospitalPicker({
     <div>
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key="hospitals" {...fadeY}>
-          {loading ? (
+          {loading || translating ? (
             <div className="mt-3 grid gap-2.5">
               {[0, 1, 2].map((i) => (
                 <div key={i} className="h-[68px] animate-pulse rounded-[20px] bg-paper-2" />
@@ -96,7 +98,7 @@ export function HospitalPicker({
                           onPointerUp={(e) => e.currentTarget.blur()}
                           className="mb-1.5 flex w-full items-center gap-1 px-1 text-left outline-none focus:outline-none focus-visible:outline-none"
                         >
-                          <span className="flex-1 text-[13px] font-bold text-ink">{c}</span>
+                          <span className="flex-1 text-[13px] font-bold text-ink">{tx(c)}</span>
                           <ChevronDown
                             size={16}
                             strokeWidth={2.5}
@@ -144,8 +146,8 @@ function HospitalRow({
   h: PickerHospital
   onClick: () => void
 }) {
-  const { t } = useLang()
-  const name = hospCopyOr(t, h.hospitalId, 'name', h.name)
+  const { tx } = useLang()
+  const name = h.name
   const logo = HOSPITAL_LOGOS[h.hospitalId]
   return (
     <button
@@ -167,8 +169,8 @@ function HospitalRow({
         </span>
       )}
       <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-semibold text-ink">{h.short}</span>
-        <span className="block text-[12px] text-muted">{name}</span>
+        <span className="block text-[15px] font-semibold text-ink">{tx(h.short)}</span>
+        <span className="block text-[12px] text-muted">{tx(name)}</span>
       </span>
       <ChevronRight size={18} className="shrink-0 text-muted" />
     </button>

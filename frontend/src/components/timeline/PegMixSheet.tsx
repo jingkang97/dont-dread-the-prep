@@ -10,18 +10,20 @@ export function PegMixSheet({
   onClose: () => void
   prepImageLabel?: string | null
 }) {
-  const { t } = useLang()
+  const { t, tx } = useLang()
   const imageSrc = resolvePrepImageSrc(prepImageLabel)
   return (
     <SheetFrame onDismiss={onClose} dismissLabel={t('on.back')}>
-      <p className="font-display text-[22px] leading-tight tracking-tight text-ink">PEG</p>
+      <p className="font-display text-[22px] leading-tight tracking-tight text-ink">{tx('PEG')}</p>
       <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
-        PEG is used to clean out the gastrointestinal tract (stomach and intestines). You may experience diarrhoea, nausea and/or stomach cramps after taking the medication. Mix as shown below.
+        {tx(
+          'PEG is used to clean out the gastrointestinal tract (stomach and intestines). You may experience diarrhoea, nausea and/or stomach cramps after taking the medication. Mix as shown below.',
+        )}
       </p>
       {imageSrc && (
         <img
           src={imageSrc}
-          alt="How to mix PEG"
+          alt={tx('How to mix PEG')}
           className="mt-3 w-full rounded-2xl bg-navy-2"
         />
       )}

@@ -11,7 +11,7 @@ export function StoolGuide({
 }: {
   session: PrepSession
 }) {
-  const { t } = useLang()
+  const { t, tx } = useLang()
   const { hospital, loading } = useSessionHospital(session)
   const scale = hospital?.stool_scale
   const showBadges = scale?.show_ready_badges === true
@@ -27,7 +27,7 @@ export function StoolGuide({
 
       <div className="mt-5 grid gap-2">
         {scale?.stages.map((stage) => (
-          <StageCard key={stage.n} stage={stage} showBadge={showBadges} t={t} />
+          <StageCard key={stage.n} stage={stage} showBadge={showBadges} t={t} tx={tx} />
         ))}
       </div>
 
@@ -37,7 +37,7 @@ export function StoolGuide({
             {t(notReadyAction ? 'stool.ifNotReady' : 'stool.ifUnsure')}
           </p>
           <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
-            {notReadyAction ?? t('stool.ifUnsureBody')}
+            {notReadyAction ? tx(notReadyAction) : t('stool.ifUnsureBody')}
           </p>
         </Card>
       ) : null}
@@ -49,21 +49,23 @@ function StageCard({
   stage,
   showBadge,
   t,
+  tx,
 }: {
   stage: ApiStoolScaleStage
   showBadge: boolean
   t: (key: 'stool.ready' | 'stool.almost' | 'stool.notReady') => string
+  tx: (text: string) => string
 }) {
   const ready = stage.ready
 
   return (
     <Card className="flex items-center gap-3 p-3">
-      <StageVisual stage={stage} />
+      <StageVisual stage={stage} tx={tx} />
       <div className="min-w-0 flex-1">
         <p className="text-[15px] font-semibold text-ink">
-          {stage.n}. {stage.name}
+          {stage.n}. {tx(stage.name)}
         </p>
-        {stage.look?.trim() ? <p className="text-[12px] text-muted">{stage.look}</p> : null}
+        {stage.look?.trim() ? <p className="text-[12px] text-muted">{tx(stage.look)}</p> : null}
       </div>
       {showBadge && ready ? <ReadyBadge ready={ready}>{readyLabel(t, ready)}</ReadyBadge> : null}
     </Card>
@@ -72,14 +74,16 @@ function StageCard({
 
 function StageVisual({
   stage,
+  tx,
 }: {
   stage: ApiStoolScaleStage
+  tx: (text: string) => string
 }) {
   if (stage.photo) {
     return (
       <img
         src={`/stool/${stage.photo}`}
-        alt={`${stage.n}. ${stage.name}`}
+        alt={`${stage.n}. ${tx(stage.name)}`}
         className="h-[88px] w-[72px] shrink-0 rounded-[14px] bg-white object-contain"
       />
     )
