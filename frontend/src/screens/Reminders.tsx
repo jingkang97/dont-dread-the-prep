@@ -35,7 +35,9 @@ export function Reminders({
         sent: item.sent,
       }))
     : []
-  usePrimeLiveCopy(items.flatMap((item) => [item.title, item.body, item.delayLabel ?? '']))
+  usePrimeLiveCopy(
+    items.flatMap((item) => [item.title, item.body, item.delayLabel].filter((text): text is string => Boolean(text))),
+  )
   const href = telegramStartHref(session.id)
   const push = usePushReminders(session, onSession)
   const telegram = useTelegramLink(session, onSession)
@@ -169,7 +171,7 @@ export function Reminders({
                           : ''}
                 </span>
               </div>
-              <p className="text-[12px] text-ink-soft">{tx(item.body)}</p>
+              <p className="text-[12px] text-ink-soft">{item.body ? tx(item.body) : ''}</p>
             </li>
           ))}
         </ul>
