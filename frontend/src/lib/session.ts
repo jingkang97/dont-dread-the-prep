@@ -4,6 +4,7 @@ import { clearFoodChat } from './foodChat'
 import { clearTimelineCache, loadTimeline, timelineCacheKey, getCachedTimeline } from './timelineCache'
 import { clearTimelineUi } from './timelineUi'
 import { clearFoodChatUi } from './foodChatUi'
+import { isLang } from '../i18n/strings'
 import {
   ApiError,
   createApiSession,
@@ -33,6 +34,7 @@ export type PrepSession = SessionInput & {
   telegramLinked: boolean
   reminderPlan?: ReminderPlanItem[]
   protocolName?: string
+  preferredLang?: 'en' | 'zh' | 'ms' | 'ta'
 }
 
 export function cleanFirstName(raw?: string) {
@@ -51,8 +53,19 @@ function normalizeTime(value: string) {
   return value.length >= 5 ? value.slice(0, 5) : value
 }
 
+/** `HH:MM` from the picker → FastAPI `time` (`HH:MM:SS`). */
 function toApiTime(hm: string) {
   return hm.length === 5 ? `${hm}:00` : hm
+}
+
+function storedPreferredLang(): 'en' | 'zh' | 'ms' | 'ta' {
+  try {
+    const raw = localStorage.getItem('preppath.lang')
+    if (raw && isLang(raw)) return raw
+  } catch {
+    /* private mode */
+  }
+  return 'en'
 }
 
 export function fromApiSession(row: ApiSession): PrepSession {
@@ -77,6 +90,7 @@ export function fromApiSession(row: ApiSession): PrepSession {
       sent: Boolean(item.sent),
     })),
     protocolName: row.protocol_name,
+    preferredLang: row.preferred_lang,
   }
 }
 
@@ -99,6 +113,7 @@ function parseSession(raw: unknown): PrepSession | null {
     telegramLinked: Boolean(s.telegramLinked),
     reminderPlan: Array.isArray(s.reminderPlan) ? s.reminderPlan : undefined,
     protocolName: s.protocolName ? String(s.protocolName) : undefined,
+    preferredLang: s.preferredLang && isLang(s.preferredLang) ? s.preferredLang : undefined,
   }
 }
 
@@ -286,6 +301,7 @@ export async function createSession(partial: {
     reporting_time: toApiTime(reportingTime),
     first_name: firstName,
     protocol_name: partial.protocolName,
+    preferred_lang: storedPreferredLang(),
   })
   const session = fromApiSession(row)
   saveSession(session)

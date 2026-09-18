@@ -18,7 +18,7 @@ from app.services.reminder_schedule import (
     next_unsent_event,
     skip_late_events,
 )
-from app.services.timeline import live_reminder_events_for
+from app.services.translations import translate_texts
 
 log = logging.getLogger(__name__)
 
@@ -65,8 +65,11 @@ def can_use_url_button(url: str) -> bool:
     return host not in {"localhost", "127.0.0.1", "::1"}
 
 
-def with_home_hint(text: str) -> str:
-    return f"{text}\n\n{HOME_HINT}"
+def with_home_hint(text: str, lang: str = "en") -> str:
+    hint = HOME_HINT
+    if lang and lang != "en":
+        hint = translate_texts(lang, [HOME_HINT])[0]
+    return f"{text}\n\n{hint}"
 
 
 async def telegram_call(method: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -111,23 +114,25 @@ def _show_session_debug() -> bool:
     return settings.debug or not can_use_url_button(settings.resolved_site_url)
 
 
-def welcome_text(code: str, first_name: str | None) -> str:
+def welcome_text(code: str, first_name: str | None, lang: str = "en") -> str:
     name = html.escape((first_name or "").strip())
-    headline = f"You're set for reminders, {name}." if name else "You're set for reminders."
-    bits: list[str] = []
-    cadence = (
+    headline_src = "You're set for reminders, {name}." if name else "You're set for reminders."
+    cadence_src = (
         "You'll get reminders timed to your timeline: medicines, diet, each prep dose, "
         "a stool check, and when to stop fluids."
     )
+    food_src = "Food questions stay in PrepPath — Telegram is reminders only."
+    headline, cadence, food = (
+        translate_texts(lang, [headline_src, cadence_src, food_src])
+        if lang and lang != "en"
+        else (headline_src, cadence_src, food_src)
+    )
+    headline = headline.replace("{name}", name)
+    bits: list[str] = []
     if _show_session_debug():
         bits.append(f"Session {html.escape(code)}.")
     tail = f"\n\n{' '.join(bits)}" if bits else ""
-    return (
-        f"<b>{headline}</b>\n\n"
-        f"{cadence}\n\n"
-        "Food questions stay in PrepPath — Telegram is reminders only."
-        f"{tail}"
-    )
+    return f"<b>{headline}</b>\n\n{cadence}\n\n{food}{tail}"
 
 
 def _link_session(chat_id: int, code: str) -> dict[str, Any] | None:
@@ -147,6 +152,7 @@ def _link_session(chat_id: int, code: str) -> dict[str, Any] | None:
         return {
             "public_code": row.public_code,
             "first_name": row.first_name,
+            "preferred_lang": row.preferred_lang if getattr(row, "preferred_lang", None) in {"zh", "ms", "ta"} else "en",
             "skipped": skipped,
             "next": nxt,
         }
@@ -173,16 +179,20 @@ async def handle_start(chat_id: int, text: str) -> None:
 
     public_code = str(linked["public_code"])
     first_name = linked.get("first_name")
+    lang = str(linked.get("preferred_lang") or "en")
     await send_message(
         chat_id,
-        with_home_hint(welcome_text(public_code, first_name if isinstance(first_name, str) else None)),
+        with_home_hint(
+            welcome_text(public_code, first_name if isinstance(first_name, str) else None, lang),
+            lang,
+        ),
     )
     skipped = list(linked.get("skipped") or [])
     if skipped:
         try:
             await send_message(
                 chat_id,
-                with_home_hint(late_notice_html(skipped, linked.get("next"))),
+                with_home_hint(late_notice_html(skipped, linked.get("next"), lang), lang),
             )
         except Exception:
             log.exception("Failed sending late-join notice for session %s", public_code)

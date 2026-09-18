@@ -169,6 +169,7 @@ class Session(Base):
     slot: Mapped[str] = mapped_column(slot_enum, nullable=False)
     reporting_time: Mapped[time] = mapped_column(Time, nullable=False)
     first_name: Mapped[Optional[str]] = mapped_column(Text)
+    preferred_lang: Mapped[str] = mapped_column(Text, nullable=False, default="en", server_default="en")
     telegram_chat_id: Mapped[Optional[int]] = mapped_column(BigInteger)
     push_endpoint: Mapped[Optional[str]] = mapped_column(Text)
     push_p256dh: Mapped[Optional[str]] = mapped_column(Text)

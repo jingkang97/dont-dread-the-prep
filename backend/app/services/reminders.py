@@ -12,7 +12,7 @@ from app.core.config import get_settings
 from app.db.models import Session
 from app.db.session import reset_engine, session_scope
 from app.services.push import send_web_push, vapid_configured
-from app.services.reminder_copy import payload_from_event
+from app.services.reminder_copy import localize_event, payload_from_event
 from app.services.reminder_schedule import (
     is_demo_ladder_event,
     late_notice_html,
@@ -45,6 +45,11 @@ def _subscription_for(row: Session) -> dict[str, Any] | None:
 
 
 Claim = tuple[int | None, dict[str, Any] | None, str, str, str, dict[str, Any], str]
+
+
+def _preferred_lang(row: Session) -> str:
+    lang = getattr(row, "preferred_lang", None) or "en"
+    return lang if lang in {"en", "zh", "ms", "ta"} else "en"
 
 
 def _events_or_empty(db, row: Session) -> list[dict[str, Any]]:
@@ -85,7 +90,11 @@ def _claim_due() -> list[Claim]:
                 skipped = skip_late_events(row, now, events)
                 if skipped and row.reminder_late_notice_sent_at is None:
                     row.reminder_late_notice_sent_at = now
-                    extra = {"skipped": skipped, "next": next_unsent_event(row, events)}
+                    extra = {
+                        "skipped": skipped,
+                        "next": next_unsent_event(row, events),
+                        "lang": _preferred_lang(row),
+                    }
                     claimed.append(
                         (row.telegram_chat_id, subscription, "late", "late", row.public_code, extra, "both")
                     )
@@ -101,7 +110,7 @@ def _claim_due() -> list[Claim]:
                     )
                     continue
                 mark_event_sent(row, str(event["key"]))
-                extra = {"event": event}
+                extra = {"event": event, "lang": _preferred_lang(row)}
                 claimed.append(
                     (
                         row.telegram_chat_id,
@@ -133,15 +142,19 @@ def _go_for(extra: dict[str, Any], copy_key: str) -> str:
 async def _send_telegram(
     chat_id: int, copy_key: str, claim_key: str, code: str, extra: dict[str, Any]
 ) -> None:
+    lang = str(extra.get("lang") or "en")
     if claim_key == "late":
-        html = late_notice_html(extra.get("skipped") or [], extra.get("next"))
-        await send_message(chat_id, with_home_hint(html))
+        html = await asyncio.to_thread(
+            late_notice_html, extra.get("skipped") or [], extra.get("next"), lang
+        )
+        await send_message(chat_id, with_home_hint(html, lang))
         return
     event = _event_from(extra)
     if event and is_demo_ladder_event(event):
         raise RuntimeError(f"Refusing demo-ladder Telegram reminder {claim_key}")
     if event and event.get("html"):
-        await send_message(chat_id, with_home_hint(str(event["html"])))
+        localized = await asyncio.to_thread(localize_event, event, lang)
+        await send_message(chat_id, with_home_hint(str(localized["html"]), lang))
         return
     raise RuntimeError(f"Missing reminder copy for {claim_key}")
 
@@ -153,15 +166,18 @@ async def _send_push(
     code: str,
     extra: dict[str, Any],
 ) -> bool:
+    lang = str(extra.get("lang") or "en")
     path = app_path(code, _go_for(extra, copy_key))
     if claim_key == "late":
-        payload = late_notice_push(extra.get("skipped") or [], extra.get("next"), path)
+        payload = await asyncio.to_thread(
+            late_notice_push, extra.get("skipped") or [], extra.get("next"), path, lang
+        )
         return bool(await asyncio.to_thread(send_web_push, subscription, payload))
     event = _event_from(extra)
     if event and is_demo_ladder_event(event):
         raise RuntimeError(f"Refusing demo-ladder push reminder {claim_key}")
     if event:
-        payload = payload_from_event(event, path)
+        payload = await asyncio.to_thread(payload_from_event, event, path, lang)
         if is_demo_ladder_event({"title": payload.get("title"), "html": payload.get("body")}):
             raise RuntimeError(f"Refusing demo-ladder push payload {claim_key}")
         return bool(await asyncio.to_thread(send_web_push, subscription, payload))

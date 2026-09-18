@@ -56,7 +56,12 @@ def save_subscription(code: str, endpoint: str, p256dh: str, auth: str) -> bool:
         skipped = skip_late_events(row, now, events)
         if skipped and row.reminder_late_notice_sent_at is None:
             row.reminder_late_notice_sent_at = now
-            notice = late_notice_push(skipped, next_unsent_event(row, events), app_path(row.public_code))
+            notice = late_notice_push(
+                skipped,
+                next_unsent_event(row, events),
+                app_path(row.public_code),
+                row.preferred_lang if getattr(row, "preferred_lang", None) in {"zh", "ms", "ta"} else "en",
+            )
             subscription = {
                 "endpoint": row.push_endpoint,
                 "keys": {"p256dh": row.push_p256dh, "auth": row.push_auth},

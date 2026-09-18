@@ -228,3 +228,11 @@ def translate_catalog(lang: str, items: list[tuple[str, str]]) -> dict[str, str]
                 log.exception("translation cache write failed")
             cached.update(fresh)
     return {key: cached[source] for key, source in items if source in cached}
+
+
+def translate_texts(lang: str, sources: list[str]) -> list[str]:
+    """Translate plain strings in order. Misses and English stay as given."""
+    if lang not in GOOGLE_TARGETS:
+        return list(sources)
+    found = translate_catalog(lang, [(str(i), text) for i, text in enumerate(sources)])
+    return [found.get(str(i), text) for i, text in enumerate(sources)]

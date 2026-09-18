@@ -17,11 +17,13 @@ import { useLang } from './i18n/LanguageContext'
 import { cn } from './lib/cn'
 import { useAppointmentEdit } from './hooks/useAppointmentEdit'
 import { useHomeTour } from './hooks/useHomeTour'
+import { useEdgeSwipeBack } from './hooks/useEdgeSwipeBack'
 import { useSession } from './hooks/useSession'
 import { startHomeTour } from './lib/homeTour'
 import { isStandaloneDisplay } from './lib/push'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import type { Screen } from './lib/session'
+import { patchApiSession } from './lib/api'
 
 export default function App() {
   const { lang, t } = useLang()
@@ -34,6 +36,13 @@ export default function App() {
   const homeLeaf = homeLeafRef.current
   const homeStack = screen === 'home' || screen === 'reminders'
   useHomeTour(ready && !!session && screen === 'home')
+  const goHome = () => setScreen('home')
+  const swipeBack = useEdgeSwipeBack(screen === 'reminders', goHome)
+
+  useEffect(() => {
+    if (!session?.id) return
+    void patchApiSession(session.id, { preferred_lang: lang }).catch(() => undefined)
+  }, [lang, session?.id])
 
   function openTab(id: Screen) {
     setScreen(id === 'home' ? homeLeafRef.current : id)
@@ -88,11 +97,17 @@ export default function App() {
                   'absolute inset-0 overflow-hidden',
                   screen !== 'home' && screen !== 'reminders' && 'invisible pointer-events-none',
                 )}
+                {...swipeBack.bind}
               >
                 <motion.div
                   initial={false}
-                  animate={{ x: homeLeaf === 'reminders' ? '-100%' : 0 }}
-                  transition={pageSlide(homeStack)}
+                  animate={{
+                    x:
+                      homeLeaf === 'reminders'
+                        ? `${-100 + swipeBack.shift * 100}%`
+                        : 0,
+                  }}
+                  transition={swipeBack.dragging ? { duration: 0 } : pageSlide(homeStack)}
                   aria-hidden={screen !== 'home'}
                   data-home-scroll
                   className="absolute inset-0 overflow-y-auto overscroll-y-contain"
@@ -102,8 +117,10 @@ export default function App() {
                 </motion.div>
                 <motion.div
                   initial={false}
-                  animate={{ x: homeLeaf === 'reminders' ? 0 : '100%' }}
-                  transition={pageSlide(homeStack)}
+                  animate={{
+                    x: homeLeaf === 'reminders' ? `${swipeBack.shift * 100}%` : '100%',
+                  }}
+                  transition={swipeBack.dragging ? { duration: 0 } : pageSlide(homeStack)}
                   aria-hidden={screen !== 'reminders'}
                   className="absolute inset-0 overflow-y-auto overscroll-y-contain"
                   style={{ pointerEvents: screen === 'reminders' ? 'auto' : 'none' }}
@@ -112,7 +129,7 @@ export default function App() {
                     session={session}
                     onSession={setSession}
                     onShortcut={setShortcut}
-                    onBack={() => setScreen('home')}
+                    onBack={goHome}
                   />
                 </motion.div>
               </div>

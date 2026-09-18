@@ -7,6 +7,8 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm.attributes import flag_modified
 
+from app.services.translations import translate_texts
+
 SG = ZoneInfo("Asia/Singapore")
 # Still send as a live reminder if the window became due in the last couple of minutes.
 LATE_GRACE = timedelta(minutes=2)
@@ -108,32 +110,65 @@ def _format_sg(when: datetime) -> str:
     return local.strftime("%d %b, %I:%M %p").lstrip("0").replace(" 0", " ")
 
 
-def late_notice_html(skipped: list[dict[str, Any]], nxt: dict[str, Any] | None) -> str:
-    labels = ", ".join(f"<b>{event['title']}</b>" for event in skipped)
+def _tx(lang: str, texts: list[str]) -> list[str]:
+    if not lang or lang == "en":
+        return list(texts)
+    return translate_texts(lang, texts)
+
+
+def late_notice_html(skipped: list[dict[str, Any]], nxt: dict[str, Any] | None, lang: str = "en") -> str:
+    heading, lead, next_line, none_line = _tx(
+        lang,
+        [
+            "Some reminder windows have already passed.",
+            "These were due before reminders were turned on: {labels}.",
+            "Your next reminder is {title} on {when}.",
+            "There are no further timed reminders for this appointment.",
+        ],
+    )
+    titles = _tx(lang, [str(event.get("title") or "") for event in skipped])
+    bodies = _tx(lang, [str(event.get("body") or "") for event in skipped])
+    labels = ", ".join(f"<b>{title or event['title']}</b>" for title, event in zip(titles, skipped, strict=True))
     lines = [
-        "<b>Some reminder windows have already passed.</b>",
+        f"<b>{heading}</b>",
         "",
-        f"These were due before reminders were turned on: {labels}.",
+        lead.replace("{labels}", labels),
     ]
-    for event in skipped:
-        lines.append(f"• <b>{event['title']}</b> — {event['body']}")
+    for title, body, event in zip(titles, bodies, skipped, strict=True):
+        lines.append(f"• <b>{title or event['title']}</b> — {body or event.get('body') or ''}")
     lines.append("")
     if nxt:
-        lines.append(f"Your next reminder is <b>{nxt['title']}</b> on {_format_sg(nxt['at'])}.")
+        nxt_title = _tx(lang, [str(nxt["title"])])[0]
+        lines.append(
+            next_line.replace("{title}", f"<b>{nxt_title}</b>").replace("{when}", _format_sg(nxt["at"]))
+        )
     else:
-        lines.append("There are no further timed reminders for this appointment.")
+        lines.append(none_line)
     return "\n".join(lines)
 
 
 def late_notice_push(
-    skipped: list[dict[str, Any]], nxt: dict[str, Any] | None, url: str
+    skipped: list[dict[str, Any]], nxt: dict[str, Any] | None, url: str, lang: str = "en"
 ) -> dict[str, str]:
-    titles = " and ".join(str(event["title"]) for event in skipped)
+    titles = " and ".join(_tx(lang, [str(event["title"]) for event in skipped]))
+    heading, with_next, without_next = _tx(
+        lang,
+        [
+            "Some reminder windows have passed",
+            "{titles} already passed. Next: {title} on {when}.",
+            "{titles} already passed. There are no further timed reminders.",
+        ],
+    )
     if nxt:
-        body = f"{titles} already passed. Next: {nxt['title']} on {_format_sg(nxt['at'])}."
+        nxt_title = _tx(lang, [str(nxt["title"])])[0]
+        body = (
+            with_next.replace("{titles}", titles)
+            .replace("{title}", nxt_title)
+            .replace("{when}", _format_sg(nxt["at"]))
+        )
     else:
-        body = f"{titles} already passed. There are no further timed reminders."
-    return {"title": "Some reminder windows have passed", "body": body, "url": url}
+        body = without_next.replace("{titles}", titles)
+    return {"title": heading, "body": body, "url": url}
 
 
 def reminder_plan(row: Session, events: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:

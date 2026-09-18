@@ -8,6 +8,7 @@ const PENDING = 'preppath.homeTour.pending'
 const STEPS: { element: string; title: StringKey; body: StringKey; side: Side }[] = [
   { element: '[data-tour="home-hero"]', title: 'tour.1t', body: 'tour.1d', side: 'bottom' },
   { element: '[data-tour="session-bar"]', title: 'tour.2t', body: 'tour.2d', side: 'bottom' },
+  { element: '[data-tour="lang-switch"]', title: 'tour.langT', body: 'tour.langD', side: 'bottom' },
   { element: '[data-tour="home-reminders"]', title: 'tour.3t', body: 'tour.3d', side: 'bottom' },
   { element: '[data-tour="home-tools"]', title: 'tour.4t', body: 'tour.4d', side: 'top' },
   { element: '[data-tour="bottom-nav"]', title: 'tour.5t', body: 'tour.5d', side: 'top' },

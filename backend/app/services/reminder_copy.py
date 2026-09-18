@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import html
+import re
 from datetime import date, time
 from typing import Any, TypedDict
+
+from app.services.translations import translate_texts
 
 
 class ReminderCopy(TypedDict, total=False):
@@ -70,8 +73,49 @@ def tap_hint(url: str) -> str:
     return "Tap to open the stool guide." if "go=stool" in url else "Tap to open your timeline."
 
 
-def push_payload(title: str, body: str, url: str) -> dict[str, str]:
-    return {"title": title, "body": f"{body}\n\n{tap_hint(url)}", "url": url}
+def _html_to_plain(value: str) -> str:
+    text = re.sub(r"<br\s*/?>", "\n", value, flags=re.I)
+    text = re.sub(r"</p>", "\n", text, flags=re.I)
+    text = re.sub(r"<[^>]+>", "", text)
+    return html.unescape(text).strip()
+
+
+def localize_event(event: dict[str, Any], lang: str) -> dict[str, Any]:
+    if not lang or lang == "en":
+        return event
+    title = str(event.get("title") or "")
+    body = str(event.get("body") or "")
+    html_msg = str(event.get("html") or "")
+    inner = ""
+    marker = "</b>\n\n"
+    if html_msg and marker in html_msg:
+        inner = _html_to_plain(html_msg.split(marker, 1)[1])
+    sources = [title, body]
+    if inner and inner != body:
+        sources.append(inner)
+    out = translate_texts(lang, sources)
+    t_title = out[0] or title
+    t_body = out[1] or body
+    t_inner = out[2] if len(out) > 2 else t_body
+    return {
+        **event,
+        "title": t_title,
+        "body": t_body,
+        "html": wrap_html(t_title, html.escape(t_inner)),
+    }
+
+
+def payload_from_event(event: dict[str, Any], url: str, lang: str = "en") -> dict[str, str]:
+    localized = localize_event(event, lang)
+    hint = tap_hint(url)
+    if lang and lang != "en":
+        hint = translate_texts(lang, [hint])[0]
+    return push_payload(str(localized["title"]), str(localized["body"]), url, hint)
+
+
+def push_payload(title: str, body: str, url: str, hint: str | None = None) -> dict[str, str]:
+    extra = hint if hint is not None else tap_hint(url)
+    return {"title": title, "body": f"{body}\n\n{extra}", "url": url}
 
 
 def wrap_html(title: str, long_html: str) -> str:
@@ -239,7 +283,3 @@ def classify_med_stop(title: str, detail: str, day_offset: int = 0) -> str:
     if "sglt" in blob or "empagliflozin" in blob or "dapagliflozin" in blob or "canagliflozin" in blob:
         return "sglt2"
     return "med7"
-
-
-def payload_from_event(event: dict[str, Any], url: str) -> dict[str, str]:
-    return push_payload(str(event["title"]), str(event["body"]), url)

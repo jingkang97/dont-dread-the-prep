@@ -118,7 +118,10 @@ export const EN = {
   'tour.2t': 'Change date or hospital',
   'tour.2d': 'Tap Edit to change the appointment time. Start over if you need a different hospital.',
   'tour.3t': 'Reminders',
-  'tour.3d': 'App push notifications or Telegram. Timed to your timeline — meds, diet, prep, stool, and fasting.',
+  'tour.3d': 'App push or Telegram, timed to your timeline — meds, diet, prep, stool, and fasting. Messages use the language you picked.',
+  'tour.langT': 'Your language',
+  'tour.langD':
+    'English, 中文, Bahasa Melayu, or தமிழ். Screens and reminder messages follow this choice.',
   'tour.4t': 'Food, stool, and contacts',
   'tour.4d': 'Check a food against your hospital sheet, open the stool guide, or call your hospital.',
   'tour.5t': 'The five tabs',
@@ -229,6 +232,9 @@ export const EN = {
   'wa.pushBusy': 'Turning on…',
   'wa.pushError': 'Could not enable notifications. Try again, or use Telegram.',
   'wa.pushDenied': 'Notifications were blocked. Use Telegram, or allow them in browser settings.',
+  'wa.pushReadyTitle': "You're set for reminders",
+  'wa.pushReadyBody':
+    'Reminders follow your timeline — meds, diet, prep doses, stool check, and fasting.',
   'app.homescreenHint':
     'This opened in the browser. Your session is on the PrepPath Home Screen icon — open that to stay in the app.',
   'lang.choose': 'Language',

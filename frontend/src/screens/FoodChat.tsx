@@ -10,6 +10,7 @@ import { useLang } from '../i18n/LanguageContext'
 import { ApiError, getApiDish, postApiFoodChat, type ApiDishChoice } from '../lib/api'
 import { loadFoodChat, saveFoodChat, type FoodChatAnswer, type FoodChatMsg } from '../lib/foodChat'
 import { clearFoodChatUi, loadFoodChatUi, saveFoodChatUi } from '../lib/foodChatUi'
+import { usePrimeLiveCopy } from '../i18n/liveCopy'
 import { EN, type StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
 import { easeOut, fadeY } from '../lib/motion'
@@ -33,6 +34,14 @@ function scrollToLatestTurn(el: HTMLElement, behavior: ScrollBehavior) {
   }
   const top = turn.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - 8
   el.scrollTo({ top: Math.max(0, top), behavior })
+}
+
+function userBubbleLabel(text: string | undefined, query: string | undefined, tx: (s: string) => string) {
+  const source = (query || text || '').trim()
+  if (!source) return ''
+  if (query) return tx(query)
+  if (/^[\x00-\x7F]+$/.test(source) && /[A-Za-z]/.test(source)) return tx(source)
+  return source
 }
 
 function canJump(el: HTMLElement) {
@@ -61,6 +70,13 @@ export function FoodChat({ session }: { session: PrepSession }) {
   const [tab, setTab] = useState<Tab>('mealPrep')
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<FoodChatMsg[]>(() => loadFoodChat(session.id))
+  usePrimeLiveCopy(
+    messages.flatMap((msg) =>
+      [msg.query, msg.text, msg.answer?.message, ...(msg.answer?.choices ?? []).map((c) => c.name)].filter(
+        (text): text is string => Boolean(text),
+      ),
+    ),
+  )
   const listRef = useRef<HTMLDivElement>(null)
   const skipEnter = useRef(messages.length > 0)
   const prevLen = useRef(messages.length)
@@ -122,14 +138,14 @@ export function FoodChat({ session }: { session: PrepSession }) {
     }
   }, [session.id, messages])
 
-  async function ask(shown: string, query = shown) {
+  async function ask(shown: string, query?: string) {
     const text = shown.trim()
     if (!text) return
-    const queryText = query.trim()
+    const queryText = (query ?? shown).trim()
     const pendingId = crypto.randomUUID()
     setMessages((m) => [
       ...m,
-      { id: crypto.randomUUID(), role: 'user', text },
+      { id: crypto.randomUUID(), role: 'user', text, query: query ? queryText : undefined },
       { id: pendingId, role: 'bot', pending: true },
     ])
     setInput('')
@@ -161,7 +177,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
     const pendingId = crypto.randomUUID()
     setMessages((m) => [
       ...m,
-      { id: crypto.randomUUID(), role: 'user', text: choice.name },
+      { id: crypto.randomUUID(), role: 'user', text: choice.name, query: choice.name },
       { id: pendingId, role: 'bot', pending: true },
     ])
 
@@ -285,7 +301,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
                         {...(skipEnter.current ? {} : fadeY)}
                       >
                         <div className="max-w-[85%] rounded-2xl rounded-br-md bg-navy px-3.5 py-2.5 text-[14px] text-white">
-                          {msg.text}
+                          {userBubbleLabel(msg.text, msg.query, tx)}
                         </div>
                       </motion.div>
                     ) : (
@@ -319,7 +335,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
                 <button
                   key={item.query}
                   type="button"
-                  onClick={() => ask(item.query)}
+                  onClick={() => ask(t(item.key), item.query)}
                   className="shrink-0 rounded-full border border-line bg-paper px-3 py-1.5 text-[12px] font-medium text-navy"
                 >
                   {t(item.key)}
