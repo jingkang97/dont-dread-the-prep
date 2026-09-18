@@ -14,6 +14,7 @@ from app.db.session import reset_engine, session_scope
 from app.services.push import send_web_push, vapid_configured
 from app.services.reminder_copy import payload_from_event
 from app.services.reminder_schedule import (
+    is_demo_ladder_event,
     late_notice_html,
     late_notice_push,
     mark_event_sent,
@@ -92,6 +93,13 @@ def _claim_due() -> list[Claim]:
                 event = upcoming_event(row, now, events)
                 if event is None:
                     continue
+                if is_demo_ladder_event(event):
+                    log.error(
+                        "Refusing demo-ladder reminder %s for session %s",
+                        event.get("title"),
+                        row.public_code,
+                    )
+                    continue
                 mark_event_sent(row, str(event["key"]))
                 extra = {"event": event}
                 claimed.append(
@@ -130,6 +138,8 @@ async def _send_telegram(
         await send_message(chat_id, with_home_hint(html))
         return
     event = _event_from(extra)
+    if event and is_demo_ladder_event(event):
+        raise RuntimeError(f"Refusing demo-ladder Telegram reminder {claim_key}")
     if event and event.get("html"):
         await send_message(chat_id, with_home_hint(str(event["html"])))
         return
@@ -148,8 +158,12 @@ async def _send_push(
         payload = late_notice_push(extra.get("skipped") or [], extra.get("next"), path)
         return bool(await asyncio.to_thread(send_web_push, subscription, payload))
     event = _event_from(extra)
+    if event and is_demo_ladder_event(event):
+        raise RuntimeError(f"Refusing demo-ladder push reminder {claim_key}")
     if event:
         payload = payload_from_event(event, path)
+        if is_demo_ladder_event({"title": payload.get("title"), "html": payload.get("body")}):
+            raise RuntimeError(f"Refusing demo-ladder push payload {claim_key}")
         return bool(await asyncio.to_thread(send_web_push, subscription, payload))
     raise RuntimeError(f"Missing reminder copy for {claim_key}")
 
@@ -204,13 +218,15 @@ def _clear_sent(code: str, claim_key: str, extra: dict[str, Any] | None = None) 
 
 def _reminders_enabled() -> bool:
     settings = get_settings()
+    if not settings.should_send_reminders:
+        return False
     return bool(settings.telegram_bot_token.strip() or vapid_configured())
 
 
 async def run_reminder_loop(stop: asyncio.Event) -> None:
     if not _reminders_enabled():
         return
-    log.warning("Reminder loop starting (live timeline events)")
+    log.warning("Reminder loop starting (live timeline events, demo ladder disabled)")
     while not stop.is_set():
         try:
             await run_reminder_tick()
