@@ -13,10 +13,11 @@ from app.db.session import session_scope
 from datetime import datetime, timezone
 
 from app.services.reminder_schedule import (
-    events_already_due,
+    catch_up_due_events,
+    clear_channel,
     late_notice_push,
+    mark_late_notice,
     next_unsent_event,
-    skip_late_events,
 )
 from app.services.telegram import app_path
 from app.services.timeline import live_reminder_events_for
@@ -54,11 +55,9 @@ def save_subscription(code: str, endpoint: str, p256dh: str, auth: str) -> dict[
         row.push_auth = auth.strip()
         now = datetime.now(timezone.utc)
         events = live_reminder_events_for(db, row)
-        skip_late_events(row, now, events)
-        passed = events_already_due(now, events)
-        if passed:
-            if row.reminder_late_notice_sent_at is None:
-                row.reminder_late_notice_sent_at = now
+        caught = catch_up_due_events(row, now, events, "push")
+        if caught:
+            mark_late_notice(row, "push", now)
             lang = (
                 row.preferred_lang
                 if getattr(row, "preferred_lang", None) in {"zh", "ms", "ta"}
@@ -66,8 +65,8 @@ def save_subscription(code: str, endpoint: str, p256dh: str, auth: str) -> dict[
             )
             try:
                 notice = late_notice_push(
-                    passed,
-                    next_unsent_event(row, events),
+                    caught,
+                    next_unsent_event(row, events, "push"),
                     app_path(row.public_code),
                     lang,
                 )
@@ -81,9 +80,7 @@ def clear_subscription(code: str) -> bool:
         row = db.scalar(select(Session).where(Session.public_code == code.upper()))
         if row is None:
             return False
-        row.push_endpoint = None
-        row.push_p256dh = None
-        row.push_auth = None
+        clear_channel(row, "push")
         return True
 
 
@@ -92,9 +89,7 @@ def clear_endpoint(endpoint: str) -> None:
         row = db.scalar(select(Session).where(Session.push_endpoint == endpoint))
         if row is None:
             return
-        row.push_endpoint = None
-        row.push_p256dh = None
-        row.push_auth = None
+        clear_channel(row, "push")
 
 
 def send_web_push(subscription: dict[str, Any], payload: dict[str, str]) -> bool:

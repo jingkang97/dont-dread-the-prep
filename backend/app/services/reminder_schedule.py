@@ -3,7 +3,7 @@ from __future__ import annotations
 import html
 import re
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm.attributes import flag_modified
@@ -26,6 +26,16 @@ def is_demo_ladder_event(event: dict[str, Any] | None) -> bool:
 if TYPE_CHECKING:
     from app.db.models import Session
 
+Channel = Literal["telegram", "push"]
+
+
+def _sent_col(channel: Channel) -> str:
+    return "reminder_doses_sent" if channel == "telegram" else "reminder_push_sent"
+
+
+def _late_col(channel: Channel) -> str:
+    return "reminder_late_notice_sent_at" if channel == "telegram" else "reminder_push_late_notice_sent_at"
+
 
 def reset_reminder_clock(row: Session) -> None:
     row.reminder_t72_sent_at = None
@@ -35,8 +45,11 @@ def reset_reminder_clock(row: Session) -> None:
     row.reminder_demo_sent = 0
     row.reminder_demo_push_sent = 0
     row.reminder_late_notice_sent_at = None
+    row.reminder_push_late_notice_sent_at = None
     row.reminder_doses_sent = []
+    row.reminder_push_sent = []
     flag_modified(row, "reminder_doses_sent")
+    flag_modified(row, "reminder_push_sent")
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -45,53 +58,97 @@ def _as_utc(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
-def events_sent(row: Session) -> list[str]:
-    raw = row.reminder_doses_sent
+def events_sent(row: Session, channel: Channel = "telegram") -> list[str]:
+    raw = getattr(row, _sent_col(channel), None)
     if not isinstance(raw, list):
         return []
     return [str(item) for item in raw]
 
 
-def mark_event_sent(row: Session, key: str) -> None:
-    sent = events_sent(row)
+def mark_event_sent(row: Session, key: str, channel: Channel = "telegram") -> None:
+    sent = events_sent(row, channel)
     if key in sent:
         return
     sent.append(key)
-    row.reminder_doses_sent = sent
-    flag_modified(row, "reminder_doses_sent")
+    setattr(row, _sent_col(channel), sent)
+    flag_modified(row, _sent_col(channel))
 
 
-def unmark_event_sent(row: Session, key: str) -> None:
-    row.reminder_doses_sent = [item for item in events_sent(row) if item != key]
-    flag_modified(row, "reminder_doses_sent")
+def unmark_event_sent(row: Session, key: str, channel: Channel = "telegram") -> None:
+    col = _sent_col(channel)
+    setattr(row, col, [item for item in events_sent(row, channel) if item != key])
+    flag_modified(row, col)
+
+
+def late_notice_at(row: Session, channel: Channel) -> datetime | None:
+    value = getattr(row, _late_col(channel), None)
+    return value if isinstance(value, datetime) else None
+
+
+def mark_late_notice(row: Session, channel: Channel, when: datetime) -> None:
+    setattr(row, _late_col(channel), when)
+
+
+def clear_late_notice(row: Session, channel: Channel) -> None:
+    setattr(row, _late_col(channel), None)
+
+
+def clear_channel(row: Session, channel: Channel) -> None:
+    """Opt-out: drop this channel so leftover due windows cannot fire on it."""
+    if channel == "telegram":
+        row.telegram_chat_id = None
+    else:
+        row.push_endpoint = None
+        row.push_p256dh = None
+        row.push_auth = None
+    setattr(row, _sent_col(channel), [])
+    flag_modified(row, _sent_col(channel))
+    clear_late_notice(row, channel)
 
 
 def events_already_due(now: datetime, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Windows that already passed — recap these when reminders are turned on."""
+    """Windows already due — recap these on opt-in instead of live-sending."""
     current = _as_utc(now)
-    return [
-        event
-        for event in events
-        if current > _as_utc(event["at"]) + LATE_GRACE
-    ]
+    return [event for event in events if current >= _as_utc(event["at"])]
 
 
-def skip_late_events(row: Session, now: datetime, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def catch_up_due_events(
+    row: Session, now: datetime, events: list[dict[str, Any]], channel: Channel
+) -> list[dict[str, Any]]:
+    """Mark every already-due window sent on this channel so a later tick cannot duplicate it."""
+    current = _as_utc(now)
+    caught: list[dict[str, Any]] = []
+    sent = set(events_sent(row, channel))
+    for event in events:
+        key = str(event["key"])
+        if key in sent:
+            continue
+        if current >= _as_utc(event["at"]):
+            mark_event_sent(row, key, channel)
+            caught.append(event)
+    return caught
+
+
+def skip_late_events(
+    row: Session, now: datetime, events: list[dict[str, Any]], channel: Channel = "telegram"
+) -> list[dict[str, Any]]:
     skipped: list[dict[str, Any]] = []
-    sent = set(events_sent(row))
+    sent = set(events_sent(row, channel))
     current = _as_utc(now)
     for event in events:
         key = str(event["key"])
         if key in sent:
             continue
         if current > _as_utc(event["at"]) + LATE_GRACE:
-            mark_event_sent(row, key)
+            mark_event_sent(row, key, channel)
             skipped.append(event)
     return skipped
 
 
-def upcoming_event(row: Session, now: datetime, events: list[dict[str, Any]]) -> dict[str, Any] | None:
-    sent = set(events_sent(row))
+def upcoming_event(
+    row: Session, now: datetime, events: list[dict[str, Any]], channel: Channel = "telegram"
+) -> dict[str, Any] | None:
+    sent = set(events_sent(row, channel))
     current = _as_utc(now)
     for event in events:
         if str(event["key"]) in sent:
@@ -104,8 +161,10 @@ def upcoming_event(row: Session, now: datetime, events: list[dict[str, Any]]) ->
     return None
 
 
-def next_unsent_event(row: Session, events: list[dict[str, Any]]) -> dict[str, Any] | None:
-    sent = set(events_sent(row))
+def next_unsent_event(
+    row: Session, events: list[dict[str, Any]], channel: Channel = "telegram"
+) -> dict[str, Any] | None:
+    sent = set(events_sent(row, channel))
     for event in events:
         if str(event["key"]) not in sent:
             return event
@@ -204,7 +263,7 @@ def late_notice_push(
 
 def reminder_plan(row: Session, events: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     events = list(events or [])
-    sent = set(events_sent(row))
+    sent = set(events_sent(row, "telegram")) | set(events_sent(row, "push"))
     return [
         {
             "key": event["key"],

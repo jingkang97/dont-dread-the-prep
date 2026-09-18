@@ -15,10 +15,12 @@ from app.db.models import Session
 from app.db.session import session_scope
 from app.services.reminder_copy import _html_to_plain
 from app.services.reminder_schedule import (
-    events_already_due,
+    catch_up_due_events,
+    clear_channel,
+    clear_late_notice,
     late_notice_html,
+    mark_late_notice,
     next_unsent_event,
-    skip_late_events,
 )
 from app.services.timeline import live_reminder_events_for
 from app.services.translations import translate_texts
@@ -168,11 +170,10 @@ def _link_session(chat_id: int, code: str) -> dict[str, Any] | None:
         nxt = None
         now = datetime.now(timezone.utc)
         events = live_reminder_events_for(db, row)
-        skip_late_events(row, now, events)
-        skipped = events_already_due(now, events)
-        nxt = next_unsent_event(row, events)
+        skipped = catch_up_due_events(row, now, events, "telegram")
+        nxt = next_unsent_event(row, events, "telegram")
         if skipped:
-            row.reminder_late_notice_sent_at = now
+            mark_late_notice(row, "telegram", now)
         return {
             "public_code": row.public_code,
             "first_name": row.first_name,
@@ -224,16 +225,42 @@ async def handle_start(chat_id: int, text: str) -> None:
             await send_message(chat_id, late)
         except Exception:
             log.exception("Failed sending late-join notice for session %s", public_code)
-            await asyncio.to_thread(_clear_late_notice, public_code)
+            await asyncio.to_thread(_clear_late_notice, public_code, "telegram")
     log.info("Linked Telegram chat to session %s", public_code)
 
 
-def _clear_late_notice(code: str) -> None:
+def _clear_late_notice(code: str, channel: str = "telegram") -> None:
     with session_scope() as db:
         row = db.scalar(select(Session).where(Session.public_code == code.upper()))
         if row is None:
             return
-        row.reminder_late_notice_sent_at = None
+        clear_late_notice(row, "push" if channel == "push" else "telegram")
+
+
+def unlink_telegram(code: str) -> bool:
+    with session_scope() as db:
+        row = db.scalar(select(Session).where(Session.public_code == code.upper()))
+        if row is None:
+            return False
+        clear_channel(row, "telegram")
+        return True
+
+
+def _unlink_chat(chat_id: int) -> bool:
+    with session_scope() as db:
+        row = db.scalar(select(Session).where(Session.telegram_chat_id == chat_id))
+        if row is None:
+            return False
+        clear_channel(row, "telegram")
+        return True
+
+
+async def handle_stop(chat_id: int) -> None:
+    unlinked = await asyncio.to_thread(_unlink_chat, chat_id)
+    if unlinked:
+        await send_message(chat_id, "Telegram reminders are off. Open PrepPath if you want them again.")
+    else:
+        await send_message(chat_id, "This chat is not linked to a PrepPath session.")
 
 
 async def handle_update(update: dict[str, Any]) -> None:
@@ -243,7 +270,14 @@ async def handle_update(update: dict[str, Any]) -> None:
     chat = message.get("chat") or {}
     chat_id = chat.get("id")
     text = message.get("text") or ""
-    if chat_id is None or not text.startswith("/start"):
+    if chat_id is None:
+        return
+    bits = text.strip().split()
+    command = bits[0].split("@", 1)[0] if bits else ""
+    if command == "/stop":
+        await handle_stop(int(chat_id))
+        return
+    if command != "/start":
         return
     await handle_start(int(chat_id), text)
 

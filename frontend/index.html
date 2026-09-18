@@ -15,15 +15,28 @@
     <script>
       (function () {
         try {
-          var raw = localStorage.getItem('preppath.session.v1')
-          if (!raw) return
-          var id = JSON.parse(raw).id
-          if (!id) return
           var url = new URL(location.href)
-          if (url.searchParams.get('s') === id) return
-          url.searchParams.set('s', id)
-          url.searchParams.delete('p')
-          history.replaceState(history.state, '', url.pathname + url.search + url.hash)
+          var lang = (url.searchParams.get('lang') || '').toLowerCase()
+          if (lang === 'zh' || lang === 'ms' || lang === 'ta') {
+            localStorage.setItem('preppath.lang', lang)
+          } else {
+            var storedLang = localStorage.getItem('preppath.lang')
+            if (storedLang === 'zh' || storedLang === 'ms' || storedLang === 'ta') {
+              url.searchParams.set('lang', storedLang)
+            }
+          }
+          var raw = localStorage.getItem('preppath.session.v1')
+          if (raw) {
+            var id = JSON.parse(raw).id
+            if (id && url.searchParams.get('s') !== id) {
+              url.searchParams.set('s', id)
+              url.searchParams.delete('p')
+            }
+          }
+          var next = url.pathname + url.search + url.hash
+          if (next !== location.pathname + location.search + location.hash) {
+            history.replaceState(history.state, '', next)
+          }
         } catch (e) {}
       })()
     </script>

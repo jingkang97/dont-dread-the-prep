@@ -223,6 +223,7 @@ export const EN = {
   'wa.on': 'On',
   'wa.pushOn': 'App push notifications on.',
   'wa.pushOff': 'Turn off',
+  'wa.telegramOff': 'Turn off',
   'wa.pushNeedInstall':
     "In-app reminders won't work in a web browser. Add PrepPath to your Home Screen, then tap Allow notifications.",
   'wa.pushHow': 'Add to Home Screen',

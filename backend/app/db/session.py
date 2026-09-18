@@ -37,17 +37,42 @@ def get_engine() -> Engine:
             connect_args={"prepare_threshold": None},
         )
         _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False)
-        _ensure_preferred_lang(_engine)
+        _ensure_session_columns(_engine)
     return _engine
 
 
-def _ensure_preferred_lang(engine: Engine) -> None:
+def _ensure_session_columns(engine: Engine) -> None:
     try:
         with engine.begin() as conn:
             conn.execute(
                 text(
                     "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS "
                     "preferred_lang TEXT NOT NULL DEFAULT 'en'"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS "
+                    "reminder_push_sent JSONB NOT NULL DEFAULT '[]'::jsonb"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS "
+                    "reminder_push_late_notice_sent_at TIMESTAMPTZ"
+                )
+            )
+            # Inherit the old shared cursor so already-sent push events are not fired again.
+            conn.execute(
+                text(
+                    """
+                    UPDATE sessions
+                    SET reminder_push_sent = reminder_doses_sent
+                    WHERE push_endpoint IS NOT NULL
+                      AND (reminder_push_sent IS NULL OR reminder_push_sent = '[]'::jsonb)
+                      AND reminder_doses_sent IS NOT NULL
+                      AND reminder_doses_sent <> '[]'::jsonb
+                    """
                 )
             )
     except Exception:

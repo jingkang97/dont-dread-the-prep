@@ -16,6 +16,7 @@ export {
   getVapidPublicKey,
   subscribeApiPush,
   unsubscribeApiPush,
+  unsubscribeApiTelegram,
 } from './sessions'
 export type {
   ApiSession,

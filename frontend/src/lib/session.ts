@@ -5,6 +5,7 @@ import { clearTimelineCache, loadTimeline, timelineCacheKey, getCachedTimeline }
 import { clearTimelineUi } from './timelineUi'
 import { clearFoodChatUi } from './foodChatUi'
 import { isLang } from '../i18n/strings'
+import { readStoredLang, syncLangManifest } from '../i18n/persist'
 import {
   ApiError,
   createApiSession,
@@ -59,13 +60,7 @@ function toApiTime(hm: string) {
 }
 
 function storedPreferredLang(): 'en' | 'zh' | 'ms' | 'ta' {
-  try {
-    const raw = localStorage.getItem('preppath.lang')
-    if (raw && isLang(raw)) return raw
-  } catch {
-    /* private mode */
-  }
-  return 'en'
+  return readStoredLang()
 }
 
 export function fromApiSession(row: ApiSession): PrepSession {
@@ -191,19 +186,22 @@ function writeUrl(session: PrepSession | null) {
   if (next !== now) history.replaceState(history.state, '', next)
 }
 
-function publishManifest(session: PrepSession | null) {
-  // Same-origin file + ?s= so iOS/Android read a real start_url. Blob/data manifests are ignored on iOS.
-  const href = session
-    ? `/manifest.webmanifest?s=${encodeURIComponent(session.id)}`
-    : '/manifest.webmanifest'
-  let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')
-  if (!link) {
-    link = document.createElement('link')
-    link.rel = 'manifest'
-    document.head.appendChild(link)
+function publishManifest(sessionId: string | null) {
+  syncLangManifest(sessionId)
+}
+
+export function syncSessionManifest() {
+  syncLangManifest(publicCodeFromUrl() ?? sessionIdFromLocal() ?? null)
+}
+
+function sessionIdFromLocal(): string | null {
+  try {
+    const raw = localStorage.getItem(KEY)
+    const id = raw ? (JSON.parse(raw) as { id?: unknown }).id : null
+    return typeof id === 'string' ? id : null
+  } catch {
+    return null
   }
-  const prev = link.getAttribute('href')
-  if (prev !== href) link.setAttribute('href', href)
 }
 
 function persistEverywhere(session: PrepSession | null) {
@@ -211,7 +209,7 @@ function persistEverywhere(session: PrepSession | null) {
   else localStorage.removeItem(KEY)
   writeCookie(session)
   writeUrl(session)
-  publishManifest(session)
+  publishManifest(session?.id ?? null)
 }
 
 export function loadSession(): PrepSession | null {
