@@ -22,10 +22,26 @@ export function hasSeenHomeTour() {
   }
 }
 
-export function queueHomeTour() {
-  if (hasSeenHomeTour()) return
+export function queueHomeTour(force = false) {
+  if (!force && hasSeenHomeTour()) return
   try {
     sessionStorage.setItem(PENDING, '1')
+  } catch {
+    /* ignore */
+  }
+}
+
+export function homeTourPending() {
+  try {
+    return sessionStorage.getItem(PENDING) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function dropHomeTourPending() {
+  try {
+    sessionStorage.removeItem(PENDING)
   } catch {
     /* ignore */
   }
@@ -50,7 +66,17 @@ export function markHomeTourSeen() {
   }
 }
 
+/** First home visit is claimed so Start over / change date cannot re-queue the tour. */
+export function rememberFirstHomeVisit() {
+  try {
+    localStorage.setItem(SEEN, '1')
+  } catch {
+    /* ignore */
+  }
+}
+
 let active: ReturnType<typeof driver> | null = null
+let skipSeenOnDestroy = false
 
 function scrollHomeToTop() {
   const scroller = document.querySelector('[data-home-scroll]')
@@ -62,10 +88,36 @@ function scrollHomeToTop() {
   if (pane instanceof HTMLElement) pane.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+function tourTargetsReady() {
+  return STEPS.some((step) => document.querySelector(step.element))
+}
+
+export function waitForTourTargets(timeoutMs = 2500) {
+  if (tourTargetsReady()) return Promise.resolve(true)
+  return new Promise<boolean>((resolve) => {
+    const finish = (ok: boolean) => {
+      window.clearTimeout(timer)
+      observer.disconnect()
+      resolve(ok)
+    }
+    const observer = new MutationObserver(() => {
+      if (tourTargetsReady()) finish(true)
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    const timer = window.setTimeout(() => finish(tourTargetsReady()), timeoutMs)
+  })
+}
+
 export function stopHomeTour() {
   const tour = active
   active = null
-  tour?.destroy()
+  if (!tour) return
+  skipSeenOnDestroy = true
+  try {
+    tour.destroy()
+  } finally {
+    skipSeenOnDestroy = false
+  }
 }
 
 export function startHomeTour(opts: { t: (key: StringKey) => string }) {
@@ -80,11 +132,9 @@ export function startHomeTour(opts: { t: (key: StringKey) => string }) {
       align: 'center',
     },
   }))
-  if (steps.length === 0) {
-    markHomeTourSeen()
-    return
-  }
+  if (steps.length === 0) return false
 
+  consumeHomeTourPending()
   const tour = driver({
     steps,
     showProgress: true,
@@ -101,11 +151,12 @@ export function startHomeTour(opts: { t: (key: StringKey) => string }) {
     progressText: '{{current}} / {{total}}',
     disableActiveInteraction: true,
     onDestroyed: () => {
-      markHomeTourSeen()
+      if (!skipSeenOnDestroy) markHomeTourSeen()
       if (active === tour) active = null
       scrollHomeToTop()
     },
   })
   active = tour
   tour.drive()
+  return true
 }
