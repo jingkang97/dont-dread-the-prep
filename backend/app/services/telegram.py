@@ -13,11 +13,14 @@ from sqlalchemy import select
 from app.core.config import get_settings
 from app.db.models import Session
 from app.db.session import session_scope
+from app.services.reminder_copy import _html_to_plain
 from app.services.reminder_schedule import (
+    events_already_due,
     late_notice_html,
     next_unsent_event,
     skip_late_events,
 )
+from app.services.timeline import live_reminder_events_for
 from app.services.translations import translate_texts
 
 log = logging.getLogger(__name__)
@@ -65,11 +68,15 @@ def can_use_url_button(url: str) -> bool:
     return host not in {"localhost", "127.0.0.1", "::1"}
 
 
+def _tg_escape(value: str) -> str:
+    return html.escape(_html_to_plain(value), quote=False)
+
+
 def with_home_hint(text: str, lang: str = "en") -> str:
     hint = HOME_HINT
     if lang and lang != "en":
         hint = translate_texts(lang, [HOME_HINT])[0]
-    return f"{text}\n\n{hint}"
+    return f"{text}\n\n{_tg_escape(hint)}"
 
 
 async def telegram_call(method: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -94,7 +101,21 @@ async def send_message(
         "parse_mode": "HTML",
         "disable_web_page_preview": True,
     }
-    await telegram_call("sendMessage", payload)
+    try:
+        await telegram_call("sendMessage", payload)
+    except RuntimeError as exc:
+        detail = str(exc).lower()
+        if "parse" not in detail and "entit" not in detail and "tag" not in detail:
+            raise
+        log.warning("Telegram HTML rejected (%s); sending plain text", exc)
+        await telegram_call(
+            "sendMessage",
+            {
+                "chat_id": chat_id,
+                "text": _html_to_plain(text),
+                "disable_web_page_preview": True,
+            },
+        )
 
 
 def parse_start_code(text: str) -> str | None:
@@ -115,7 +136,7 @@ def _show_session_debug() -> bool:
 
 
 def welcome_text(code: str, first_name: str | None, lang: str = "en") -> str:
-    name = html.escape((first_name or "").strip())
+    name = (first_name or "").strip()
     headline_src = "You're set for reminders, {name}." if name else "You're set for reminders."
     cadence_src = (
         "You'll get reminders timed to your timeline: medicines, diet, each prep dose, "
@@ -127,7 +148,9 @@ def welcome_text(code: str, first_name: str | None, lang: str = "en") -> str:
         if lang and lang != "en"
         else (headline_src, cadence_src, food_src)
     )
-    headline = headline.replace("{name}", name)
+    headline = _tg_escape(headline.replace("{name}", name))
+    cadence = _tg_escape(cadence)
+    food = _tg_escape(food)
     bits: list[str] = []
     if _show_session_debug():
         bits.append(f"Session {html.escape(code)}.")
@@ -145,7 +168,8 @@ def _link_session(chat_id: int, code: str) -> dict[str, Any] | None:
         nxt = None
         now = datetime.now(timezone.utc)
         events = live_reminder_events_for(db, row)
-        skipped = skip_late_events(row, now, events)
+        skip_late_events(row, now, events)
+        skipped = events_already_due(now, events)
         nxt = next_unsent_event(row, events)
         if skipped:
             row.reminder_late_notice_sent_at = now
@@ -178,22 +202,26 @@ async def handle_start(chat_id: int, text: str) -> None:
         return
 
     public_code = str(linked["public_code"])
-    first_name = linked.get("first_name")
+    first_name = linked.get("first_name") if isinstance(linked.get("first_name"), str) else None
     lang = str(linked.get("preferred_lang") or "en")
-    await send_message(
-        chat_id,
-        with_home_hint(
-            welcome_text(public_code, first_name if isinstance(first_name, str) else None, lang),
-            lang,
-        ),
-    )
+
+    def _welcome(chosen: str) -> str:
+        return with_home_hint(welcome_text(public_code, first_name, chosen), chosen)
+
+    try:
+        await send_message(chat_id, await asyncio.to_thread(_welcome, lang))
+    except Exception:
+        log.exception("Failed sending %s Telegram welcome for session %s", lang, public_code)
+        await send_message(chat_id, _welcome("en"))
     skipped = list(linked.get("skipped") or [])
     if skipped:
         try:
-            await send_message(
-                chat_id,
-                with_home_hint(late_notice_html(skipped, linked.get("next"), lang), lang),
+            late = await asyncio.to_thread(
+                lambda: with_home_hint(
+                    late_notice_html(skipped, linked.get("next"), lang), lang
+                )
             )
+            await send_message(chat_id, late)
         except Exception:
             log.exception("Failed sending late-join notice for session %s", public_code)
             await asyncio.to_thread(_clear_late_notice, public_code)

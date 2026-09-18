@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import re
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
@@ -65,6 +66,16 @@ def unmark_event_sent(row: Session, key: str) -> None:
     flag_modified(row, "reminder_doses_sent")
 
 
+def events_already_due(now: datetime, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Windows that already passed — recap these when reminders are turned on."""
+    current = _as_utc(now)
+    return [
+        event
+        for event in events
+        if current > _as_utc(event["at"]) + LATE_GRACE
+    ]
+
+
 def skip_late_events(row: Session, now: datetime, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     skipped: list[dict[str, Any]] = []
     sent = set(events_sent(row))
@@ -116,6 +127,14 @@ def _tx(lang: str, texts: list[str]) -> list[str]:
     return translate_texts(lang, texts)
 
 
+def _tg_escape(value: str) -> str:
+    return html.escape(value, quote=False)
+
+
+def _tg_bold(value: str) -> str:
+    return f"<b>{_tg_escape(value)}</b>"
+
+
 def late_notice_html(skipped: list[dict[str, Any]], nxt: dict[str, Any] | None, lang: str = "en") -> str:
     heading, lead, next_line, none_line = _tx(
         lang,
@@ -126,21 +145,33 @@ def late_notice_html(skipped: list[dict[str, Any]], nxt: dict[str, Any] | None, 
             "There are no further timed reminders for this appointment.",
         ],
     )
+    heading, lead, next_line, none_line = (
+        _tg_escape(heading),
+        _tg_escape(lead),
+        _tg_escape(next_line),
+        _tg_escape(none_line),
+    )
     titles = _tx(lang, [str(event.get("title") or "") for event in skipped])
     bodies = _tx(lang, [str(event.get("body") or "") for event in skipped])
-    labels = ", ".join(f"<b>{title or event['title']}</b>" for title, event in zip(titles, skipped, strict=True))
+    labels = ", ".join(
+        _tg_bold(title or str(event["title"])) for title, event in zip(titles, skipped, strict=True)
+    )
     lines = [
         f"<b>{heading}</b>",
         "",
         lead.replace("{labels}", labels),
     ]
     for title, body, event in zip(titles, bodies, skipped, strict=True):
-        lines.append(f"• <b>{title or event['title']}</b> — {body or event.get('body') or ''}")
+        lines.append(
+            f"• {_tg_bold(title or str(event['title']))} — {_tg_escape(body or str(event.get('body') or ''))}"
+        )
     lines.append("")
     if nxt:
         nxt_title = _tx(lang, [str(nxt["title"])])[0]
         lines.append(
-            next_line.replace("{title}", f"<b>{nxt_title}</b>").replace("{when}", _format_sg(nxt["at"]))
+            next_line.replace("{title}", _tg_bold(nxt_title)).replace(
+                "{when}", _tg_escape(_format_sg(nxt["at"]))
+            )
         )
     else:
         lines.append(none_line)
