@@ -99,7 +99,7 @@ function LangMenu({
   }, [open])
 
   return (
-    <div ref={rootRef} data-tour="lang-switch" className={cn('relative shrink-0', className)}>
+    <div ref={rootRef} className={cn('relative shrink-0', className)}>
       <button
         type="button"
         aria-label={label}
