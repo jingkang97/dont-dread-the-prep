@@ -14,10 +14,14 @@ from app.db.session import reset_engine, session_scope
 from app.services.push import send_web_push, vapid_configured
 from app.services.reminder_copy import localize_event, payload_from_event
 from app.services.reminder_schedule import (
+    Channel,
+    clear_late_notice,
     is_demo_ladder_event,
+    late_notice_at,
     late_notice_html,
     late_notice_push,
     mark_event_sent,
+    mark_late_notice,
     next_unsent_event,
     skip_late_events,
     unmark_event_sent,
@@ -65,8 +69,58 @@ def _events_or_empty(db, row: Session) -> list[dict[str, Any]]:
         return []
 
 
+def _claim_channel(
+    row: Session,
+    now: datetime,
+    events: list[dict[str, Any]],
+    channel: Channel,
+    claimed: list[Claim],
+) -> None:
+    skipped = skip_late_events(row, now, events, channel)
+    chat_id = row.telegram_chat_id if channel == "telegram" else None
+    subscription = _subscription_for(row) if channel == "push" else None
+    if channel == "telegram" and chat_id is None:
+        return
+    if channel == "push" and subscription is None:
+        return
+    if skipped and late_notice_at(row, channel) is None:
+        mark_late_notice(row, channel, now)
+        extra = {
+            "skipped": skipped,
+            "next": next_unsent_event(row, events, channel),
+            "lang": _preferred_lang(row),
+        }
+        claimed.append(
+            (chat_id, subscription, "late", "late", row.public_code, extra, channel)
+        )
+        return
+    event = upcoming_event(row, now, events, channel)
+    if event is None:
+        return
+    if is_demo_ladder_event(event):
+        log.error(
+            "Refusing demo-ladder reminder %s for session %s",
+            event.get("title"),
+            row.public_code,
+        )
+        return
+    mark_event_sent(row, str(event["key"]), channel)
+    extra = {"event": event, "lang": _preferred_lang(row)}
+    claimed.append(
+        (
+            chat_id,
+            subscription,
+            str(event.get("copy_key") or "step"),
+            str(event["key"]),
+            row.public_code,
+            extra,
+            channel,
+        )
+    )
+
+
 def _claim_due() -> list[Claim]:
-    """Telegram keeps its own receipt. In-app push retries on a separate cursor."""
+    """Each channel has its own sent cursor so opt-out cannot duplicate the other."""
     now = datetime.now(timezone.utc)
     claimed: list[Claim] = []
     with session_scope() as db:
@@ -82,46 +136,11 @@ def _claim_due() -> list[Claim]:
         )
         for row in rows:
             try:
-                if row.telegram_chat_id is None and not row.push_endpoint:
-                    continue
-                extra: dict[str, Any] = {}
                 events = _events_or_empty(db, row)
-                subscription = _subscription_for(row)
-                skipped = skip_late_events(row, now, events)
-                if skipped and row.reminder_late_notice_sent_at is None:
-                    row.reminder_late_notice_sent_at = now
-                    extra = {
-                        "skipped": skipped,
-                        "next": next_unsent_event(row, events),
-                        "lang": _preferred_lang(row),
-                    }
-                    claimed.append(
-                        (row.telegram_chat_id, subscription, "late", "late", row.public_code, extra, "both")
-                    )
-                    continue
-                event = upcoming_event(row, now, events)
-                if event is None:
-                    continue
-                if is_demo_ladder_event(event):
-                    log.error(
-                        "Refusing demo-ladder reminder %s for session %s",
-                        event.get("title"),
-                        row.public_code,
-                    )
-                    continue
-                mark_event_sent(row, str(event["key"]))
-                extra = {"event": event, "lang": _preferred_lang(row)}
-                claimed.append(
-                    (
-                        row.telegram_chat_id,
-                        subscription,
-                        str(event.get("copy_key") or "step"),
-                        str(event["key"]),
-                        row.public_code,
-                        extra,
-                        "both",
-                    )
-                )
+                if row.telegram_chat_id is not None:
+                    _claim_channel(row, now, events, "telegram", claimed)
+                if row.push_endpoint:
+                    _claim_channel(row, now, events, "push", claimed)
             except Exception:
                 log.exception("Skipped reminder claim for session %s", row.public_code)
     return claimed
@@ -216,20 +235,23 @@ async def run_reminder_tick() -> int:
             sent += 1
             log.warning("Sent %s reminder for session %s", claim_key, code)
         else:
-            await asyncio.to_thread(_clear_sent, code, claim_key, extra)
+            await asyncio.to_thread(_clear_sent, code, claim_key, extra, channel)
             log.warning("Rolled back %s reminder claim for session %s", claim_key, code)
     return sent
 
 
-def _clear_sent(code: str, claim_key: str, extra: dict[str, Any] | None = None) -> None:
+def _clear_sent(
+    code: str, claim_key: str, extra: dict[str, Any] | None = None, channel: str = "telegram"
+) -> None:
+    ch: Channel = "push" if channel == "push" else "telegram"
     with session_scope() as db:
         row = db.scalar(select(Session).where(Session.public_code == code.upper()))
         if row is None:
             return
         if claim_key == "late":
-            row.reminder_late_notice_sent_at = None
+            clear_late_notice(row, ch)
             return
-        unmark_event_sent(row, claim_key)
+        unmark_event_sent(row, claim_key, ch)
 
 
 def _reminders_enabled() -> bool:

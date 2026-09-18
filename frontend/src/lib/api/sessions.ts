@@ -91,3 +91,9 @@ export function unsubscribeApiPush(publicCode: string) {
     method: 'DELETE',
   })
 }
+
+export function unsubscribeApiTelegram(publicCode: string) {
+  return apiFetch<void>(`/api/sessions/${encodeURIComponent(publicCode)}/telegram`, {
+    method: 'DELETE',
+  })
+}

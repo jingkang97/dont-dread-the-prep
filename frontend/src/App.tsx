@@ -24,9 +24,11 @@ import { isStandaloneDisplay } from './lib/push'
 import { useRef, useState, useEffect } from 'react'
 import type { Screen } from './lib/session'
 import { patchApiSession } from './lib/api'
+import { readExplicitLang } from './i18n/persist'
+import { isLang } from './i18n/strings'
 
 export default function App() {
-  const { lang, t } = useLang()
+  const { lang, setLang, t } = useLang()
   const { session, setSession, screen, setScreen, ready, create, clear, update } = useSession()
   const edit = useAppointmentEdit()
   const [shortcut, setShortcut] = useState<'off' | 'ios' | 'android'>('off')
@@ -40,9 +42,17 @@ export default function App() {
   const swipeBack = useEdgeSwipeBack(screen === 'reminders', goHome)
 
   useEffect(() => {
-    if (!session?.id) return
-    void patchApiSession(session.id, { preferred_lang: lang }).catch(() => undefined)
-  }, [lang, session?.id])
+    if (!ready || !session?.id) return
+    const server =
+      session.preferredLang && isLang(session.preferredLang) ? session.preferredLang : 'en'
+    if (!readExplicitLang() && server !== lang) {
+      setLang(server)
+      return
+    }
+    if (lang !== server) {
+      void patchApiSession(session.id, { preferred_lang: lang }).catch(() => undefined)
+    }
+  }, [lang, ready, session?.id, session?.preferredLang, setLang])
 
   function openTab(id: Screen) {
     setScreen(id === 'home' ? homeLeafRef.current : id)

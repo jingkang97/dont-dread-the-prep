@@ -1,13 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { postApiTranslations } from '../lib/api/translations'
 import { inlineMarkdown } from './inlineMarkdown'
-import {
-  catalogItems,
-  isLang,
-  translate,
-  type Lang,
-  type StringKey,
-} from './strings'
+import { persistLang, readStoredLang, syncCurrentManifest } from './persist'
+import { catalogItems, translate, type Lang, type StringKey } from './strings'
 
 type Overlay = Partial<Record<StringKey, string>>
 
@@ -33,21 +28,10 @@ const HTML_LANG: Record<Lang, string> = {
   ta: 'ta-SG',
 }
 
-const LANG_KEY = 'preppath.lang'
 const OVERLAY_PREFIX = 'preppath.i18n.v2:'
 const LIVE_CHUNK = 50
 
 type CachedOverlay = { glossary: string; strings: Overlay; live?: Record<string, string> }
-
-function readStoredLang(): Lang {
-  try {
-    const raw = localStorage.getItem(LANG_KEY)
-    if (raw && isLang(raw)) return raw
-  } catch {
-    /* private mode */
-  }
-  return 'en'
-}
 
 function readCache(lang: Lang): CachedOverlay | null {
   if (lang === 'en') return null
@@ -155,11 +139,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLang = useCallback((next: Lang) => {
     setLangState(next)
-    try {
-      localStorage.setItem(LANG_KEY, next)
-    } catch {
-      /* ignore */
-    }
+    persistLang(next)
+    syncCurrentManifest()
     pendingRef.current.clear()
     inflightRef.current.clear()
     skipRef.current.clear()
@@ -183,6 +164,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const warm = stored?.strings && Object.keys(stored.strings).length > 0
     setTranslating(!warm)
   }, [])
+
+  useEffect(() => {
+    persistLang(lang)
+    syncCurrentManifest()
+  }, [lang])
 
   useEffect(() => {
     document.documentElement.lang = HTML_LANG[lang]

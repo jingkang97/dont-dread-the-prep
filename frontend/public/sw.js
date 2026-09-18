@@ -10,11 +10,18 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
   if (event.request.method !== 'GET' || url.pathname !== '/manifest.webmanifest') return
   const raw = (url.searchParams.get('s') || '').trim().toUpperCase()
-  if (!/^[A-Z2-9]{4}$/.test(raw)) return
+  const lang = (url.searchParams.get('lang') || '').trim().toLowerCase()
+  const hasSession = /^[A-Z2-9]{4}$/.test(raw)
+  const hasLang = lang === 'zh' || lang === 'ms' || lang === 'ta'
+  if (!hasSession && !hasLang) return
   event.respondWith(
     fetch('/manifest.webmanifest').then(async (res) => {
       const manifest = await res.json()
-      manifest.start_url = `/?s=${encodeURIComponent(raw)}`
+      const params = new URLSearchParams()
+      if (hasSession) params.set('s', raw)
+      if (hasLang) params.set('lang', lang)
+      const query = params.toString()
+      manifest.start_url = query ? `/?${query}` : '/'
       return new Response(JSON.stringify(manifest), {
         headers: { 'Content-Type': 'application/manifest+json' },
       })

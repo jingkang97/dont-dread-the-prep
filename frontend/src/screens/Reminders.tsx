@@ -122,19 +122,30 @@ export function Reminders({
           <p className="mt-1 flex-1 text-[12px] leading-relaxed text-ink-soft">
             {t(session.telegramLinked ? 'wa.sandboxBodyOn' : 'wa.sandboxBody')}
           </p>
-          <a
-            href={href}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3"
-            onClick={() => {
-              void telegram.startLink()
-            }}
-          >
-            <PrimaryButton className="bg-telegram py-2.5 text-[14px]">
-              {telegram.waiting && !session.telegramLinked ? t('wa.waiting') : t('wa.open')}
-            </PrimaryButton>
-          </a>
+          {session.telegramLinked ? (
+            <GhostButton
+              className="mt-3 py-2.5 text-[14px]"
+              onClick={() => {
+                if (!telegram.busy) void telegram.disable()
+              }}
+            >
+              {t('wa.telegramOff')}
+            </GhostButton>
+          ) : (
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3"
+              onClick={() => {
+                void telegram.startLink()
+              }}
+            >
+              <PrimaryButton className="bg-telegram py-2.5 text-[14px]">
+                {telegram.waiting ? t('wa.waiting') : t('wa.open')}
+              </PrimaryButton>
+            </a>
+          )}
         </Card>
       </div>
 
