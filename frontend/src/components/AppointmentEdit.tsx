@@ -21,8 +21,8 @@ export function AppointmentChooser({
   onStartOver: () => void
   onKeep: () => void
 }) {
-  const { t } = useLang()
-  const hospital = session.hospitalShort
+  const { t, tx } = useLang()
+  const hospital = tx(session.hospitalShort)
   const slotLabel = session.slot === 'am' ? t('on.morning') : t('on.afternoon')
   return (
     <SheetFrame onDismiss={onKeep} dismissLabel={t('app.keep')}>
@@ -96,8 +96,8 @@ export function ChangeDatePanel({
   onCancel: () => void
   onSave: (next: { date: string; slot: Slot; reportingTime: string }) => void | Promise<void>
 }) {
-  const { t } = useLang()
-  const hospital = session.hospitalShort
+  const { t, tx } = useLang()
+  const hospital = tx(session.hospitalShort)
   const [date, setDate] = useState(session.date)
   const [slot, setSlot] = useState<Slot>(session.slot)
   const [reportingTime, setReportingTime] = useState(session.reportingTime)
@@ -138,7 +138,7 @@ export function ChangeDatePanel({
                 </div>
                 {error ? (
                   <p className="mt-3 text-[13px] leading-relaxed text-no" role="alert">
-                    {error}
+                    {tx(error)}
                   </p>
                 ) : null}
                 <div className="mt-5 grid gap-2">

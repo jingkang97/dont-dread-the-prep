@@ -27,7 +27,7 @@ export function BotCard({
   answer: FoodChatAnswer
   onSelectChoice?: (choice: ApiDishChoice) => void
 }) {
-  const { t } = useLang()
+  const { t, tx } = useLang()
 
   if (answer.status === 'ok' && answer.dish) {
     return <DishCard dish={answer.dish} />
@@ -39,7 +39,7 @@ export function BotCard({
         {/* No verdict pill: this card asks which dish you meant, it does not answer. */}
         <p className="text-[16px] font-semibold text-ink">{t('food.choicesTitle')}</p>
         <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
-          {answer.message || t('food.choicesTitle')}
+          {answer.message ? tx(answer.message) : t('food.choicesTitle')}
         </p>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {answer.choices.map((choice) => (
@@ -49,7 +49,7 @@ export function BotCard({
               onClick={() => onSelectChoice?.(choice)}
               className="rounded-full border border-line bg-paper px-3 py-1.5 text-[13px] font-medium text-navy"
             >
-              {choice.name}
+              {tx(choice.name)}
             </button>
           ))}
         </div>
@@ -68,7 +68,7 @@ export function BotCard({
         {showAskPill ? <VerdictPill verdict="ask" /> : null}
       </div>
       <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
-        {answer.message || t('food.notFoundTitle')}
+        {answer.message ? tx(answer.message) : t('food.notFoundTitle')}
       </p>
     </Card>
   )

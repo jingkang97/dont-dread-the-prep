@@ -1,3 +1,4 @@
+import { LangSwitch } from './LangSwitch'
 import { useLang } from '../i18n/LanguageContext'
 import { formatSessionWhen } from '../lib/dates'
 import type { PrepSession } from '../lib/session'
@@ -11,7 +12,7 @@ export function SessionBar({
   onChange: () => void
   onReplayTour?: () => void
 }) {
-  const { t, lang } = useLang()
+  const { t, lang, tx } = useLang()
   const when = formatSessionWhen(session, lang)
   const slot = session.slot === 'am' ? t('on.morning') : t('on.afternoon')
 
@@ -23,7 +24,7 @@ export function SessionBar({
       <div className="min-w-0 flex-1 pl-1">
         <p className="truncate text-[15px] font-semibold leading-tight text-ink">
           {session.firstName ? `${session.firstName} · ` : ''}
-          {session.hospitalShort} · {slot}
+          {tx(session.hospitalShort)} · {slot}
         </p>
         <p className="truncate text-[12px] leading-tight text-muted">
           {when}
@@ -46,6 +47,7 @@ export function SessionBar({
       >
         {t('app.change')}
       </button>
+      <LangSwitch />
     </div>
   )
 }

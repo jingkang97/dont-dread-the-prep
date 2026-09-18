@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ApiError, listApiHospitals, type ApiHospital } from '../lib/api'
+import { EN } from '../i18n/strings'
 
 let cachedHospitals: ApiHospital[] | null = null
 let cachedError: string | null = null
@@ -16,9 +17,7 @@ export function useApiHospitals() {
         const rows = await listApiHospitals()
         if (cancelled) return
         cachedHospitals = rows
-        cachedError = rows.length
-          ? null
-          : 'No hospitals returned from the API. Check mvp.seed.sql was applied.'
+        cachedError = rows.length ? null : EN['err.hospitalsEmpty']
         setApiHospitals(rows)
         setHospitalsError(cachedError)
       } catch (err) {
@@ -28,7 +27,7 @@ export function useApiHospitals() {
           cachedError =
             err instanceof ApiError
               ? err.detail
-              : 'Could not load hospitals. Is the API running on port 8000?'
+              : EN['err.hospitals']
           setApiHospitals([])
           setHospitalsError(cachedError)
         }

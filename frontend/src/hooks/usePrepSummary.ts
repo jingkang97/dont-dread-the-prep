@@ -1,4 +1,5 @@
 import { useLang } from '../i18n/LanguageContext'
+import { timelineLiveCopy, usePrimeLiveCopy } from '../i18n/liveCopy'
 import type { PrepSession } from '../lib/session'
 import { fromNowDays, isEventUpcoming } from '../lib/timeline'
 import { useSessionTimeline } from '../lib/useSessionTimeline'
@@ -8,6 +9,7 @@ export function usePrepSummary(session: PrepSession) {
   const { t } = useLang()
   const { hospital: row, short } = useSessionHospital(session)
   const { events, loading, error } = useSessionTimeline(session)
+  usePrimeLiveCopy(timelineLiveCopy(events))
   const now = new Date()
   const nextUpcoming = events.find((e) => isEventUpcoming(e, now))
   const next = nextUpcoming ?? events[events.length - 1]

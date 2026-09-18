@@ -1,6 +1,17 @@
 import { CLINICAL_EN } from './clinical'
 
-export type Lang = 'en'
+export const LANGS = [
+  { id: 'en', native: 'English', short: 'EN' },
+  { id: 'zh', native: '中文', short: '中文' },
+  { id: 'ms', native: 'Melayu', short: 'BM' },
+  { id: 'ta', native: 'தமிழ்', short: 'த' },
+] as const
+
+export type Lang = (typeof LANGS)[number]['id']
+
+export function isLang(value: string): value is Lang {
+  return LANGS.some((item) => item.id === value)
+}
 
 export const EN = {
   ...CLINICAL_EN,
@@ -14,8 +25,13 @@ export const EN = {
   'verdict.ask': 'Ask your care team',
   'verdict.possible': 'Possible',
   'source.cited': 'Cited source',
-  'source.original':
-    'Hospital wording stays in English — that is the audit trail.',
+  'source.original': 'Wording from the hospital sheet, translated for this screen.',
+  'err.hospitals': 'Could not load hospitals. Is the API running on port 8000?',
+  'err.hospitalsEmpty': 'No hospitals returned from the API. Check mvp.seed.sql was applied.',
+  'err.session': 'Could not start session. Is the API running on port 8000?',
+  'err.timeline': 'Failed to load timeline',
+  'err.mealPrep': 'Could not load meal suggestions. Try again shortly.',
+  'err.save': 'Could not save. Check the API is running.',
   'on.kicker': 'Colonoscopy prep',
   'on.title': 'Your prep, on your phone.',
   'on.step1': 'Choose hospital',
@@ -215,6 +231,12 @@ export const EN = {
   'wa.pushDenied': 'Notifications were blocked. Use Telegram, or allow them in browser settings.',
   'app.homescreenHint':
     'This opened in the browser. Your session is on the PrepPath Home Screen icon — open that to stay in the app.',
+  'lang.choose': 'Language',
+  'lang.updating': 'Updating language',
+  'lang.en': 'English',
+  'lang.zh': '中文',
+  'lang.ms': 'Bahasa Melayu',
+  'lang.ta': 'தமிழ்',
   'app.change': 'Edit',
   'app.changeTitle': 'This appointment',
   'app.changeBody': 'Change date keeps {hospital}. Start over goes back to hospital pick.',
@@ -243,6 +265,8 @@ export const EN = {
   'pitch.3d': 'A meal plan of cleared dishes, or type a food. Yes, No, or Possible.',
   'pitch.4t': 'Reminders, on time',
   'pitch.4d': 'App push or Telegram — meds, diet, each dose, stool check, and fasting.',
+  'pitch.5t': 'Singapore’s four official languages',
+  'pitch.5d': 'English, Mandarin, Malay, and Tamil. Switch whenever you need to.',
   'pitch.scan': 'Scan to open PrepPath',
   'hosp.sgh.name': 'Singapore General Hospital',
   'hosp.nccs.name': 'National Cancer Centre Singapore',
@@ -260,12 +284,37 @@ export function isStringKey(key: string): key is StringKey {
   return Object.hasOwn(EN, key)
 }
 
-export function translate(key: StringKey, vars?: Record<string, string>) {
-  let s: string = EN[key]
+/** Native language names stay as-is so the switcher remains readable. */
+export function shouldTranslateKey(key: string): boolean {
+  return key !== 'lang.en' && key !== 'lang.zh' && key !== 'lang.ms' && key !== 'lang.ta'
+}
+
+export function catalogItems(): { key: StringKey; text: string }[] {
+  return (Object.entries(EN) as [StringKey, string][])
+    .filter(([key]) => shouldTranslateKey(key))
+    .map(([key, text]) => ({ key, text }))
+}
+
+function applyVars(template: string, vars?: Record<string, string>) {
+  let s = template
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       s = s.replaceAll(`{${k}}`, v)
     }
+  }
+  return s
+}
+
+export function translate(
+  key: StringKey,
+  vars?: Record<string, string>,
+  overlay?: Partial<Record<StringKey, string>>,
+) {
+  const english = EN[key]
+  const raw = overlay?.[key] ?? english
+  let s = applyVars(raw, vars)
+  if (vars && /\{[A-Za-z0-9_]+\}/.test(s)) {
+    s = applyVars(english, vars)
   }
   if (import.meta.env.DEV) {
     const leftover = s.match(/\{[A-Za-z0-9_]+\}/g)

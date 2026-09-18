@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { Card, GhostButton, PrimaryButton } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
+import { usePrimeLiveCopy } from '../i18n/liveCopy'
 import { DATE_LOCALES } from '../lib/dateLocale'
 import type { PrepSession } from '../lib/session'
 import { fromApiSession, saveSession, telegramStartHref } from '../lib/session'
@@ -22,7 +23,7 @@ export function Reminders({
   onShortcut: (os: 'ios' | 'android') => void
   onBack: () => void
 }) {
-  const { t, lang } = useLang()
+  const { t, lang, tx } = useLang()
   const plan = session.reminderPlan
   const items = plan?.length
     ? plan.map((item) => ({
@@ -34,6 +35,7 @@ export function Reminders({
         sent: item.sent,
       }))
     : []
+  usePrimeLiveCopy(items.flatMap((item) => [item.title, item.body, item.delayLabel ?? '']))
   const href = telegramStartHref(session.id)
   const push = usePushReminders(session, onSession)
   const telegram = useTelegramLink(session, onSession)
@@ -153,7 +155,7 @@ export function Reminders({
             <li key={item.key} className="py-2.5">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[14px] font-semibold text-ink">
-                  {item.title}
+                  {tx(item.title)}
                 </span>
                 <span className="text-[12px] text-muted">
                   {item.sent
@@ -162,15 +164,17 @@ export function Reminders({
                       ? t('wa.passed')
                       : item.at
                         ? format(item.at, 'd MMM, h:mm a', { locale: DATE_LOCALES[lang] })
-                        : item.delayLabel}
+                        : item.delayLabel
+                          ? tx(item.delayLabel)
+                          : ''}
                 </span>
               </div>
-              <p className="text-[12px] text-ink-soft">{item.body}</p>
+              <p className="text-[12px] text-ink-soft">{tx(item.body)}</p>
             </li>
           ))}
         </ul>
         <p className="mt-2 text-[12px] text-muted">
-          {t('wa.computed', { hospital: session.hospitalShort, time: session.reportingTime })}
+          {t('wa.computed', { hospital: tx(session.hospitalShort), time: session.reportingTime })}
         </p>
       </Card>
     </div>

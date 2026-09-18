@@ -63,7 +63,7 @@ export function DishCard({
    */
   collapsible?: boolean
 }) {
-  const { t } = useLang()
+  const { t, tx } = useLang()
   const [expanded, setExpanded] = useState(false)
   const dishVerdict = toDishVerdict(dish.verdict)
   const showDishPill = !(hideApproved && dishVerdict === 'yes')
@@ -71,7 +71,7 @@ export function DishCard({
     <>
       {dish.verdict === 'possible' && dish.remove_ingredients.length > 0 && (
         <p className="mt-1 text-[13px] font-medium text-possible">
-          {t('food.possibleNote', { ingredients: dish.remove_ingredients.join(', ') })}
+          {t('food.possibleNote', { ingredients: dish.remove_ingredients.map((name) => tx(name)).join(', ') })}
         </p>
       )}
       <div className="mt-2.5 grid gap-1.5">
@@ -84,8 +84,8 @@ export function DishCard({
               className="flex items-start justify-between gap-2 rounded-xl bg-paper px-3 py-2"
             >
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-ink">{ingredient.name}</p>
-                <Reason text={ingredient.classification_reason} />
+                <p className="text-[13px] font-semibold text-ink">{tx(ingredient.name)}</p>
+                <Reason text={tx(ingredient.classification_reason)} />
               </div>
               {showPill ? <VerdictPill verdict={verdict} compact /> : null}
             </div>
@@ -105,7 +105,7 @@ export function DishCard({
           aria-label={expanded ? t('food.hideIngredients') : t('food.showIngredients')}
           className="flex w-full items-start justify-between gap-2 text-left"
         >
-          <p className="text-[16px] font-semibold text-ink">{dish.name}</p>
+          <p className="text-[16px] font-semibold text-ink">{tx(dish.name)}</p>
           <span className="flex shrink-0 items-start gap-1.5">
             {showDishPill ? <VerdictPill verdict={dishVerdict} /> : null}
             <Chevron open={expanded} />
@@ -113,7 +113,7 @@ export function DishCard({
         </button>
       ) : (
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[16px] font-semibold text-ink">{dish.name}</p>
+          <p className="text-[16px] font-semibold text-ink">{tx(dish.name)}</p>
           {showDishPill ? <VerdictPill verdict={dishVerdict} /> : null}
         </div>
       )}

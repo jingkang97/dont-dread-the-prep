@@ -16,19 +16,19 @@ const POSITIONS = [
 ] as const
 
 export function FleetMixSheet({ onClose }: { onClose: () => void }) {
-  const { t } = useLang()
+  const { t, tx } = useLang()
   return (
     <SheetFrame onDismiss={onClose} dismissLabel={t('on.back')}>
-      <p className="font-display text-[22px] leading-tight tracking-tight text-ink">Fleet Enema</p>
-      <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">Position for using an enema:</p>
+      <p className="font-display text-[22px] leading-tight tracking-tight text-ink">{tx('Fleet Enema')}</p>
+      <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">{tx('Position for using an enema:')}</p>
       <div className="mt-4 grid gap-4">
         {POSITIONS.map((pos) => (
           <figure key={pos.src}>
-            <img src={pos.src} alt={pos.title} className="w-full rounded-2xl bg-navy-2" />
+            <img src={pos.src} alt={tx(pos.title)} className="w-full rounded-2xl bg-navy-2" />
             <figcaption className="mt-2 text-[13px] leading-relaxed text-ink-soft">
-              <span className="font-semibold text-ink">{pos.title}</span>
+              <span className="font-semibold text-ink">{tx(pos.title)}</span>
               {' — '}
-              {pos.body}
+              {tx(pos.body)}
             </figcaption>
           </figure>
         ))}

@@ -5,9 +5,11 @@ import type { OnboardingResult } from '../data/onboarding'
 import { ApiError, defaultProtocolName } from '../lib/api'
 import { DateSlotPicker } from '../components/DateSlotPicker'
 import { HospitalPicker } from '../components/HospitalPicker'
+import { LangSwitch } from '../components/LangSwitch'
 import { Card, GeneratingPane, GhostButton, PrimaryButton, SectionLabel } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
-import { hospCopyOr } from '../i18n/keys'
+import { hospitalLiveCopy, usePrimeLiveCopy } from '../i18n/liveCopy'
+import { EN } from '../i18n/strings'
 import { cn } from '../lib/cn'
 import { formatHm, formatYmd, isBeforeToday } from '../lib/dates'
 import { fadeY } from '../lib/motion'
@@ -21,8 +23,9 @@ export function Onboarding({
 }: {
   onComplete: (d: OnboardingResult) => void | Promise<unknown>
 }) {
-  const { t, lang } = useLang()
+  const { t, lang, tx } = useLang()
   const { apiHospitals, hospitalsLoading, hospitalsError } = useApiHospitals()
+  usePrimeLiveCopy(apiHospitals.flatMap(hospitalLiveCopy))
   const {
     step,
     setStep,
@@ -80,9 +83,7 @@ export function Onboarding({
     } catch (err) {
       setBusy(false)
       setError(
-        err instanceof ApiError
-          ? err.detail
-          : 'Could not start session. Is the API running on port 8000?',
+        err instanceof ApiError ? err.detail : EN['err.session'],
       )
     }
   }
@@ -94,7 +95,10 @@ export function Onboarding({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <header className="shrink-0 px-5 pb-4 pt-8">
         {/* <p className="text-[13px] font-semibold text-teal-deep">{t('on.kicker')}</p> */}
-        <h1 className="font-display text-[34px] leading-[1.1] tracking-tight text-ink">{t('on.title')}</h1>
+        <h1 className="font-display text-[34px] leading-[1.1] tracking-tight text-ink">
+          {t('on.title')}
+        </h1>
+        <LangSwitch variant="chips" className="mt-4" />
       </header>
 
       <div className="relative min-h-0 flex-1">
@@ -107,7 +111,7 @@ export function Onboarding({
             {busy ? (
               <GeneratingPane
                 title={t('on.generating')}
-                hint={t('on.generatingHint', { hospital: hospitalShort })}
+                hint={t('on.generatingHint', { hospital: tx(hospitalShort) })}
               />
             ) : (
               <>
@@ -115,7 +119,7 @@ export function Onboarding({
                   <div>
                     {hospitalsError ? (
                       <p className="mt-3 text-[13px] leading-relaxed text-no" role="alert">
-                        {hospitalsError}
+                        {tx(hospitalsError)}
                       </p>
                     ) : null}
                     {/* Yellow-form scan demo — commented out
@@ -176,7 +180,7 @@ export function Onboarding({
                                 )}
                               >
                                 <span className="block text-[15px] font-semibold text-ink">
-                                  {protocol.prep_agent_label}
+                                  {tx(protocol.prep_agent_label)}
                                 </span>
                               </button>
                             )
@@ -206,14 +210,14 @@ export function Onboarding({
                     <Card className="mt-3 overflow-hidden">
                       <div className="bg-cream px-4 py-3">
                         <p className="text-[12px] font-semibold text-teal-deep">{t('on.formTitle')}</p>
-                        <p className="font-display text-[22px] tracking-tight text-ink">{hospitalShort}</p>
+                        <p className="font-display text-[22px] tracking-tight text-ink">{tx(hospitalShort)}</p>
                       </div>
                       <dl className="divide-y divide-line px-4">
                         <Row
                           k={t('on.hospital')}
-                          v={hospCopyOr(t, apiHospital.code, 'name', apiHospital.name)}
+                          v={tx(apiHospital.name)}
                         />
-                        <Row k={t('on.prep')} v={prepDisplay} />
+                        <Row k={t('on.prep')} v={tx(prepDisplay)} />
                         <Row k={t('on.scopeDate')} v={formatYmd(draft.date, lang)} />
                         <Row
                           k={t('on.sessionLabel')}
@@ -238,11 +242,11 @@ export function Onboarding({
                     />
                     <p className="mt-1.5 text-[12px] text-muted">{t('on.nameHint')}</p>
                     <p className="mt-3 text-[12px] leading-relaxed text-muted">
-                      {t('on.confirmNote', { hospital: hospitalShort })}
+                      {t('on.confirmNote', { hospital: tx(hospitalShort) })}
                     </p>
                     {error ? (
                       <p className="mt-3 text-[13px] leading-relaxed text-no" role="alert">
-                        {error}
+                        {tx(error)}
                       </p>
                     ) : null}
                     <div className="mt-5 grid gap-2">

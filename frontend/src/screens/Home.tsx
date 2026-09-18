@@ -19,7 +19,7 @@ export function Home({
   onOpen: (s: Screen) => void
   onShortcut: (os: 'ios' | 'android') => void
 }) {
-  const { t, lang } = useLang()
+  const { t, lang, tx } = useLang()
   const locale = DATE_LOCALES[lang]
   const { hospital, events, loading, error, now, next, nextWhen, report, started } = usePrepSummary(session)
   const remaining = report ? formatDistanceStrict(report, now, { addSuffix: true, locale }) : ''
@@ -35,14 +35,14 @@ export function Home({
             </h1>
             <p className="mt-1 text-[17px] font-semibold text-ink">
               {t(session.slot === 'am' ? 'home.morningScope' : 'home.afternoonScope', {
-                hospital: hospital.short,
+                hospital: tx(hospital.short),
               })}
             </p>
           </>
         ) : (
           <h1 className="font-display text-[32px] leading-[1.1] tracking-tight text-ink">
             {t(session.slot === 'am' ? 'home.morningScope' : 'home.afternoonScope', {
-              hospital: hospital.short,
+                hospital: tx(hospital.short),
             })}
           </h1>
         )}
@@ -60,7 +60,7 @@ export function Home({
 
       {!loading && error ? (
         <Card className="mt-5 p-4">
-          <p className="text-[14px] text-no">{error}</p>
+          <p className="text-[14px] text-no">{tx(error)}</p>
         </Card>
       ) : null}
 
@@ -76,7 +76,7 @@ export function Home({
                   {started ? t('home.upNext') : t('home.firstStep')}
                 </p>
                 <p className="font-display mt-0.5 text-[20px] leading-tight tracking-tight text-ink">
-                  {resolveEventText(next, t).title}
+                  {tx(resolveEventText(next, t).title)}
                 </p>
                 <p className="mt-1 text-[13px] text-muted">
                   {format(next.at, 'EEE d MMM, h:mm a', { locale })}

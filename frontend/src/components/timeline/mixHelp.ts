@@ -17,7 +17,7 @@ type EventHelp = {
   Sheet: ComponentType<HelpSheetProps>
 }
 
-/** Timeline ? help sheets. Hints stay English (clinical copy). */
+/** Timeline ? help sheets. Hints are English source copy, shown through tx(). */
 export const EVENT_HELP: Record<HelpKind, EventHelp> = {
   peg: {
     hint: 'How to mix PEG',

@@ -10,18 +10,19 @@ import { useLang } from '../i18n/LanguageContext'
 import { ApiError, getApiDish, postApiFoodChat, type ApiDishChoice } from '../lib/api'
 import { loadFoodChat, saveFoodChat, type FoodChatAnswer, type FoodChatMsg } from '../lib/foodChat'
 import { clearFoodChatUi, loadFoodChatUi, saveFoodChatUi } from '../lib/foodChatUi'
+import { EN, type StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
 import { easeOut, fadeY } from '../lib/motion'
 import { cn } from '../lib/cn'
 
-const CHAT_SUGGESTIONS = [
-  'Chicken rice',
-  'Kopi with milk',
-  'Apple juice',
-  'Milo',
-  'White bread',
-  'Thosai',
-  'Char kway teow',
+const CHAT_SUGGESTIONS: { key: StringKey; query: string }[] = [
+  { key: 'food.suggest.chickenRice', query: 'Chicken rice' },
+  { key: 'food.suggest.kopiMilk', query: 'Kopi with milk' },
+  { key: 'food.suggest.appleJuice', query: 'Apple juice' },
+  { key: 'food.suggest.milo', query: 'Milo' },
+  { key: 'food.suggest.whiteBread', query: 'White bread' },
+  { key: 'food.suggest.thosai', query: 'Thosai' },
+  { key: 'food.suggest.ckt', query: 'Char kway teow' },
 ]
 
 function scrollToLatestTurn(el: HTMLElement, behavior: ScrollBehavior) {
@@ -56,7 +57,7 @@ function animateScrollTop(el: HTMLElement, ms: number) {
 type Tab = 'mealPrep' | 'chat'
 
 export function FoodChat({ session }: { session: PrepSession }) {
-  const { t } = useLang()
+  const { t, tx } = useLang()
   const [tab, setTab] = useState<Tab>('mealPrep')
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<FoodChatMsg[]>(() => loadFoodChat(session.id))
@@ -147,7 +148,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
     } catch (err) {
       answer = {
         status: 'not_configured',
-        message: err instanceof ApiError ? err.detail : t('food.networkError'),
+        message: err instanceof ApiError ? err.detail : EN['food.networkError'],
       }
     }
 
@@ -176,7 +177,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
     } catch (err) {
       answer = {
         status: 'not_configured',
-        message: err instanceof ApiError ? err.detail : t('food.networkError'),
+        message: err instanceof ApiError ? err.detail : EN['food.networkError'],
       }
     }
 
@@ -218,7 +219,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
         <ScreenHeader
           kicker={t('food.kicker')}
           title={t('food.title')}
-          lead={tab === 'chat' ? t('food.lead', { hospital: session.hospitalShort }) : t('food.mealLead', { hospital: session.hospitalShort })}
+          lead={tab === 'chat' ? t('food.lead', { hospital: tx(session.hospitalShort) }) : t('food.mealLead', { hospital: tx(session.hospitalShort) })}
           leadClassName="mt-1 text-[13px] text-ink-soft"
           trailing={
             tab === 'chat' && messages.length > 0 && !clearing ? (
@@ -262,7 +263,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
             <div ref={listRef} className="h-full min-h-0 space-y-3 overflow-y-auto overflow-anchor-none overscroll-y-contain px-5 py-4">
               <Card className="p-3.5">
                 <p className="text-[16px] font-semibold text-ink">
-                  {t('food.introTitle', { hospital: session.hospitalShort })}
+                  {t('food.introTitle', { hospital: tx(session.hospitalShort) })}
                 </p>
                 <p className="mt-2 text-[14px] leading-relaxed text-ink-soft">
                   {t('food.introBody')}
@@ -314,14 +315,14 @@ export function FoodChat({ session }: { session: PrepSession }) {
 
           <div className="shrink-0 border-t border-line bg-paper-2 px-4 pb-3 pt-3">
             <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
-              {CHAT_SUGGESTIONS.map((s) => (
+              {CHAT_SUGGESTIONS.map((item) => (
                 <button
-                  key={s}
+                  key={item.query}
                   type="button"
-                  onClick={() => ask(s)}
+                  onClick={() => ask(item.query)}
                   className="shrink-0 rounded-full border border-line bg-paper px-3 py-1.5 text-[12px] font-medium text-navy"
                 >
-                  {s}
+                  {t(item.key)}
                 </button>
               ))}
             </div>

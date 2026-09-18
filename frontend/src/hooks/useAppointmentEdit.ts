@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Slot } from '../data/hospitals'
 import { ApiError } from '../lib/api'
+import { EN } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
 
 export type EditMode = 'off' | 'choose' | 'date' | 'restart'
@@ -41,7 +42,7 @@ export function useAppointmentEdit() {
       setEdit('off')
     } catch (err) {
       setEditError(
-        err instanceof ApiError ? err.detail : 'Could not save. Check the API is running.',
+        err instanceof ApiError ? err.detail : EN['err.save'],
       )
     } finally {
       setSavingEdit(false)

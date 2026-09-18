@@ -1,7 +1,8 @@
 import { startOfDay } from 'date-fns'
 import { DayPicker, type Matcher } from 'react-day-picker'
-import { enGB } from 'react-day-picker/locale'
+import { useLang } from '../i18n/LanguageContext'
 import { cn } from '../lib/cn'
+import { DATE_LOCALES } from '../lib/dateLocale'
 
 export function MonthCalendar({
   selected,
@@ -26,6 +27,7 @@ export function MonthCalendar({
   endMonth?: Date
   className?: string
 }) {
+  const { lang } = useLang()
   const oneMonth =
     startMonth &&
     endMonth &&
@@ -46,7 +48,7 @@ export function MonthCalendar({
         onSelect={(day) => {
           if (day) onSelect(day)
         }}
-        locale={enGB}
+        locale={DATE_LOCALES[lang]}
         weekStartsOn={1}
         navLayout="around"
         hideNavigation={Boolean(oneMonth)}
