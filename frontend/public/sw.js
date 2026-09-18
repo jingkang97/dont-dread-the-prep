@@ -1,3 +1,27 @@
+self.addEventListener('install', () => {
+  self.skipWaiting()
+})
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim())
+})
+
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url)
+  if (event.request.method !== 'GET' || url.pathname !== '/manifest.webmanifest') return
+  const raw = (url.searchParams.get('s') || '').trim().toUpperCase()
+  if (!/^[A-Z2-9]{4}$/.test(raw)) return
+  event.respondWith(
+    fetch('/manifest.webmanifest').then(async (res) => {
+      const manifest = await res.json()
+      manifest.start_url = `/?s=${encodeURIComponent(raw)}`
+      return new Response(JSON.stringify(manifest), {
+        headers: { 'Content-Type': 'application/manifest+json' },
+      })
+    }),
+  )
+})
+
 self.addEventListener('push', (event) => {
   let data = { title: 'PrepPath', body: '', url: '/' }
   try {

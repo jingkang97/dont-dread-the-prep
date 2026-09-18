@@ -105,13 +105,6 @@ function parseSession(raw: unknown): PrepSession | null {
   }
 }
 
-function encodeSession(session: PrepSession) {
-  const bytes = new TextEncoder().encode(JSON.stringify(session))
-  let bin = ''
-  for (const byte of bytes) bin += String.fromCharCode(byte)
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
 function decodeSession(token: string): PrepSession | null {
   try {
     const pad = token.length % 4 === 0 ? '' : '='.repeat(4 - (token.length % 4))
@@ -171,48 +164,34 @@ function writeCookie(session: PrepSession | null) {
     document.cookie = `${COOKIE}=;Path=/;Max-Age=0;SameSite=Lax${secure}`
     return
   }
-  document.cookie = `${COOKIE}=${encodeURIComponent(JSON.stringify(session))};Path=/;Max-Age=31536000;SameSite=Lax${secure}`
+  // Keep the cookie small; iOS drops >4KB and reminderPlan is only needed live from the API.
+  const { reminderPlan: _plan, ...slim } = session
+  document.cookie = `${COOKIE}=${encodeURIComponent(JSON.stringify(slim))};Path=/;Max-Age=31536000;SameSite=Lax${secure}`
 }
 
 function writeUrl(session: PrepSession | null) {
   const url = new URL(window.location.href)
-  if (session) url.searchParams.set(PARAM, encodeSession(session))
-  else url.searchParams.delete(PARAM)
+  url.searchParams.delete(PARAM)
+  if (session) url.searchParams.set(CODE_PARAM, session.id)
+  else url.searchParams.delete(CODE_PARAM)
   const next = `${url.pathname}${url.search}${url.hash}`
   const now = `${window.location.pathname}${window.location.search}${window.location.hash}`
   if (next !== now) history.replaceState(history.state, '', next)
 }
 
 function publishManifest(session: PrepSession | null) {
-  const start = session ? `/?s=${encodeURIComponent(session.id)}` : '/'
-  const manifest = {
-    name: 'PrepPath',
-    short_name: 'PrepPath',
-    id: '/',
-    description: 'No-install colonoscopy prep companion.',
-    display: 'standalone',
-    orientation: 'portrait',
-    theme_color: '#f2f2f7',
-    background_color: '#f2f2f7',
-    start_url: start,
-    scope: '/',
-    launch_handler: { client_mode: ['focus-existing', 'navigate-existing', 'auto'] },
-    icons: [
-      { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
-      { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-    ],
-  }
-  const blob = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }))
+  // Same-origin file + ?s= so iOS/Android read a real start_url. Blob/data manifests are ignored on iOS.
+  const href = session
+    ? `/manifest.webmanifest?s=${encodeURIComponent(session.id)}`
+    : '/manifest.webmanifest'
   let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')
   if (!link) {
     link = document.createElement('link')
     link.rel = 'manifest'
     document.head.appendChild(link)
   }
-  const prev = link.href
-  link.href = blob
-  if (prev.startsWith('blob:')) URL.revokeObjectURL(prev)
+  const prev = link.getAttribute('href')
+  if (prev !== href) link.setAttribute('href', href)
 }
 
 function persistEverywhere(session: PrepSession | null) {
