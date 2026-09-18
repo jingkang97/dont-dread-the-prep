@@ -236,6 +236,8 @@ export function FoodChat({ session }: { session: PrepSession }) {
           <SegmentedControl
             value={tab}
             onChange={setTab}
+            className="h-12 rounded-xl"
+            buttonClassName="px-3 text-[15px]"
             options={[
               { id: 'mealPrep', label: t('food.tabMealPrep') },
               { id: 'chat', label: t('food.tabChat') },

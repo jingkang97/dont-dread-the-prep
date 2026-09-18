@@ -38,7 +38,5 @@ export const CLINICAL_EN = {
   'food.possibleNote': 'Possible if you leave out {ingredients}.',
   'food.showIngredients': 'Show ingredients',
   'food.hideIngredients': 'Hide ingredients',
-  'food.reasonMore': 'Why',
-  'food.reasonLess': 'Hide',
   'food.networkError': 'Could not reach the food service. Check your connection and try again.',
 } as const

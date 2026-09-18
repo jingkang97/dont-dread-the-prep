@@ -1,13 +1,22 @@
 import { useState } from 'react'
-import { SegmentedControl } from '../SegmentedControl'
 import { GeneratingPane } from '../ui'
 import { DishCard } from './DishCard'
 import { useMealPrep } from '../../hooks/useMealPrep'
 import { useLang } from '../../i18n/LanguageContext'
+import type { StringKey } from '../../i18n/strings'
+import { cn } from '../../lib/cn'
 import type { ApiDish } from '../../lib/api'
 import type { PrepSession } from '../../lib/session'
 
 type MealKey = 'breakfast' | 'lunch' | 'dinner' | 'snacks' | 'drinks'
+
+const MEALS: { id: MealKey; label: StringKey }[] = [
+  { id: 'breakfast', label: 'food.mealBreakfast' },
+  { id: 'lunch', label: 'food.mealLunch' },
+  { id: 'dinner', label: 'food.mealDinner' },
+  { id: 'snacks', label: 'food.mealSnacks' },
+  { id: 'drinks', label: 'food.mealDrinks' },
+]
 
 export function MealPrep({ session }: { session: PrepSession }) {
   const { t } = useLang()
@@ -19,17 +28,30 @@ export function MealPrep({ session }: { session: PrepSession }) {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="shrink-0 px-5 pb-3 pt-4">
-        <SegmentedControl
-          value={meal}
-          onChange={setMeal}
-          options={[
-            { id: 'breakfast', label: t('food.mealBreakfast') },
-            { id: 'lunch', label: t('food.mealLunch') },
-            { id: 'dinner', label: t('food.mealDinner') },
-            { id: 'snacks', label: t('food.mealSnacks') },
-            { id: 'drinks', label: t('food.mealDrinks') },
-          ]}
-        />
+        <div
+          role="radiogroup"
+          aria-label={t('food.tabMealPrep')}
+          className="flex gap-1.5"
+        >
+          {MEALS.map((item) => {
+            const on = meal === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => setMeal(item.id)}
+                className={cn(
+                  'min-h-9 min-w-0 flex-1 whitespace-nowrap rounded-full px-1.5 text-[12px] font-medium',
+                  on ? 'bg-teal-deep text-white' : 'bg-black/[0.06] text-navy',
+                )}
+              >
+                {t(item.label)}
+              </button>
+            )
+          })}
+        </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
         {loading && (
