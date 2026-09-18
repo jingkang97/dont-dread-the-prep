@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useLang } from '../i18n/LanguageContext'
-import { consumeHomeTourPending, startHomeTour, stopHomeTour } from '../lib/homeTour'
+import { homeTourPending, queueHomeTour, rememberFirstHomeVisit, startHomeTour, stopHomeTour, waitForTourTargets } from '../lib/homeTour'
 
 function takeTourFlag() {
   const url = new URL(window.location.href)
@@ -12,19 +12,28 @@ function takeTourFlag() {
 
 export function useHomeTour(active: boolean) {
   const { t } = useLang()
-  const started = useRef(false)
 
   useEffect(() => {
-    if (!active || started.current) return
-    const forced = takeTourFlag()
-    if (!forced && !consumeHomeTourPending()) return
-    started.current = true
+    if (!active) return
+    if (takeTourFlag()) queueHomeTour(true)
+    if (!homeTourPending()) return
+    rememberFirstHomeVisit()
+
+    let cancelled = false
+    let timeoutId = 0
     const frame = window.requestAnimationFrame(() => {
-      window.setTimeout(() => {
-        startHomeTour({ t })
-      }, 420)
+      timeoutId = window.setTimeout(() => {
+        void waitForTourTargets().then((ready) => {
+          if (cancelled || !ready) return
+          startHomeTour({ t })
+        })
+      }, 280)
     })
-    return () => window.cancelAnimationFrame(frame)
+    return () => {
+      cancelled = true
+      window.cancelAnimationFrame(frame)
+      window.clearTimeout(timeoutId)
+    }
   }, [active, t])
 
   useEffect(() => () => stopHomeTour(), [])

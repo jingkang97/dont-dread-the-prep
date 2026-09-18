@@ -11,7 +11,7 @@ import {
   type PrepSession,
   type Screen,
 } from '../lib/session'
-import { queueHomeTour } from '../lib/homeTour'
+import { dropHomeTourPending, queueHomeTour } from '../lib/homeTour'
 
 export function useSession() {
   const [session, setSession] = useState<PrepSession | null>(null)
@@ -63,6 +63,7 @@ export function useSession() {
   }
 
   function clear() {
+    dropHomeTourPending()
     clearSession()
     setSession(null)
     setScreen('onboarding')
