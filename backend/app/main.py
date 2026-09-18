@@ -13,6 +13,7 @@ from app.db.session import reset_engine
 from app.services.push import vapid_configured
 from app.services.reminders import run_reminder_loop
 from app.services.telegram import start_telegram_listener
+from app.services.translations import translation_configured
 
 log = logging.getLogger(__name__)
 settings = get_settings()
@@ -30,13 +31,14 @@ async def lifespan(_app: FastAPI):
     if settings.should_send_reminders and (token or vapid_configured()):
         tasks.append(asyncio.create_task(run_reminder_loop(stop), name="telegram-reminders"))
     log.info(
-        "Reminders send=%s telegram=%s push=%s poll=%s site=%s api=%s",
+        "Reminders send=%s telegram=%s push=%s poll=%s site=%s api=%s translate=%s",
         settings.should_send_reminders,
         token,
         vapid_configured(),
         settings.telegram_poll,
         settings.resolved_site_url,
         settings.resolved_public_api_url or "idle",
+        translation_configured(),
     )
     yield
     stop.set()

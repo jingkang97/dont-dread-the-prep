@@ -107,6 +107,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const scheduledRef = useRef(false)
   const catalogBusyRef = useRef(false)
   const liveBusyRef = useRef(false)
+  const configuredRef = useRef(true)
+  const skipRef = useRef(new Set<string>())
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [translating, setTranslating] = useState(false)
   const langRef = useRef(lang)
@@ -126,6 +128,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       if (!catalogBusyRef.current && !liveBusyRef.current) setTranslating(false)
     }, 180)
   }, [])
+
+  const disableLive = useCallback(() => {
+    configuredRef.current = false
+    pendingRef.current.clear()
+    inflightRef.current.clear()
+    catalogBusyRef.current = false
+    liveBusyRef.current = false
+    markTranslating(false)
+  }, [markTranslating])
 
   useEffect(
     () => () => {
@@ -151,6 +162,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
     pendingRef.current.clear()
     inflightRef.current.clear()
+    skipRef.current.clear()
+    configuredRef.current = true
     catalogBusyRef.current = false
     liveBusyRef.current = false
     if (idleTimerRef.current) {
@@ -187,7 +200,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (!hasCache) markTranslating(true)
     postApiTranslations(lang, catalogItems(), ac.signal)
       .then((res) => {
-        if (ac.signal.aborted || !res.configured) return
+        if (ac.signal.aborted) return
+        if (!res.configured) {
+          disableLive()
+          return
+        }
         glossaryRef.current = res.glossary
         const prev = readCache(lang)
         const merged: Overlay =
@@ -207,13 +224,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         markTranslating(false)
       })
     return () => ac.abort()
-  }, [lang, markTranslating])
+  }, [disableLive, lang, markTranslating])
 
   const flushLive = useCallback(async () => {
     const currentLang = langRef.current
-    if (currentLang === 'en') return
+    if (currentLang === 'en' || !configuredRef.current) {
+      liveBusyRef.current = false
+      markTranslating(false)
+      return
+    }
     const batch = [...pendingRef.current].filter(
-      (text) => !inflightRef.current.has(text) && !liveRef.current[text],
+      (text) =>
+        !inflightRef.current.has(text) && !liveRef.current[text] && !skipRef.current.has(text),
     )
     pendingRef.current.clear()
     if (!batch.length) {
@@ -231,7 +253,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
           currentLang,
           slice.map((text) => ({ key: textKey(text), text: text.slice(0, 5000) })),
         )
-        if (langRef.current !== currentLang || !res.configured) return
+        if (langRef.current !== currentLang) return
+        if (!res.configured) {
+          disableLive()
+          return
+        }
         glossaryRef.current = res.glossary
         const next: Record<string, string> = {}
         for (const text of slice) {
@@ -246,13 +272,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         })
       }
     } catch {
-      /* keep English until the next pass */
+      for (const text of batch) skipRef.current.add(text)
     } finally {
       for (const text of batch) inflightRef.current.delete(text)
-      liveBusyRef.current = pendingRef.current.size > 0
+      liveBusyRef.current = configuredRef.current && pendingRef.current.size > 0
       markTranslating(liveBusyRef.current)
     }
-  }, [markTranslating, persist])
+  }, [disableLive, markTranslating, persist])
 
   const scheduleFlush = useCallback(() => {
     if (scheduledRef.current) return
@@ -265,8 +291,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const enqueue = useCallback(
     (text: string) => {
-      if (langRef.current === 'en' || !shouldLiveTranslate(text)) return
-      if (liveRef.current[text] || inflightRef.current.has(text)) return
+      if (langRef.current === 'en' || !configuredRef.current || !shouldLiveTranslate(text)) return
+      if (liveRef.current[text] || inflightRef.current.has(text) || skipRef.current.has(text)) return
       pendingRef.current.add(text)
     },
     [],
