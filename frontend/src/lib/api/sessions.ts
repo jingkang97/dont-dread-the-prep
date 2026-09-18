@@ -22,6 +22,7 @@ export type ApiSession = {
   first_name: string | null
   push_opt_in: boolean
   telegram_linked?: boolean
+  preferred_lang?: 'en' | 'zh' | 'ms' | 'ta'
   reminder_plan?: ApiReminderPlanItem[]
   created_at: string
 }
@@ -33,6 +34,7 @@ export type ApiSessionCreate = {
   reporting_time?: string
   protocol_name?: string
   first_name?: string
+  preferred_lang?: 'en' | 'zh' | 'ms' | 'ta'
 }
 
 export type ApiSessionUpdate = {
@@ -40,6 +42,7 @@ export type ApiSessionUpdate = {
   slot?: ApiSlot
   reporting_time?: string
   first_name?: string | null
+  preferred_lang?: 'en' | 'zh' | 'ms' | 'ta'
 }
 
 export function createApiSession(body: ApiSessionCreate) {

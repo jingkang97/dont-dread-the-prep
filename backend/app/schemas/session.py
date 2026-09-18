@@ -31,6 +31,7 @@ class ProtocolSummary(BaseModel):
 
 
 StoolReady = Literal["not", "almost", "ready"]
+PreferredLang = Literal["en", "zh", "ms", "ta"]
 
 
 class StoolScaleStageOut(BaseModel):
@@ -78,6 +79,7 @@ class SessionCreate(BaseModel):
         "Auto-picked when the hospital has one listed protocol.",
     )
     first_name: Optional[str] = Field(default=None, max_length=24)
+    preferred_lang: PreferredLang = "en"
 
     @field_validator("hospital_code")
     @classmethod
@@ -98,6 +100,7 @@ class SessionUpdate(BaseModel):
     slot: Optional[Slot] = None
     reporting_time: Optional[time] = None
     first_name: Optional[str] = Field(default=None, max_length=24)
+    preferred_lang: Optional[PreferredLang] = None
 
     @field_validator("first_name")
     @classmethod
@@ -129,6 +132,7 @@ class SessionOut(BaseModel):
     slot: Slot
     reporting_time: time
     first_name: Optional[str] = None
+    preferred_lang: PreferredLang = "en"
     push_opt_in: bool = False
     telegram_linked: bool = False
     reminder_mode: str = "live"

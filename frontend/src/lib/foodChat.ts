@@ -15,6 +15,7 @@ export type FoodChatMsg = {
   id: string
   role: 'user' | 'bot'
   text?: string
+  query?: string
   pending?: boolean
   answer?: FoodChatAnswer
 }

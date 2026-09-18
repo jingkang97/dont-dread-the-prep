@@ -41,7 +41,10 @@ export async function registerPushWorker() {
   return navigator.serviceWorker.register('/sw.js')
 }
 
-export async function enablePush(session: PrepSession): Promise<PrepSession> {
+export async function enablePush(
+  session: PrepSession,
+  copy?: { title: string; body: string },
+): Promise<PrepSession> {
   if (!isStandaloneDisplay()) throw new Error('not-installed')
   const registration = await registerPushWorker()
   if (!registration) throw new Error('unsupported')
@@ -60,8 +63,10 @@ export async function enablePush(session: PrepSession): Promise<PrepSession> {
   await subscribeApiPush(session.id, { endpoint, keys: { p256dh, auth } })
   const next = { ...session, pushOptIn: true }
   saveSession(next)
-  await registration.showNotification("You're set for reminders", {
-    body: 'Reminders follow your timeline — meds, diet, prep doses, stool check, and fasting.',
+  await registration.showNotification(copy?.title ?? "You're set for reminders", {
+    body:
+      copy?.body ??
+      'Reminders follow your timeline — meds, diet, prep doses, stool check, and fasting.',
     icon: '/icon-192.png',
     data: { url: `/?s=${encodeURIComponent(session.id)}&go=timeline` },
   })

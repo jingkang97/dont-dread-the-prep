@@ -37,7 +37,22 @@ def get_engine() -> Engine:
             connect_args={"prepare_threshold": None},
         )
         _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False)
+        _ensure_preferred_lang(_engine)
     return _engine
+
+
+def _ensure_preferred_lang(engine: Engine) -> None:
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS "
+                    "preferred_lang TEXT NOT NULL DEFAULT 'en'"
+                )
+            )
+    except Exception:
+        # Fresh DBs without sessions, or a read replica, should not block boot.
+        return
 
 
 def get_session_factory() -> sessionmaker:
