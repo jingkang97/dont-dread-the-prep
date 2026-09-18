@@ -115,13 +115,11 @@ export const EN = {
   'tour.replayShort': 'Tour',
   'tour.1t': 'This is your home',
   'tour.1d': 'Your hospital, date, and next step live here. Use the cards below, or the five tabs at the bottom.',
-  'tour.2t': 'Change date or hospital',
-  'tour.2d': 'Tap Edit to change the appointment time. Start over if you need a different hospital.',
+  'tour.2t': 'Edit, tour, and language',
+  'tour.2d':
+    'Tap Edit to change the date, Tour to replay this walkthrough, or the language menu for English, 中文, BM, or த. Screens and reminders follow.',
   'tour.3t': 'Reminders',
   'tour.3d': 'App push or Telegram, timed to your timeline — meds, diet, prep, stool, and fasting. Messages use the language you picked.',
-  'tour.langT': 'Your language',
-  'tour.langD':
-    'English, 中文, Bahasa Melayu, or தமிழ். Screens and reminder messages follow this choice.',
   'tour.4t': 'Food, stool, and contacts',
   'tour.4d': 'Check a food against your hospital sheet, open the stool guide, or call your hospital.',
   'tour.5t': 'The five tabs',
