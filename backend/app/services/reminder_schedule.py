@@ -6,7 +6,6 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.core.config import get_settings
 from app.services.reminder_copy import ITEMS, item_body, tap_hint, wrap_html
 
 SG = ZoneInfo("Asia/Singapore")
@@ -104,7 +103,8 @@ def demo_fast_tick_span(events: list[dict[str, Any]] | None = None) -> timedelta
 
 
 def demo_mode() -> bool:
-    return get_settings().telegram_reminder_test
+    """The compressed Minute/Hour/Day ladder is retired. Always use live hospital times."""
+    return False
 
 
 def demo_body(step: dict[str, Any]) -> str:
@@ -117,8 +117,7 @@ def demo_body(step: dict[str, Any]) -> str:
 
 
 def demo_title(step: dict[str, Any]) -> str:
-    title = step.get("title") or ITEMS.get(step.get("copy") or "", ITEMS["step"])["title"]
-    return f"{step['phase']} · {title}"
+    return str(step.get("title") or ITEMS.get(step.get("copy") or "", ITEMS["step"])["title"])
 
 
 def demo_html(step: dict[str, Any]) -> str:
@@ -139,11 +138,8 @@ def demo_push_payload(step: dict[str, Any], url: str) -> dict[str, str]:
 
 
 def start_demo_clock(row: Session, *, restart: bool = False) -> None:
-    if not restart and row.reminder_anchor_at is not None:
-        return
-    row.reminder_anchor_at = datetime.now(timezone.utc)
-    row.reminder_demo_sent = 0
-    row.reminder_demo_push_sent = 0
+    """Retired. Opt-in must not restart the old minute ladder."""
+    return
 
 
 def reset_reminder_clock(row: Session) -> None:
@@ -260,25 +256,6 @@ def late_notice_push(
 
 def reminder_plan(row: Session, events: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     events = list(events or [])
-    if demo_mode():
-        sent = max(0, int(row.reminder_demo_sent or 0))
-        anchor = row.reminder_anchor_at
-        items: list[dict[str, Any]] = []
-        for index, step in enumerate(demo_steps_for(events)):
-            at = anchor + step["delay"] if anchor is not None else None
-            items.append(
-                {
-                    "key": step["key"],
-                    "title": demo_title(step),
-                    "copy_key": step["copy"],
-                    "delay_label": step["delay_label"],
-                    "body": demo_body(step),
-                    "at": at,
-                    "sent": index < sent,
-                }
-            )
-        return items
-
     sent = set(events_sent(row))
     return [
         {

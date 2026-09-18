@@ -30,10 +30,9 @@ async def lifespan(_app: FastAPI):
     if token or vapid_configured():
         tasks.append(asyncio.create_task(run_reminder_loop(stop), name="telegram-reminders"))
     log.info(
-        "Reminders telegram=%s push=%s test=%s poll=%s site=%s api=%s",
+        "Reminders telegram=%s push=%s poll=%s site=%s api=%s",
         token,
         vapid_configured(),
-        settings.telegram_reminder_test,
         settings.telegram_poll,
         settings.resolved_site_url,
         settings.resolved_public_api_url or "idle",

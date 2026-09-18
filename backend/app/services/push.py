@@ -13,11 +13,9 @@ from app.db.session import session_scope
 from datetime import datetime, timezone
 
 from app.services.reminder_schedule import (
-    demo_mode,
     late_notice_push,
     next_unsent_event,
     skip_late_events,
-    start_demo_clock,
 )
 from app.services.telegram import app_path
 from app.services.timeline import live_reminder_events_for
@@ -53,19 +51,16 @@ def save_subscription(code: str, endpoint: str, p256dh: str, auth: str) -> bool:
         row.push_endpoint = endpoint.strip()
         row.push_p256dh = p256dh.strip()
         row.push_auth = auth.strip()
-        if demo_mode():
-            start_demo_clock(row)
-        else:
-            now = datetime.now(timezone.utc)
-            events = live_reminder_events_for(db, row)
-            skipped = skip_late_events(row, now, events)
-            if skipped and row.reminder_late_notice_sent_at is None:
-                row.reminder_late_notice_sent_at = now
-                notice = late_notice_push(skipped, next_unsent_event(row, events), app_path(row.public_code))
-                subscription = {
-                    "endpoint": row.push_endpoint,
-                    "keys": {"p256dh": row.push_p256dh, "auth": row.push_auth},
-                }
+        now = datetime.now(timezone.utc)
+        events = live_reminder_events_for(db, row)
+        skipped = skip_late_events(row, now, events)
+        if skipped and row.reminder_late_notice_sent_at is None:
+            row.reminder_late_notice_sent_at = now
+            notice = late_notice_push(skipped, next_unsent_event(row, events), app_path(row.public_code))
+            subscription = {
+                "endpoint": row.push_endpoint,
+                "keys": {"p256dh": row.push_p256dh, "auth": row.push_auth},
+            }
     if notice and subscription:
         try:
             send_web_push(subscription, notice)
