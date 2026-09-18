@@ -86,8 +86,11 @@ def _protect(source: str) -> str:
 
 
 def _unprotect(translated: str) -> str:
-    text_plain = _SPAN_RE.sub("", translated)
+    # Google sometimes entity-encodes our notranslate spans; unescape first so they strip.
+    text_plain = html.unescape(translated)
+    text_plain = _SPAN_RE.sub("", text_plain)
     text_plain = _BOLD_HTML_RE.sub(r"**\1**", text_plain)
+    text_plain = re.sub(r"<[^>]+>", "", text_plain)
     return html.unescape(text_plain).strip()
 
 

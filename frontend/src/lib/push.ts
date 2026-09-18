@@ -60,16 +60,28 @@ export async function enablePush(
   const p256dh = json.keys?.p256dh
   const auth = json.keys?.auth
   if (!endpoint || !p256dh || !auth) throw new Error('incomplete')
-  await subscribeApiPush(session.id, { endpoint, keys: { p256dh, auth } })
+  const subscribed = await subscribeApiPush(session.id, { endpoint, keys: { p256dh, auth } })
   const next = { ...session, pushOptIn: true }
   saveSession(next)
+  const timelineUrl = `/?s=${encodeURIComponent(session.id)}&go=timeline`
   await registration.showNotification(copy?.title ?? "You're set for reminders", {
     body:
       copy?.body ??
       'Reminders follow your timeline — meds, diet, prep doses, stool check, and fasting.',
     icon: '/icon-192.png',
-    data: { url: `/?s=${encodeURIComponent(session.id)}&go=timeline` },
+    tag: 'preppath-enroll',
+    data: { url: timelineUrl },
   })
+  const late = subscribed?.late_notice
+  if (late?.title && late.body) {
+    await new Promise((resolve) => window.setTimeout(resolve, 900))
+    await registration.showNotification(late.title, {
+      body: late.body,
+      icon: '/icon-192.png',
+      tag: 'preppath-late',
+      data: { url: late.url || timelineUrl },
+    })
+  }
   return next
 }
 

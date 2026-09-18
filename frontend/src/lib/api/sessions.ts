@@ -67,14 +67,23 @@ export function getVapidPublicKey() {
   return apiFetch<{ public_key: string }>('/api/push/vapid-public-key')
 }
 
+export type ApiPushLateNotice = {
+  title: string
+  body: string
+  url: string
+}
+
 export function subscribeApiPush(
   publicCode: string,
   body: { endpoint: string; keys: { p256dh: string; auth: string } },
 ) {
-  return apiFetch<void>(`/api/sessions/${encodeURIComponent(publicCode)}/push`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
+  return apiFetch<{ late_notice?: ApiPushLateNotice | null }>(
+    `/api/sessions/${encodeURIComponent(publicCode)}/push`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  )
 }
 
 export function unsubscribeApiPush(publicCode: string) {

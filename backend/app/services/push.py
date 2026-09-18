@@ -13,6 +13,7 @@ from app.db.session import session_scope
 from datetime import datetime, timezone
 
 from app.services.reminder_schedule import (
+    events_already_due,
     late_notice_push,
     next_unsent_event,
     skip_late_events,
@@ -41,9 +42,9 @@ def _subscription(row: Session) -> dict[str, Any] | None:
     }
 
 
-def save_subscription(code: str, endpoint: str, p256dh: str, auth: str) -> bool:
+def save_subscription(code: str, endpoint: str, p256dh: str, auth: str) -> dict[str, str] | None | bool:
+    """Persist the subscription. Returns a late-join recap payload, None, or False if missing."""
     notice: dict[str, str] | None = None
-    subscription: dict[str, Any] | None = None
     with session_scope() as db:
         row = db.scalar(select(Session).where(Session.public_code == code.upper()))
         if row is None:
@@ -53,25 +54,26 @@ def save_subscription(code: str, endpoint: str, p256dh: str, auth: str) -> bool:
         row.push_auth = auth.strip()
         now = datetime.now(timezone.utc)
         events = live_reminder_events_for(db, row)
-        skipped = skip_late_events(row, now, events)
-        if skipped and row.reminder_late_notice_sent_at is None:
-            row.reminder_late_notice_sent_at = now
-            notice = late_notice_push(
-                skipped,
-                next_unsent_event(row, events),
-                app_path(row.public_code),
-                row.preferred_lang if getattr(row, "preferred_lang", None) in {"zh", "ms", "ta"} else "en",
+        skip_late_events(row, now, events)
+        passed = events_already_due(now, events)
+        if passed:
+            if row.reminder_late_notice_sent_at is None:
+                row.reminder_late_notice_sent_at = now
+            lang = (
+                row.preferred_lang
+                if getattr(row, "preferred_lang", None) in {"zh", "ms", "ta"}
+                else "en"
             )
-            subscription = {
-                "endpoint": row.push_endpoint,
-                "keys": {"p256dh": row.push_p256dh, "auth": row.push_auth},
-            }
-    if notice and subscription:
-        try:
-            send_web_push(subscription, notice)
-        except Exception:
-            log.exception("Failed sending late-join push notice for session %s", code)
-    return True
+            try:
+                notice = late_notice_push(
+                    passed,
+                    next_unsent_event(row, events),
+                    app_path(row.public_code),
+                    lang,
+                )
+            except Exception:
+                log.exception("Failed building late-join push notice for session %s", code)
+    return notice
 
 
 def clear_subscription(code: str) -> bool:

@@ -13,6 +13,16 @@ class PushSubscribeIn(BaseModel):
     keys: dict[str, str]
 
 
+class PushLateNotice(BaseModel):
+    title: str
+    body: str
+    url: str
+
+
+class PushSubscribeOut(BaseModel):
+    late_notice: PushLateNotice | None = None
+
+
 class VapidOut(BaseModel):
     public_key: str
 
@@ -27,8 +37,8 @@ def get_vapid_public_key() -> VapidOut:
     return VapidOut(public_key=push_service.vapid_public_key())
 
 
-@router.post("/sessions/{public_code}/push", status_code=204)
-def subscribe_push(public_code: str, body: PushSubscribeIn) -> None:
+@router.post("/sessions/{public_code}/push", response_model=PushSubscribeOut)
+def subscribe_push(public_code: str, body: PushSubscribeIn) -> PushSubscribeOut:
     p256dh = (body.keys.get("p256dh") or "").strip()
     auth = (body.keys.get("auth") or "").strip()
     if not p256dh or not auth:
@@ -36,8 +46,11 @@ def subscribe_push(public_code: str, body: PushSubscribeIn) -> None:
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Push subscription keys are required",
         )
-    if not push_service.save_subscription(public_code, body.endpoint, p256dh, auth):
+    result = push_service.save_subscription(public_code, body.endpoint, p256dh, auth)
+    if result is False:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    notice = result if isinstance(result, dict) else None
+    return PushSubscribeOut(late_notice=PushLateNotice(**notice) if notice else None)
 
 
 @router.delete("/sessions/{public_code}/push", status_code=204)
