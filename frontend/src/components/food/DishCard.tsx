@@ -23,32 +23,8 @@ function toDishVerdict(verdict: ApiDishVerdict): Verdict {
   return 'possible'
 }
 
-// Roughly two lines at this type size. Longer reasons collapse so the card stays
-// scannable; the full wording is one tap away rather than truncated, because a
-// half-shown clinical reason is worse than a short one.
-const REASON_CLAMP_CHARS = 110
-
 function Reason({ text }: { text: string }) {
-  const { t } = useLang()
-  const [expanded, setExpanded] = useState(false)
-  const clampable = text.length > REASON_CLAMP_CHARS
-
-  if (!clampable) {
-    return <p className="mt-0.5 text-[12px] leading-snug text-muted">{text}</p>
-  }
-  return (
-    <button
-      type="button"
-      onClick={() => setExpanded((v) => !v)}
-      className="mt-0.5 block text-left text-[12px] leading-snug text-muted"
-      aria-expanded={expanded}
-    >
-      <span className={expanded ? undefined : 'line-clamp-2'}>{text}</span>
-      <span className="mt-0.5 block font-medium text-navy">
-        {expanded ? t('food.reasonLess') : t('food.reasonMore')}
-      </span>
-    </button>
-  )
+  return <p className="mt-0.5 text-[12px] leading-snug text-muted">{text}</p>
 }
 
 function Chevron({ open }: { open: boolean }) {
