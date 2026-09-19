@@ -4,7 +4,6 @@ import { motion } from 'motion/react'
 import { isAfter, isBefore, isSameDay, isToday, startOfDay, startOfMonth } from 'date-fns'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { Card } from '../components/ui'
-import { ScreenHeader } from '../components/ScreenHeader'
 import { DayHeader } from '../components/timeline/DayHeader'
 import { EventCard } from '../components/timeline/EventCard'
 import { EventStamp } from '../components/timeline/EventStamp'
@@ -71,7 +70,7 @@ export function Timeline({
   onOpenFood: () => void
 }) {
   const { t, tx } = useLang()
-  const { hospital, events, loading, error, now, nextUpcoming } = usePrepSummary(session)
+  const { events, loading, error, now, nextUpcoming } = usePrepSummary(session)
   usePrimeLiveCopy(timelineLiveCopy(events))
   const nextId = nextUpcoming?.id
   const days = useMemo(() => groupByDay(events), [events])
@@ -173,11 +172,7 @@ export function Timeline({
   return (
     <>
     <div ref={bindRoot} className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 px-5 pt-6">
-        <ScreenHeader kicker={t('tl.for', { hospital: tx(hospital.short) })} title={t('tl.title')} />
-      </div>
-
-      <div data-tl-bar className="shrink-0 bg-paper px-5 py-2">
+      <div data-tl-bar className="shrink-0 bg-paper px-5 pt-3 pb-2">
         <SegmentedControl
           group="tl-view"
           value={view}

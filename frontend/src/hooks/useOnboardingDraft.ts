@@ -23,7 +23,6 @@ export function useOnboardingDraft() {
     date: plusDays(7),
     slot: 'am',
     reportingTime: defaultReporting('am'),
-    firstName: '',
   })
   // const demoDate = useMemo(() => plusDays(4), [])
   // const scanTimer = useRef<number | null>(null)

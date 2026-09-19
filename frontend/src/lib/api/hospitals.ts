@@ -40,3 +40,7 @@ export type ApiHospital = {
 export function listApiHospitals() {
   return apiFetch<ApiHospital[]>('/api/hospitals')
 }
+
+export function getApiHospital(code: string) {
+  return apiFetch<ApiHospital>(`/api/hospitals/${encodeURIComponent(code)}`)
+}

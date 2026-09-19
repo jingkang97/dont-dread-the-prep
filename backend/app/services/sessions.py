@@ -141,6 +141,29 @@ def list_hospitals_out(db: DbSession) -> list[HospitalOut]:
     return [hospital_to_out(row, bristol) for row in list_hospitals(db)]
 
 
+def get_hospital_out(db: DbSession, code: str) -> HospitalOut:
+    """Any seeded hospital, including codes hidden from the picker.
+
+    Existing sessions (e.g. SGH) still need stool + contacts after those
+    sites were taken off new onboarding.
+    """
+    want = code.strip().lower()
+    row = db.scalar(
+        select(Hospital)
+        .options(
+            selectinload(Hospital.protocols),
+            selectinload(Hospital.stool_scale).selectinload(StoolScale.stages),
+        )
+        .where(Hospital.code == want)
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Unknown hospital_code '{code}'",
+        )
+    return hospital_to_out(row, load_bristol_scale(db))
+
+
 def listed_protocols(hospital: Hospital) -> list[Protocol]:
     return [p for p in hospital.protocols if p.listed]
 

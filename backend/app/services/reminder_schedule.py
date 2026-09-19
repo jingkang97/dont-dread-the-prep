@@ -175,8 +175,12 @@ def report_at(row: Session) -> datetime:
     return datetime.combine(row.procedure_date, row.reporting_time, tzinfo=SG)
 
 
-def _format_sg(when: datetime) -> str:
+def _format_sg(when: datetime, lang: str = "en") -> str:
     local = when.astimezone(SG)
+    if lang == "zh":
+        hour = local.hour % 12 or 12
+        period = "上午" if local.hour < 12 else "下午"
+        return f"{local.month}月 {local.day} 日 {period} {hour}:{local.minute:02d}"
     return local.strftime("%d %b, %I:%M %p").lstrip("0").replace(" 0", " ")
 
 
@@ -229,7 +233,7 @@ def late_notice_html(skipped: list[dict[str, Any]], nxt: dict[str, Any] | None, 
         nxt_title = _tx(lang, [str(nxt["title"])])[0]
         lines.append(
             next_line.replace("{title}", _tg_bold(nxt_title)).replace(
-                "{when}", _tg_escape(_format_sg(nxt["at"]))
+                "{when}", _tg_escape(_format_sg(nxt["at"], lang))
             )
         )
     else:
@@ -254,7 +258,7 @@ def late_notice_push(
         body = (
             with_next.replace("{titles}", titles)
             .replace("{title}", nxt_title)
-            .replace("{when}", _format_sg(nxt["at"]))
+            .replace("{when}", _format_sg(nxt["at"], lang))
         )
     else:
         body = without_next.replace("{titles}", titles)

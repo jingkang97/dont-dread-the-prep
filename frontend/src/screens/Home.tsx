@@ -1,13 +1,11 @@
 import type { ReactNode } from 'react'
-import { format, formatDistanceStrict, isAfter } from 'date-fns'
 import { ArrowRight, Bell, Droplets, EllipsisVertical, Phone, Sparkles, Utensils } from 'lucide-react'
 import { Card } from '../components/ui'
 import { cn } from '../lib/cn'
 import { useLang } from '../i18n/LanguageContext'
 import type { PrepSession, Screen } from '../lib/session'
 import { resolveEventText } from '../lib/timeline'
-import { DATE_LOCALES } from '../lib/dateLocale'
-import { formatYmd } from '../lib/dates'
+import { formatByLang } from '../lib/dates'
 import { usePrepSummary } from '../hooks/usePrepSummary'
 
 export function Home({
@@ -20,52 +18,25 @@ export function Home({
   onShortcut: (os: 'ios' | 'android') => void
 }) {
   const { t, lang, tx } = useLang()
-  const locale = DATE_LOCALES[lang]
-  const { hospital, events, loading, error, now, next, nextWhen, report, started } = usePrepSummary(session)
-  const remaining = report ? formatDistanceStrict(report, now, { addSuffix: true, locale }) : ''
+  const { events, loading, error, next, nextWhen, started } = usePrepSummary(session)
   const remindersOn = session.telegramLinked || session.pushOptIn
 
   return (
-    <div className="px-5 pb-8 pt-6">
-      <div data-tour="home-hero">
-        {session.firstName ? (
-          <>
-            <h1 className="font-display text-[32px] leading-[1.1] tracking-tight text-ink">
-              {t('home.hi', { name: session.firstName })}
-            </h1>
-            <p className="mt-1 text-[17px] font-semibold text-ink">
-              {t(session.slot === 'am' ? 'home.morningScope' : 'home.afternoonScope', {
-                hospital: tx(hospital.short),
-              })}
-            </p>
-          </>
-        ) : (
-          <h1 className="font-display text-[32px] leading-[1.1] tracking-tight text-ink">
-            {t(session.slot === 'am' ? 'home.morningScope' : 'home.afternoonScope', {
-                hospital: tx(hospital.short),
-            })}
-          </h1>
-        )}
-        <p className="mt-1 text-[15px] text-ink-soft">
-          {formatYmd(session.date, lang)} · {t('home.report', { time: session.reportingTime })}
-          {report ? ` · ${isAfter(report, now) ? remaining : ''}` : ''}
-        </p>
-      </div>
-
+    <div className="grid gap-4 px-5 pb-8 pt-4">
       {loading && events.length === 0 ? (
-        <Card className="mt-5 p-4">
+        <Card className="p-4">
           <p className="text-[14px] text-muted">{t('app.regenerating')}</p>
         </Card>
       ) : null}
 
       {!loading && error ? (
-        <Card className="mt-5 p-4">
+        <Card className="p-4">
           <p className="text-[14px] text-no">{tx(error)}</p>
         </Card>
       ) : null}
 
       {next && (
-        <button type="button" onClick={() => onOpen('timeline')} className="mt-5 w-full text-left">
+        <button type="button" data-tour="home-hero" onClick={() => onOpen('timeline')} className="w-full text-left">
           <Card className="p-4">
             <div className="flex items-start gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-teal/15 text-teal-deep">
@@ -79,7 +50,7 @@ export function Home({
                   {tx(resolveEventText(next, t).title)}
                 </p>
                 <p className="mt-1 text-[13px] text-muted">
-                  {format(next.at, 'EEE d MMM, h:mm a', { locale })}
+                  {formatByLang(next.at, lang, 'dateTime')}
                   {nextWhen ? ` · ${nextWhen}` : ''}
                 </p>
                 <p className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-teal-deep">
@@ -91,7 +62,7 @@ export function Home({
         </button>
       )}
 
-      <Card data-tour="home-reminders" className="mt-4 overflow-hidden">
+      <Card data-tour="home-reminders" className="overflow-hidden">
         <div className="flex items-start gap-3 p-4">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-teal/15 text-teal-deep">
             <Bell size={20} />
@@ -112,7 +83,7 @@ export function Home({
         </div>
       </Card>
 
-      <Card data-tour="home-tools" className="mt-4 overflow-hidden">
+      <Card data-tour="home-tools" className="overflow-hidden">
         <Tile
           icon={<Utensils size={18} />}
           iconClass="bg-[#e8f8ff] text-[#007aff]"
@@ -138,7 +109,7 @@ export function Home({
         />
       </Card>
 
-      <Card data-tour="home-shortcut" className="mt-4 p-4">
+      <Card data-tour="home-shortcut" className="p-4">
         <p className="text-[13px] font-semibold text-navy">{t('home.shortcut')}</p>
         <div className="mt-3 grid w-full grid-cols-2 gap-2">
           <button

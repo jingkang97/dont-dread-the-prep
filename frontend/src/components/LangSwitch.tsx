@@ -7,9 +7,11 @@ import { cn } from '../lib/cn'
 export function LangSwitch({
   className,
   variant = 'menu',
+  compact = false,
 }: {
   className?: string
   variant?: 'menu' | 'chips'
+  compact?: boolean
 }) {
   const { lang, setLang, t, translating } = useLang()
   const current = LANGS.find((item) => item.id === lang) ?? LANGS[0]
@@ -60,6 +62,7 @@ export function LangSwitch({
       setLang={setLang}
       label={translating ? t('lang.updating') : t('lang.choose')}
       translating={translating}
+      compact={compact}
     />
   )
 }
@@ -71,6 +74,7 @@ function LangMenu({
   setLang,
   label,
   translating,
+  compact,
 }: {
   className?: string
   current: (typeof LANGS)[number]
@@ -78,6 +82,7 @@ function LangMenu({
   setLang: (lang: Lang) => void
   label: string
   translating: boolean
+  compact: boolean
 }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -110,7 +115,7 @@ function LangMenu({
         className="inline-flex min-h-11 items-center gap-1 rounded-full bg-black/[0.06] py-1 pl-2.5 pr-2 text-[13px] font-semibold text-navy"
       >
         <Languages size={15} strokeWidth={2.25} className="shrink-0 text-teal-deep" />
-        <span>{current.native}</span>
+        <span>{compact ? current.short : current.native}</span>
         {translating ? (
           <LoaderCircle
             size={16}
