@@ -20,6 +20,7 @@ const ANDROID_STEPS: StringKey[] = [
   'home.shortcutAndroid2',
   'home.shortcutAndroid3',
   'home.shortcutAndroid4',
+  'home.shortcutAndroid5',
 ]
 
 export function ShortcutSheet({
