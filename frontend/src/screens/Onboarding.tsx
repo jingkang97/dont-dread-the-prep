@@ -97,7 +97,9 @@ export function Onboarding({
         <h1 className="font-display text-[34px] leading-[1.1] tracking-tight text-ink">
           {t('on.title')}
         </h1>
-        <LangSwitch variant="chips" className="mt-4" />
+        <div data-demo="on-lang">
+          <LangSwitch variant="chips" className="mt-4" />
+        </div>
       </header>
 
       <div className="relative min-h-0 flex-1">
@@ -189,6 +191,7 @@ export function Onboarding({
                     )}
                     <div className="mt-5 grid gap-2">
                       <PrimaryButton
+                        data-demo="on-continue"
                         disabled={
                           !draft.slot ||
                           isBeforeToday(draft.date) ||
@@ -198,13 +201,13 @@ export function Onboarding({
                       >
                         {t('on.continue')}
                       </PrimaryButton>
-                      <GhostButton onClick={() => setStep('hospital')}>{t('on.back')}</GhostButton>
+                      <GhostButton data-demo="on-back" onClick={() => setStep('hospital')}>{t('on.back')}</GhostButton>
                     </div>
                   </div>
                 )}
 
                 {step === 'confirm' && apiHospital && draft.slot && (
-                  <div>
+                  <div data-demo="on-confirm">
                     <SectionLabel>{t('on.step3')}</SectionLabel>
                     <Card className="mt-3 overflow-hidden">
                       <div className="bg-cream px-4 py-3">
@@ -234,10 +237,10 @@ export function Onboarding({
                       </p>
                     ) : null}
                     <div className="mt-5 grid gap-2">
-                      <PrimaryButton disabled={!canFinish || busy} onClick={() => void generate()}>
+                      <PrimaryButton data-demo="on-generate" disabled={!canFinish || busy} onClick={() => void generate()}>
                         {t('on.generate')}
                       </PrimaryButton>
-                      <GhostButton onClick={() => setStep('schedule')}>{t('on.back')}</GhostButton>
+                      <GhostButton data-demo="on-back" onClick={() => setStep('schedule')}>{t('on.back')}</GhostButton>
                     </div>
                   </div>
                 )}

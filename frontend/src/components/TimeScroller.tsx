@@ -141,6 +141,7 @@ export function TimeScroller({
               id={`time-${time}`}
               type="button"
               role="option"
+              data-demo={`on-time-${time}`}
               aria-selected={selected}
               onClick={() => {
                 setScrolled(null)

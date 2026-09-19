@@ -21,6 +21,8 @@ import { useEdgeSwipeBack } from './hooks/useEdgeSwipeBack'
 import { useSession } from './hooks/useSession'
 import { startHomeTour } from './lib/homeTour'
 import { isStandaloneDisplay } from './lib/push'
+import { DemoPlayer } from './demo/DemoPlayer'
+import { DemoProvider } from './demo/DemoContext'
 import { useRef, useState, useEffect } from 'react'
 import type { Screen } from './lib/session'
 import { patchApiSession } from './lib/api'
@@ -29,7 +31,7 @@ import { isLang } from './i18n/strings'
 
 export default function App() {
   const { lang, setLang, t } = useLang()
-  const { session, setSession, screen, setScreen, ready, create, clear, update } = useSession()
+  const { session, setSession, screen, setScreen, ready, create, clear, update, onboardKey } = useSession()
   const edit = useAppointmentEdit()
   const [shortcut, setShortcut] = useState<'off' | 'ios' | 'android'>('off')
   const homeLeafRef = useRef<'home' | 'reminders'>('home')
@@ -62,6 +64,12 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
+    <DemoProvider
+      hasSession={Boolean(session) && screen !== 'onboarding'}
+      setScreen={setScreen}
+      clear={clear}
+      resetLang={() => setLang('en')}
+    >
     <div className="h-full xl:grid xl:grid-cols-[minmax(0,1fr)_430px]">
       <PitchRail session={session} />
 
@@ -81,7 +89,7 @@ export default function App() {
             className="flex min-h-0 flex-1 flex-col overflow-hidden"
             {...fadeY}
           >
-          <Onboarding onComplete={create} />
+          <Onboarding key={onboardKey} onComplete={create} />
           </motion.div>
         ) : (
           <motion.div
@@ -92,14 +100,14 @@ export default function App() {
             <SessionBar
               session={session}
               onChange={edit.openChooser}
-              onReplayTour={screen === 'home' ? () => startHomeTour({ t }) : undefined}
+              onReplayTour={() => {
+                if (screen !== 'home') setScreen('home')
+                window.setTimeout(() => startHomeTour({ t }), screen === 'home' ? 80 : 400)
+              }}
             />
             <div
               data-app-pane
-              className={cn(
-                'relative min-h-0 flex-1 overflow-hidden',
-                screen !== 'timeline' && '**:data-tl-fab:hidden',
-              )}
+              className="relative min-h-0 flex-1 overflow-hidden"
             >
               <div
                 aria-hidden={screen !== 'home' && screen !== 'reminders'}
@@ -206,6 +214,8 @@ export default function App() {
         </AnimatePresence>
       </div>
     </div>
+    <DemoPlayer />
+    </DemoProvider>
     </MotionConfig>
   )
 }

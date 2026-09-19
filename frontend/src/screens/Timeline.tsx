@@ -1,5 +1,4 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { motion } from 'motion/react'
 import { isAfter, isBefore, isSameDay, isToday, startOfDay, startOfMonth } from 'date-fns'
 import { MonthCalendar } from '../components/MonthCalendar'
@@ -100,14 +99,11 @@ export function Timeline({
   const rootRef = useRef<HTMLDivElement>(null)
   const todayRef = useRef<HTMLElement>(null)
   const nextRef = useRef<HTMLLIElement>(null)
-  const [pane, setPane] = useState<HTMLElement | null>(null)
   const [jumpDir, setJumpDir] = useState<JumpDir>('down')
   const [progress, setProgress] = useState(0)
 
   const bindRoot = useCallback((node: HTMLDivElement | null) => {
     rootRef.current = node
-    const host = node?.closest('[data-app-pane]')
-    setPane(host instanceof HTMLElement ? host : null)
   }, [])
 
   useLayoutEffect(() => {
@@ -171,7 +167,7 @@ export function Timeline({
 
   return (
     <>
-    <div ref={bindRoot} className="flex h-full min-h-0 flex-col">
+    <div ref={bindRoot} className="relative flex h-full min-h-0 flex-col">
       <div data-tl-bar className="shrink-0 bg-paper px-5 pt-3 pb-2">
         <SegmentedControl
           group="tl-view"
@@ -316,18 +312,14 @@ export function Timeline({
         </div>
       )}
       </div>
+    {view === 'list' && nextUpcoming ? (
+      <div data-tl-fab className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-end px-4">
+        <div className="pointer-events-auto">
+          <JumpNextFab dir={jumpDir} progress={progress} onClick={jumpToNext} />
+        </div>
+      </div>
+    ) : null}
     </div>
-    {pane &&
-      view === 'list' &&
-      nextUpcoming &&
-      createPortal(
-        <div data-tl-fab className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-end px-4">
-          <div className="pointer-events-auto">
-            <JumpNextFab dir={jumpDir} progress={progress} onClick={jumpToNext} />
-          </div>
-        </div>,
-        pane,
-      )}
     </>
   )
 }

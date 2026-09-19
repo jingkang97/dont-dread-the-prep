@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useLang } from '../i18n/LanguageContext'
+import { isDemoPlaying } from '../demo/enabled'
 import { homeTourPending, queueHomeTour, rememberFirstHomeVisit, startHomeTour, stopHomeTour, waitForTourTargets } from '../lib/homeTour'
 
 function takeTourFlag() {
@@ -14,7 +15,7 @@ export function useHomeTour(active: boolean) {
   const { t } = useLang()
 
   useEffect(() => {
-    if (!active) return
+    if (!active || isDemoPlaying()) return
     if (takeTourFlag()) queueHomeTour(true)
     if (!homeTourPending()) return
     rememberFirstHomeVisit()

@@ -19,7 +19,7 @@ export function SheetFrame({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18, ease: easeOut }}
     >
-      <button type="button" aria-label={dismissLabel} className="absolute inset-0 bg-black/40" onClick={onDismiss} />
+      <button type="button" data-demo="sheet-dismiss" aria-label={dismissLabel} className="absolute inset-0 bg-black/40" onClick={onDismiss} />
       <motion.div
         className="relative w-full rounded-[24px] bg-white p-5 shadow-xl"
         initial={{ opacity: 0, y: 10 }}

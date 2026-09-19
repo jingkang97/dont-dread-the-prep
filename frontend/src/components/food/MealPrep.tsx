@@ -43,6 +43,7 @@ export function MealPrep({ session }: { session: PrepSession }) {
                 type="button"
                 role="radio"
                 aria-checked={on}
+                data-demo={`food-meal-${item.id}`}
                 onClick={() => setMeal(item.id)}
                 className={cn(
                   'min-h-9 min-w-0 flex-1 whitespace-nowrap rounded-full px-1.5 text-[12px] font-medium',

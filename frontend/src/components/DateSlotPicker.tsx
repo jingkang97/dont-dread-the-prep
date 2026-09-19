@@ -30,9 +30,9 @@ export function DateSlotPicker({
   const times = slot === 'pm' ? PM_TIMES : AM_TIMES
 
   return (
-    <div>
+    <div data-demo="on-schedule">
       {dateLabel ? <p className="text-[13px] font-semibold text-navy">{dateLabel}</p> : null}
-      <Card className={dateLabel ? 'mt-3 px-1 py-2' : 'px-1 py-2'}>
+      <Card data-demo="on-date" className={dateLabel ? 'mt-3 px-1 py-2' : 'px-1 py-2'}>
         <MonthCalendar
           selected={selected}
           onSelect={(day) => {
@@ -75,7 +75,7 @@ export function DateSlotPicker({
       />
 
       <p className="mt-5 text-[13px] font-semibold text-navy">{t('on.report')}</p>
-      <Card className="mt-2 overflow-hidden py-1">
+      <Card data-demo="on-report" className="mt-2 overflow-hidden py-1">
         <TimeScroller
           key={slot ?? 'am'}
           times={times}

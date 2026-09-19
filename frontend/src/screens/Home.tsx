@@ -74,6 +74,7 @@ export function Home({
             <p className="mt-2 text-[13px] leading-relaxed text-muted">{t('home.waBody')}</p>
             <button
               type="button"
+              data-demo="home-reminders-cta"
               onClick={() => onOpen('reminders')}
               className="mt-3 inline-flex min-h-[40px] items-center rounded-full bg-navy px-4 text-[15px] font-semibold text-white"
             >
@@ -89,6 +90,7 @@ export function Home({
           iconClass="bg-[#e8f8ff] text-[#007aff]"
           title={t('home.foodTitle')}
           body={t('home.foodBody')}
+          demo="home-food"
           onClick={() => onOpen('food')}
         />
         <div className="ml-[68px] h-px bg-line" />
@@ -97,6 +99,7 @@ export function Home({
           iconClass="bg-ask-bg text-ask"
           title={t('home.stoolTitle')}
           body={t('home.stoolBody')}
+          demo="home-stool"
           onClick={() => onOpen('stool')}
         />
         <div className="ml-[68px] h-px bg-line" />
@@ -105,6 +108,7 @@ export function Home({
           iconClass="bg-teal/15 text-teal-deep"
           title={t('home.contactsTitle')}
           body={t('home.contactsBody')}
+          demo="home-contacts"
           onClick={() => onOpen('contacts')}
         />
       </Card>
@@ -114,6 +118,7 @@ export function Home({
         <div className="mt-3 grid w-full grid-cols-2 gap-2">
           <button
             type="button"
+            data-demo="home-shortcut-ios"
             onClick={() => onShortcut('ios')}
             className="flex w-full min-w-0 flex-col items-start gap-2 rounded-2xl bg-paper px-3 py-3 text-left"
           >
@@ -130,6 +135,7 @@ export function Home({
           </button>
           <button
             type="button"
+            data-demo="home-shortcut-android"
             onClick={() => onShortcut('android')}
             className="flex w-full min-w-0 flex-col items-start gap-2 rounded-2xl bg-paper px-3 py-3 text-left"
           >
@@ -155,16 +161,18 @@ function Tile({
   iconClass,
   title,
   body,
+  demo,
   onClick,
 }: {
   icon: ReactNode
   iconClass: string
   title: string
   body: string
+  demo?: string
   onClick: () => void
 }) {
   return (
-    <button type="button" onClick={onClick} className="flex w-full items-start gap-3 p-4 text-left">
+    <button type="button" data-demo={demo} onClick={onClick} className="flex w-full items-start gap-3 p-4 text-left">
       <span className={cn('flex h-9 w-9 items-center justify-center rounded-[10px]', iconClass)}>{icon}</span>
       <span className="flex-1">
         <span className="block text-[15px] font-semibold text-ink">{title}</span>

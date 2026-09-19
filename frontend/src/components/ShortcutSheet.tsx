@@ -42,7 +42,7 @@ export function ShortcutSheet({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18, ease: easeOut }}
     >
-      <button type="button" aria-label={t('on.back')} className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <button type="button" data-demo="sheet-dismiss" aria-label={t('on.back')} className="absolute inset-0 bg-black/40" onClick={onClose} />
       <motion.div
         className="relative flex max-h-full w-full flex-col overflow-hidden rounded-3xl bg-white shadow-xl"
         initial={{ opacity: 0, y: 28 }}
@@ -83,7 +83,7 @@ export function ShortcutSheet({
           </ol>
         </div>
         <div className="shrink-0 px-5 pb-5 pt-2">
-          <PrimaryButton onClick={onClose}>{t('home.shortcutGotIt')}</PrimaryButton>
+          <PrimaryButton data-demo="sheet-done" onClick={onClose}>{t('home.shortcutGotIt')}</PrimaryButton>
         </div>
       </motion.div>
     </motion.div>

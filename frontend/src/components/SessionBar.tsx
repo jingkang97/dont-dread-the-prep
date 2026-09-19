@@ -38,6 +38,7 @@ export function SessionBar({
           type="button"
           onClick={onReplayTour}
           aria-label={t('tour.replay')}
+          data-demo="home-tour"
           className="min-h-11 shrink-0 rounded-full px-2 text-[15px] font-semibold text-teal-deep active:bg-cream"
         >
           {t('tour.replayShort')}
@@ -45,6 +46,7 @@ export function SessionBar({
       ) : null}
       <button
         type="button"
+        data-demo="home-edit"
         onClick={onChange}
         className="min-h-11 shrink-0 rounded-full px-2 text-[15px] font-semibold text-teal-deep active:bg-cream"
       >

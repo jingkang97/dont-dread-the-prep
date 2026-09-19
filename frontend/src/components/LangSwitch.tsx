@@ -33,6 +33,7 @@ export function LangSwitch({
                 type="button"
                 role="radio"
                 aria-checked={on}
+                data-demo={`lang-${item.id}`}
                 onClick={() => setLang(item.id)}
                 className={cn(
                   'min-h-9 min-w-0 flex-1 whitespace-nowrap rounded-full px-2 text-[12px] font-medium',
@@ -107,6 +108,7 @@ function LangMenu({
     <div ref={rootRef} className={cn('relative shrink-0', className)}>
       <button
         type="button"
+        data-demo="lang-menu"
         aria-label={label}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -143,6 +145,7 @@ function LangMenu({
                 <button
                   type="button"
                   role="option"
+                  data-demo={`lang-menu-${item.id}`}
                   aria-selected={on}
                   onClick={() => {
                     setLang(item.id)

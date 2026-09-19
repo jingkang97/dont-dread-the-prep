@@ -33,7 +33,7 @@ export function FleetMixSheet({ onClose }: { onClose: () => void }) {
           </figure>
         ))}
       </div>
-      <PrimaryButton className="mt-4" onClick={onClose}>
+      <PrimaryButton data-demo="sheet-done" className="mt-4" onClick={onClose}>
         {t('home.shortcutGotIt')}
       </PrimaryButton>
     </SheetFrame>

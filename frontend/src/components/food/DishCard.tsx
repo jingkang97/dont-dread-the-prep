@@ -104,6 +104,7 @@ export function DishCard({
           aria-expanded={expanded}
           aria-label={expanded ? t('food.hideIngredients') : t('food.showIngredients')}
           className="flex w-full items-start justify-between gap-2 text-left"
+          data-demo="food-dish"
         >
           <p className="text-[16px] font-semibold text-ink">{tx(dish.name)}</p>
           <span className="flex shrink-0 items-start gap-1.5">

@@ -311,3 +311,23 @@ select {
   background: #e5e5ea;
   background-color: #e5e5ea;
 }
+
+.demo-ring {
+  position: absolute;
+  z-index: 80;
+  pointer-events: none;
+  border: 2px solid #00c7be;
+  border-radius: 18px;
+  box-shadow: 0 0 0 6px rgba(0, 199, 190, 0.2);
+  animation: demo-ring-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes demo-ring-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px rgba(0, 199, 190, 0.16);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(0, 199, 190, 0.3);
+  }
+}

@@ -58,6 +58,7 @@ export function Reminders({
     <div className="px-5 pb-10 pt-6">
       <button
         type="button"
+        data-demo="reminders-back"
         onClick={onBack}
         className="mb-3 inline-flex items-center gap-0.5 text-[13px] font-semibold text-teal-deep"
       >
@@ -65,7 +66,7 @@ export function Reminders({
         {t('nav.home')}
       </button>
 
-      <Card className="mt-4 p-4">
+      <Card data-demo="reminders-intro" className="mt-4 p-4">
         <p className="text-[13px] font-semibold text-navy">{t('wa.welcome')}</p>
         <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">
           {t('wa.welcomeBody')}
@@ -81,7 +82,7 @@ export function Reminders({
         )}
       </Card>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div data-demo="reminders-options" className="mt-4 grid grid-cols-2 gap-3">
         <Card className="flex flex-col p-3.5">
           <div className="flex items-start justify-between gap-2">
             <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-teal/15 text-teal-deep">
@@ -159,7 +160,7 @@ export function Reminders({
         <p className="mt-3 text-[13px] font-semibold text-no">{t('wa.waitingTimeout')}</p>
       )}
 
-      <Card className="mt-5 p-4">
+      <Card data-demo="reminders-plan" className="mt-5 p-4">
         <p className="text-[13px] font-semibold text-navy">{t('wa.times')}</p>
         <ul className="mt-2 divide-y divide-line">
           {items.map((item) => (

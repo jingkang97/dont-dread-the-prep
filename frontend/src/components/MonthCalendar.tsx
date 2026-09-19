@@ -3,6 +3,7 @@ import { DayPicker, type Matcher } from 'react-day-picker'
 import { useLang } from '../i18n/LanguageContext'
 import { cn } from '../lib/cn'
 import { DATE_LOCALES } from '../lib/dateLocale'
+import { toYmd } from '../lib/dates'
 
 export function MonthCalendar({
   selected,
@@ -63,6 +64,11 @@ export function MonthCalendar({
         modifiersClassNames={{
           hasEvent: 'pp-has-event',
           procedure: 'pp-procedure',
+        }}
+        components={{
+          DayButton: ({ day, modifiers: _modifiers, ...props }) => (
+            <button {...props} data-demo={`cal-${toYmd(day.date)}`} />
+          ),
         }}
       />
     </div>

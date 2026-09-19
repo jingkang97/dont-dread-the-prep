@@ -62,7 +62,7 @@ export function StoolGuide({
         />
       ) : null}
 
-      <div className="grid gap-2">
+      <div data-demo="stool-chart" className="grid gap-2">
         {scale?.stages.map((stage) => (
           <StageCard
             key={stage.n}
@@ -125,6 +125,7 @@ function StageCard({
       {photoMode && photo ? (
         <button
           type="button"
+          data-demo="stool-photo"
           onClick={() => onOpenPhoto(photo)}
           className="relative shrink-0 overflow-hidden rounded-2xl bg-white"
         >
@@ -151,6 +152,7 @@ function StageCard({
         {photoMode && lastStages && extras > 0 ? (
           <button
             type="button"
+            data-demo="stool-more"
             onClick={() => onOpenPhoto(photo!)}
             className="mt-1.5 text-[12px] font-semibold text-teal-deep"
           >
@@ -241,6 +243,7 @@ function PhotoSheet({
             </div>
             <button
               type="button"
+              data-demo="stool-close"
               onClick={onClose}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-paper text-ink"
               aria-label={t('tour.done')}

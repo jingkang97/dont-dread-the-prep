@@ -49,13 +49,14 @@ export function PrimaryButton({
   type = 'button',
   disabled,
   className,
+  ...rest
 }: {
   children: ReactNode
   onClick?: () => void
   type?: 'button' | 'submit'
   disabled?: boolean
   className?: string
-}) {
+} & HTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type={type}
@@ -65,6 +66,7 @@ export function PrimaryButton({
         'w-full rounded-full bg-navy px-4 py-3.5 text-[17px] font-semibold text-white transition active:scale-[0.98] disabled:opacity-40',
         className,
       )}
+      {...rest}
     >
       {children}
     </button>
@@ -75,11 +77,12 @@ export function GhostButton({
   children,
   onClick,
   className,
+  ...rest
 }: {
   children: ReactNode
   onClick?: () => void
   className?: string
-}) {
+} & HTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"
@@ -88,6 +91,7 @@ export function GhostButton({
         'w-full rounded-full bg-white px-4 py-3 text-[17px] font-semibold text-ink shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition active:scale-[0.98]',
         className,
       )}
+      {...rest}
     >
       {children}
     </button>

@@ -19,6 +19,7 @@ export function JumpNextFab({
   return (
     <button
       type="button"
+      data-demo="tl-fab"
       onClick={onClick}
       className="flex flex-col items-center gap-1"
       aria-label={t('tl.jumpNext')}

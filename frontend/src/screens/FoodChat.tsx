@@ -294,7 +294,11 @@ export function FoodChat({ session }: { session: PrepSession }) {
                         </div>
                       </motion.div>
                     ) : (
-                      <motion.div key={msg.id} {...(skipEnter.current ? {} : fadeY)}>
+                      <motion.div
+                        key={msg.id}
+                        data-demo={msg.pending || !msg.answer ? 'food-thinking' : 'food-reply'}
+                        {...(skipEnter.current ? {} : fadeY)}
+                      >
                         {msg.pending || !msg.answer ? (
                           <ThinkingCard />
                         ) : (
@@ -324,6 +328,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
                 <button
                   key={item.query}
                   type="button"
+                  data-demo={`food-suggest-${item.query}`}
                   onClick={() => ask(t(item.key), item.query)}
                   className="shrink-0 rounded-full border border-line bg-paper px-3 py-1.5 text-[12px] font-medium text-navy"
                 >
@@ -339,6 +344,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
               }}
             >
               <input
+                data-demo="food-input"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={t('food.placeholder')}
@@ -346,6 +352,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
               />
               <button
                 type="submit"
+                data-demo="food-send"
                 className="flex h-12 w-12 items-center justify-center rounded-full bg-teal text-white"
                 aria-label={t('food.send')}
               >
