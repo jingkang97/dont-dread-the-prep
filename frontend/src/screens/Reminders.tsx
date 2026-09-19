@@ -1,11 +1,10 @@
-import { format, isAfter, parseISO } from 'date-fns'
+import { isAfter, parseISO } from 'date-fns'
 import { Bell, ChevronLeft, Info } from 'lucide-react'
 import { useEffect } from 'react'
-import { ScreenHeader } from '../components/ScreenHeader'
 import { Card, GhostButton, PrimaryButton } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
 import { usePrimeLiveCopy } from '../i18n/liveCopy'
-import { DATE_LOCALES } from '../lib/dateLocale'
+import { formatByLang } from '../lib/dates'
 import type { PrepSession } from '../lib/session'
 import { fromApiSession, saveSession, telegramStartHref } from '../lib/session'
 import { getApiSession } from '../lib/api'
@@ -65,9 +64,8 @@ export function Reminders({
         <ChevronLeft size={16} strokeWidth={2.4} />
         {t('nav.home')}
       </button>
-      <ScreenHeader title={t('wa.title')} />
 
-      <Card className="mt-5 p-4">
+      <Card className="mt-4 p-4">
         <p className="text-[13px] font-semibold text-navy">{t('wa.welcome')}</p>
         <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">
           {t('wa.welcomeBody')}
@@ -176,7 +174,7 @@ export function Reminders({
                     : item.at && !isAfter(item.at, new Date())
                       ? t('wa.passed')
                       : item.at
-                        ? format(item.at, 'd MMM, h:mm a', { locale: DATE_LOCALES[lang] })
+                        ? formatByLang(item.at, lang, 'sessionWhen')
                         : item.delayLabel
                           ? tx(item.delayLabel)
                           : ''}

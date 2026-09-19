@@ -17,7 +17,6 @@ export type OnboardingDraft = {
   date: string
   slot: Slot | null
   reportingTime: string
-  firstName: string
 }
 
 /** Payload handed to App → createSession */
@@ -26,6 +25,5 @@ export type OnboardingResult = {
   date: string
   slot: Slot
   reportingTime: string
-  firstName: string
   protocolName?: string
 }

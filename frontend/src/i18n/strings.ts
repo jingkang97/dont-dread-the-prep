@@ -114,7 +114,7 @@ export const EN = {
   'tour.replay': 'Replay tour',
   'tour.replayShort': 'Tour',
   'tour.1t': 'This is your home',
-  'tour.1d': 'Your hospital, date, and next step live here. Use the cards below, or the five tabs at the bottom.',
+  'tour.1d': 'Your next step is here. Use the cards below, or the five tabs at the bottom.',
   'tour.2t': 'Edit, tour, and language',
   'tour.2d':
     'Tap Edit to change the date, Tour to replay this walkthrough, or the language menu for English, 中文, BM, or த. Screens and reminders follow.',

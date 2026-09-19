@@ -1,6 +1,10 @@
 import { format } from 'date-fns'
 import type { Lang } from '../i18n/strings'
-import { DATE_LOCALES } from './dateLocale'
+import { DATE_LOCALES, DATE_PATTERNS, type DatePattern } from './dateLocale'
+
+export function formatByLang(date: Date, lang: Lang, pattern: DatePattern) {
+  return format(date, DATE_PATTERNS[lang][pattern], { locale: DATE_LOCALES[lang] })
+}
 
 export function parseYmd(ymd: string) {
   const [y, m, d] = ymd.split('-').map(Number)
@@ -23,9 +27,9 @@ export function isBeforeToday(ymd: string) {
   return ymd < toYmd(new Date())
 }
 
-export function formatHm(hm: string) {
+export function formatHm(hm: string, lang: Lang = 'en') {
   const [h, min] = hm.split(':').map(Number)
-  return format(new Date(2000, 0, 1, h, min), 'h:mm a')
+  return formatByLang(new Date(2000, 0, 1, h, min), lang, 'time')
 }
 
 export function quarterHours(startHm: string, endHm: string, step = 15) {
@@ -44,7 +48,7 @@ export function quarterHours(startHm: string, endHm: string, step = 15) {
 }
 
 export function formatYmd(ymd: string, lang: Lang) {
-  return format(parseYmd(ymd), 'EEE d MMM yyyy', { locale: DATE_LOCALES[lang] })
+  return formatByLang(parseYmd(ymd), lang, 'ymd')
 }
 
 export function sessionReportAt(session: { date: string; reportingTime: string }) {
@@ -52,5 +56,5 @@ export function sessionReportAt(session: { date: string; reportingTime: string }
 }
 
 export function formatSessionWhen(session: { date: string; reportingTime: string }, lang: Lang) {
-  return format(sessionReportAt(session), 'd MMM, h:mm a', { locale: DATE_LOCALES[lang] })
+  return formatByLang(sessionReportAt(session), lang, 'sessionWhen')
 }

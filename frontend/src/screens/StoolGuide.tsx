@@ -1,4 +1,3 @@
-import { ScreenHeader } from '../components/ScreenHeader'
 import { Card } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
 import { useSessionHospital } from '../hooks/useSessionHospital'
@@ -12,20 +11,17 @@ export function StoolGuide({
   session: PrepSession
 }) {
   const { t, tx } = useLang()
-  const { hospital, loading } = useSessionHospital(session)
+  const { hospital, loading, error } = useSessionHospital(session)
   const scale = hospital?.stool_scale
   const showBadges = scale?.show_ready_badges === true
   const notReadyAction = scale?.not_ready_action?.trim() || null
 
   return (
-    <div className="px-5 pb-10 pt-6">
-      <ScreenHeader
-        kicker={t('stool.kicker')}
-        title={t('stool.title')}
-        lead={t('stool.lead')}
-      />
-
-      <div className="mt-5 grid gap-2">
+    <div className="px-5 pb-10 pt-4">
+      {!loading && !scale ? (
+        <p className="text-[14px] text-no">{tx(error ?? t('err.hospitals'))}</p>
+      ) : null}
+      <div className="grid gap-2">
         {scale?.stages.map((stage) => (
           <StageCard key={stage.n} stage={stage} showBadge={showBadges} t={t} tx={tx} />
         ))}

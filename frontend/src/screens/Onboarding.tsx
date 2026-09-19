@@ -76,7 +76,6 @@ export function Onboarding({
         date: draft.date,
         slot: draft.slot,
         reportingTime: draft.reportingTime,
-        firstName: draft.firstName,
         // Listed chip name only — server remaps to the sheet for reporting_time.
         protocolName: draft.protocolName ?? undefined,
       })
@@ -223,24 +222,9 @@ export function Onboarding({
                           k={t('on.sessionLabel')}
                           v={draft.slot === 'am' ? t('on.morning') : t('on.afternoon')}
                         />
-                        <Row k={t('on.reportBy')} v={formatHm(draft.reportingTime)} />
+                        <Row k={t('on.reportBy')} v={formatHm(draft.reportingTime, lang)} />
                       </dl>
                     </Card>
-                    <label className="mt-4 block text-[13px] font-semibold text-navy" htmlFor="firstName">
-                      {t('on.name')}
-                    </label>
-                    <input
-                      id="firstName"
-                      type="text"
-                      autoComplete="given-name"
-                      enterKeyHint="done"
-                      maxLength={24}
-                      placeholder={t('on.namePlaceholder')}
-                      value={draft.firstName}
-                      onChange={(e) => setDraft((d) => ({ ...d, firstName: e.target.value }))}
-                      className="mt-1.5 w-full rounded-xl border border-transparent bg-paper-2 px-3 py-3 text-[16px] text-ink"
-                    />
-                    <p className="mt-1.5 text-[12px] text-muted">{t('on.nameHint')}</p>
                     <p className="mt-3 text-[12px] leading-relaxed text-muted">
                       {t('on.confirmNote', { hospital: tx(hospitalShort) })}
                     </p>

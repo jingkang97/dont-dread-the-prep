@@ -1,6 +1,5 @@
 import { Phone } from 'lucide-react'
 import { formatPhone, telHref } from '../data/hospitals'
-import { ScreenHeader } from '../components/ScreenHeader'
 import { Card, PrimaryButton } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
 import { useSessionHospital } from '../hooks/useSessionHospital'
@@ -8,18 +7,15 @@ import type { PrepSession } from '../lib/session'
 
 export function Contacts({ session }: { session: PrepSession }) {
   const { t, tx } = useLang()
-  const { hospital, short } = useSessionHospital(session)
+  const { hospital, loading, error } = useSessionHospital(session)
   const contacts = hospital?.contacts ?? []
 
   return (
-    <div className="px-5 pb-10 pt-6">
-      <ScreenHeader
-        kicker={t('contacts.kicker')}
-        title={t('contacts.title', { hospital: tx(short) })}
-        lead={t('contacts.lead')}
-      />
-
-      <div className="mt-5 grid gap-2.5">
+    <div className="px-5 pb-10 pt-4">
+      {!loading && contacts.length === 0 ? (
+        <p className="text-[14px] text-no">{tx(error ?? t('err.hospitals'))}</p>
+      ) : null}
+      <div className="grid gap-2.5">
         {contacts.map((c) => (
           <Card key={c.phone} className="p-4">
             <p className="text-[12px] font-semibold tracking-wide text-muted">{tx(c.label)}</p>

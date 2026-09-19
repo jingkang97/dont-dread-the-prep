@@ -1,7 +1,7 @@
-import { format, isSameDay, isToday } from 'date-fns'
+import { isSameDay, isToday } from 'date-fns'
 import { useLang } from '../../i18n/LanguageContext'
 import { cn } from '../../lib/cn'
-import { DATE_LOCALES } from '../../lib/dateLocale'
+import { formatByLang } from '../../lib/dates'
 import { fromNowDays } from '../../lib/timeline'
 
 export function DayHeader({
@@ -26,7 +26,7 @@ export function DayHeader({
         sticky && 'sticky top-0 z-10 -mx-5 px-5',
       )}
     >
-      <span className="min-w-0 truncate">{format(day, 'EEE d MMM', { locale: DATE_LOCALES[lang] })}</span>
+      <span className="min-w-0 truncate">{formatByLang(day, lang, 'dayHeader')}</span>
       {today && (
         <span className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wide text-teal-deep shadow-[inset_0_0_0_1.5px_#00c7be]">
           {t('tl.today')}

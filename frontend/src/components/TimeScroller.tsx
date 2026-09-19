@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { useLang } from '../i18n/LanguageContext'
 import { cn } from '../lib/cn'
 import { formatHm } from '../lib/dates'
 
@@ -37,6 +38,7 @@ export function TimeScroller({
   onChange: (time: string) => void
   label: string
 }) {
+  const { lang } = useLang()
   const scrollerRef = useRef<HTMLDivElement>(null)
   const onChangeRef = useRef(onChange)
   const valueRef = useRef(value)
@@ -150,7 +152,7 @@ export function TimeScroller({
                 selected ? 'text-teal-deep' : 'text-muted',
               )}
             >
-              {formatHm(time)}
+              {formatHm(time, lang)}
             </button>
           )
         })}

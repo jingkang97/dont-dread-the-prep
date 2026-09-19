@@ -3,7 +3,6 @@ import { motion } from 'motion/react'
 import { ArrowDown, Send } from 'lucide-react'
 import { BotCard, ThinkingCard } from '../components/food/BotCard'
 import { MealPrep } from '../components/food/MealPrep'
-import { ScreenHeader } from '../components/ScreenHeader'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { Card } from '../components/ui'
 import { useLang } from '../i18n/LanguageContext'
@@ -231,36 +230,26 @@ export function FoodChat({ session }: { session: PrepSession }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="px-5 pt-6">
-        <ScreenHeader
-          kicker={t('food.kicker')}
-          title={t('food.title')}
-          lead={tab === 'chat' ? t('food.lead', { hospital: tx(session.hospitalShort) }) : t('food.mealLead', { hospital: tx(session.hospitalShort) })}
-          leadClassName="mt-1 text-[13px] text-ink-soft"
-          trailing={
-            tab === 'chat' && messages.length > 0 && !clearing ? (
-              <button
-                type="button"
-                onClick={clearChat}
-                className="mt-7 shrink-0 text-[13px] font-semibold text-teal-deep"
-              >
-                {t('food.clear')}
-              </button>
-            ) : null
-          }
+      <div className="flex items-center gap-3 px-5 pt-3">
+        <SegmentedControl
+          value={tab}
+          onChange={setTab}
+          className="h-11 min-w-0 flex-1 rounded-xl"
+          buttonClassName="px-3 text-[15px]"
+          options={[
+            { id: 'mealPrep', label: t('food.tabMealPrep') },
+            { id: 'chat', label: t('food.tabChat') },
+          ]}
         />
-        <div className="mt-4">
-          <SegmentedControl
-            value={tab}
-            onChange={setTab}
-            className="h-12 rounded-xl"
-            buttonClassName="px-3 text-[15px]"
-            options={[
-              { id: 'mealPrep', label: t('food.tabMealPrep') },
-              { id: 'chat', label: t('food.tabChat') },
-            ]}
-          />
-        </div>
+        {tab === 'chat' && messages.length > 0 && !clearing ? (
+          <button
+            type="button"
+            onClick={clearChat}
+            className="shrink-0 text-[13px] font-semibold text-teal-deep"
+          >
+            {t('food.clear')}
+          </button>
+        ) : null}
       </div>
 
       <div className="relative min-h-0 flex-1">

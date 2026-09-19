@@ -14,6 +14,11 @@ def get_hospitals(db: Session = Depends(get_db)) -> list[HospitalOut]:
     return sessions_service.list_hospitals_out(db)
 
 
+@router.get("/hospitals/{code}", response_model=HospitalOut)
+def get_hospital(code: str, db: Session = Depends(get_db)) -> HospitalOut:
+    return sessions_service.get_hospital_out(db, code)
+
+
 @router.post("/sessions", response_model=SessionOut, status_code=201)
 def create_session(body: SessionCreate, db: Session = Depends(get_db)) -> SessionOut:
     """Finish onboarding: hospital + date + AM/PM → persisted prep session."""

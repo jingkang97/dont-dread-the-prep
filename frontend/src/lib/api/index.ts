@@ -1,6 +1,6 @@
 export { API_BASE_URL, ApiError, apiFetch } from './client'
 export type { ApiSlot } from './types'
-export { listApiHospitals } from './hospitals'
+export { listApiHospitals, getApiHospital } from './hospitals'
 export type {
   ApiHospital,
   ApiProtocolSummary,
