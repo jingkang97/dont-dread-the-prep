@@ -125,7 +125,8 @@ def catch_up_due_events(
             continue
         if current >= _as_utc(event["at"]):
             mark_event_sent(row, key, channel)
-            caught.append(event)
+            if not event.get("quiet_if_late"):
+                caught.append(event)
     return caught
 
 
@@ -141,7 +142,8 @@ def skip_late_events(
             continue
         if current > _as_utc(event["at"]) + LATE_GRACE:
             mark_event_sent(row, key, channel)
-            skipped.append(event)
+            if not event.get("quiet_if_late"):
+                skipped.append(event)
     return skipped
 
 

@@ -48,9 +48,17 @@ ITEMS: dict[str, ReminderCopy] = {
         "title": "Prep dose",
         "body": "Time to mix and drink this dose.",
     },
+    "dose_soon": {
+        "title": "1 hour until · Prep dose",
+        "body": "Your prep is due in 1 hour time.",
+    },
     "peg": {
         "title": "PEG dose",
         "body": "Time to mix and drink this dose.",
+    },
+    "peg_soon": {
+        "title": "1 hour until · PEG dose",
+        "body": "Your prep is due in 1 hour time.",
     },
     "step": {
         "title": "Timeline step",
@@ -276,6 +284,15 @@ def dose_copy(title: str, *, agent: str, detail: str = "") -> dict[str, str]:
         "html": wrap_html(title, long_html),
         "go": "timeline",
     }
+
+
+def dose_soon_copy(title: str, *, agent: str) -> dict[str, str]:
+    copy_key = "peg_soon" if agent == "peg" else "dose_soon"
+    return _message(
+        copy_key,
+        f"1 hour until · {title}",
+        "Your prep is due in 1 hour time.",
+    )
 
 
 def classify_med_stop(title: str, detail: str, day_offset: int = 0) -> str:

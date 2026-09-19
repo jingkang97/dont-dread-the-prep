@@ -14,6 +14,7 @@ from app.services.reminder_copy import (
     classify_med_stop,
     diet_copy,
     dose_copy,
+    dose_soon_copy,
     fast_copy,
     med7_copy,
     prep_start_copy,
@@ -273,6 +274,15 @@ def live_reminder_events_for(db: DbSession, row: Session) -> list[dict]:
         elif step.kind == "prep":
             has_prep = True
             agent = step.agent or "picoprep"
+            soon = dose_soon_copy(step.title, agent=agent)
+            events.append(
+                {
+                    **soon,
+                    "key": f"dose:{step.id}:soon",
+                    "at": at - timedelta(hours=1),
+                    "quiet_if_late": True,
+                }
+            )
             copy = dose_copy(step.title, agent=agent, detail=step.detail or "")
             events.append({"key": f"dose:{step.id}", "at": at, **copy})
         elif step.kind == "stool":

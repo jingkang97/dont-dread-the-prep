@@ -141,8 +141,8 @@ def welcome_text(code: str, first_name: str | None, lang: str = "en") -> str:
     name = (first_name or "").strip()
     headline_src = "You're set for reminders, {name}." if name else "You're set for reminders."
     cadence_src = (
-        "You'll get reminders timed to your timeline: medicines, diet, each prep dose, "
-        "a stool check, and when to stop fluids."
+        "You'll get reminders timed to your timeline: medicines, diet, each prep dose "
+        "1 hour before and at dose time, a stool check, and when to stop fluids."
     )
     food_src = "Food questions stay in PrepPath — Telegram is reminders only."
     headline, cadence, food = (
