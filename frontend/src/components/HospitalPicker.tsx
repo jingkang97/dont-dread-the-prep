@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown, ChevronRight, Hospital, Search } from 'lucide-react'
 import {
@@ -15,6 +15,8 @@ import { hospCopyOr } from '../i18n/keys'
 import { useLang } from '../i18n/LanguageContext'
 import { hospitalLiveCopy, usePrimeLiveCopy } from '../i18n/liveCopy'
 import type { ApiHospital } from '../lib/api/hospitals'
+import { isDemoMode } from '../demo/enabled'
+import { HOSPITAL_QUERY_EVENT } from '../demo/dom'
 import { cn } from '../lib/cn'
 import { easeOut, fadeY } from '../lib/motion'
 
@@ -32,6 +34,18 @@ export function HospitalPicker({
   const [openClusters, setOpenClusters] = useState<Set<PickerCluster>>(
     () => new Set(PICKER_CLUSTERS),
   )
+
+  useEffect(() => {
+    if (!isDemoMode()) return
+    const onQuery = (event: Event) => {
+      const next = (event as CustomEvent<{ query?: string }>).detail?.query
+      if (typeof next !== 'string') return
+      setQuery(next)
+      if (next.trim()) setOpenClusters(new Set(PICKER_CLUSTERS))
+    }
+    window.addEventListener(HOSPITAL_QUERY_EVENT, onQuery)
+    return () => window.removeEventListener(HOSPITAL_QUERY_EVENT, onQuery)
+  }, [])
 
   const catalog = useMemo(() => pickerHospitalsFromApi(hospitals), [hospitals])
   usePrimeLiveCopy(hospitals.flatMap(hospitalLiveCopy))
@@ -78,6 +92,7 @@ export function HospitalPicker({
                     if (e.target.value.trim()) setOpenClusters(new Set(PICKER_CLUSTERS))
                   }}
                   placeholder={t('on.pickerSearch')}
+                  data-demo="on-hospital-search"
                   className="w-full rounded-2xl border border-transparent bg-paper-2 py-3.5 pr-3 pl-9 text-[16px] text-ink outline-none focus:border-navy"
                 />
               </label>
@@ -152,6 +167,8 @@ function HospitalRow({
   return (
     <button
       type="button"
+      data-demo={`hospital-${h.hospitalId}`}
+      data-demo-hospital-row=""
       onClick={onClick}
       onPointerUp={(e) => e.currentTarget.blur()}
       className="flex items-center gap-3 overflow-hidden rounded-[20px] bg-paper-2 px-4 py-3.5 text-left outline-none transition [-webkit-tap-highlight-color:transparent] focus:outline-none focus-visible:outline-none focus:ring-0"

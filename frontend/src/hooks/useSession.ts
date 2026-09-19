@@ -11,12 +11,14 @@ import {
   type PrepSession,
   type Screen,
 } from '../lib/session'
+import { isDemoPlaying } from '../demo/enabled'
 import { dropHomeTourPending, queueHomeTour } from '../lib/homeTour'
 
 export function useSession() {
   const [session, setSession] = useState<PrepSession | null>(null)
   const [screen, setScreen] = useState<Screen>('onboarding')
   const [ready, setReady] = useState(false)
+  const [onboardKey, setOnboardKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -56,7 +58,7 @@ export function useSession() {
 
   async function create(draft: OnboardingResult) {
     const next = await createSession(draft)
-    queueHomeTour()
+    if (!isDemoPlaying()) queueHomeTour()
     setSession(next)
     setScreen('home')
     return next
@@ -67,6 +69,7 @@ export function useSession() {
     clearSession()
     setSession(null)
     setScreen('onboarding')
+    setOnboardKey((k) => k + 1)
   }
 
   async function update(patch: { date: string; slot: Slot; reportingTime: string }) {
@@ -77,5 +80,5 @@ export function useSession() {
     return next
   }
 
-  return { session, setSession, screen, setScreen, ready, create, clear, update }
+  return { session, setSession, screen, setScreen, ready, create, clear, update, onboardKey }
 }

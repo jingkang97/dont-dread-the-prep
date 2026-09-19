@@ -27,7 +27,7 @@ export function PegMixSheet({
           className="mt-3 w-full rounded-2xl bg-navy-2"
         />
       )}
-      <PrimaryButton className="mt-4" onClick={onClose}>
+      <PrimaryButton data-demo="sheet-done" className="mt-4" onClick={onClose}>
         {t('home.shortcutGotIt')}
       </PrimaryButton>
     </SheetFrame>

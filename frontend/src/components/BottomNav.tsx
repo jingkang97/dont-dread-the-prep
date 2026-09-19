@@ -30,6 +30,7 @@ export function BottomNav({
             <button
               key={item.id}
               type="button"
+              data-demo={`nav-${item.id}`}
               onClick={() => onChange(item.id)}
               className={cn(
                 'flex h-12 w-full flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-medium leading-none transition-colors duration-200',

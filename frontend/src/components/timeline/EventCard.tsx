@@ -67,6 +67,13 @@ export function EventCard({
             {help && (
               <button
                 type="button"
+                data-demo={
+                  help.kind === 'picoprep'
+                    ? 'tl-help-picoprep'
+                    : help.kind === 'med-7d'
+                      ? 'tl-help-med'
+                      : 'tl-help'
+                }
                 aria-label={tx(help.hint)}
                 onClick={(e) => {
                   e.stopPropagation()

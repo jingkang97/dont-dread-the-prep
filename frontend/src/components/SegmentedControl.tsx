@@ -80,6 +80,7 @@ export function SegmentedControl<T extends string>({
               else btnRefs.current.delete(item.id)
             }}
             type="button"
+            data-demo-seg={item.id}
             onClick={() => onChange(item.id)}
             className={cn(
               'relative z-10 min-w-0 flex-1 rounded-[8px] px-1 text-[13px] font-semibold outline-none',

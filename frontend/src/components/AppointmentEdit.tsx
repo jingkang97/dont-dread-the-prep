@@ -26,12 +26,14 @@ export function AppointmentChooser({
   const slotLabel = session.slot === 'am' ? t('on.morning') : t('on.afternoon')
   return (
     <SheetFrame onDismiss={onKeep} dismissLabel={t('app.keep')}>
+      <div data-demo="edit-chooser">
       <p className="font-display text-[22px] leading-tight tracking-tight text-ink">
         {hospital} · {slotLabel}
       </p>
       <p className="mt-1 text-[15px] text-ink-soft">{when}</p>
       <button
         type="button"
+        data-demo="edit-date"
         onClick={onChangeDate}
         className="mt-5 min-h-[56px] w-full rounded-[18px] bg-paper px-4 py-3 text-left"
       >
@@ -40,6 +42,7 @@ export function AppointmentChooser({
       </button>
       <button
         type="button"
+        data-demo="edit-restart"
         onClick={onStartOver}
         className="mt-2 min-h-[56px] w-full rounded-[18px] bg-paper px-4 py-3 text-left"
       >
@@ -48,11 +51,13 @@ export function AppointmentChooser({
       </button>
       <button
         type="button"
+        data-demo="edit-keep"
         onClick={onKeep}
         className="mt-3 min-h-[48px] w-full rounded-full bg-navy px-4 text-[17px] font-semibold text-white"
       >
         {t('app.keep')}
       </button>
+      </div>
     </SheetFrame>
   )
 }
@@ -143,6 +148,7 @@ export function ChangeDatePanel({
                 ) : null}
                 <div className="mt-5 grid gap-2">
                   <PrimaryButton
+                    data-demo="edit-save"
                     disabled={busy}
                     onClick={() => void onSave({ date, slot, reportingTime })}
                   >
@@ -150,6 +156,7 @@ export function ChangeDatePanel({
                   </PrimaryButton>
                   <button
                     type="button"
+                    data-demo="edit-back"
                     onClick={onCancel}
                     className="min-h-[48px] w-full rounded-full bg-white px-4 text-[17px] font-semibold text-ink"
                   >

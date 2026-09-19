@@ -15,7 +15,7 @@ export function Contacts({ session }: { session: PrepSession }) {
       {!loading && contacts.length === 0 ? (
         <p className="text-[14px] text-no">{tx(error ?? t('err.hospitals'))}</p>
       ) : null}
-      <div className="grid gap-2.5">
+      <div data-demo="contacts" className="grid gap-2.5">
         {contacts.map((c) => (
           <Card key={c.phone} className="p-4">
             <p className="text-[12px] font-semibold tracking-wide text-muted">{tx(c.label)}</p>
