@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import type { ApiDish, ApiHospital, ApiMealPrep } from '../lib/api'
 import type { TimelineEvent } from '../lib/timeline'
+import { STAGE_LOOK } from '../lib/stoolVisuals'
 import { useLang } from './LanguageContext'
 
 const HELP_COPY = [
@@ -68,6 +69,7 @@ export function hospitalLiveCopy(hospital: ApiHospital): string[] {
     push(out, stage.name)
     push(out, stage.look)
   }
+  for (const text of Object.values(STAGE_LOOK[scale?.key ?? ''] ?? {})) push(out, text)
   return out
 }
 

@@ -170,6 +170,13 @@ export const EN = {
   'stool.ifUnsure': 'If you are unsure',
   'stool.ifUnsureBody':
     'Do not guess. Call your hospital contact and follow what your team advised.',
+  'stool.viewCartoon': 'Illustration',
+  'stool.viewPhotos': 'Photos',
+  'stool.tapToEnlarge': 'Tap to enlarge',
+  'stool.moreExamples': 'More examples of this stage',
+  'stool.photoSoon': 'Extra photo coming soon',
+  'stool.lastStagesHint':
+    'The last two stages matter most. Check both colour and leftover residue before you leave.',
   'contacts.kicker': 'Your hospital',
   'contacts.title': 'Contacts for {hospital}',
   'contacts.lead': 'Call these numbers if you need help with your prep.',
