@@ -21,11 +21,11 @@ ITEMS: dict[str, ReminderCopy] = {
         "body": "Some medications may need to stop in 1 week's time, check the instructions from your hospital.",
     },
     "med7": {
-        "title": "7 days before · Stop certain medications",
+        "title": "⚠️ Check if you need to stop any medicines 7 days before",
         "body": "If your hospital told you to stop certain medications 7 days before your colonoscopy, please do so today.",
     },
     "sglt2": {
-        "title": "Stop SGLT2 inhibitors",
+        "title": "⚠️ Check if you need to stop any medicines 2 days before",
         "body": "If your hospital told you to stop your SGLT2 inhibitor today, please do so now.",
     },
     "diet": {
@@ -184,7 +184,7 @@ def med7_copy(
     when = days_phrase(days)
     return _message(
         "med7",
-        f"{when} before · Stop certain medications",
+        f"⚠️ Check if you need to stop any medicines {when} before",
         (
             f"If your hospital told you to stop certain medications {when} before your colonoscopy, "
             "please do so today."
@@ -199,7 +199,7 @@ def sglt2_copy(
     when = days_phrase(days)
     return _message(
         "sglt2",
-        f"{when} before · Stop SGLT2 inhibitors",
+        f"⚠️ Check if you need to stop any medicines {when} before",
         "If your hospital told you to stop your SGLT2 inhibitor today, please do so now.",
     )
 
@@ -265,6 +265,8 @@ def dose_soon_copy(title: str, *, agent: str) -> dict[str, str]:
 
 
 def classify_med_stop(title: str, detail: str, day_offset: int = 0) -> str:
+    if int(day_offset) == -2:
+        return "sglt2"
     blob = f"{title} {detail}".lower()
     if "sglt" in blob or "empagliflozin" in blob or "dapagliflozin" in blob or "canagliflozin" in blob:
         return "sglt2"

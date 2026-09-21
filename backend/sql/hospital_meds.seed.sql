@@ -16,13 +16,13 @@ CROSS JOIN (
   VALUES
   (
     -7,
-    'Some medicines may need to be stopped 7 days before',
+    '⚠️ Check if you need to stop any medicines 7 days before',
     E'Some medications — blood thinners, certain supplements, and iron — may need to be stopped or adjusted up to 1 week before. Tap ? for the list.\n\nDo not stop any medication unless instructed. If unsure, contact your care team.',
     10
   ),
   (
     -2,
-    'If prescribed — stop Dapagliflozin / Empagliflozin',
+    '⚠️ Check if you need to stop any medicines 2 days before',
     'Do not take these diabetes medications for 2 days before and on the day of the procedure if you are going for colonoscopy. Confirm against the list from counselling if unsure.',
     20
   )

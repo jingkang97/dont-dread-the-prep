@@ -9,7 +9,7 @@ import { useLang } from '../i18n/LanguageContext'
 import { useSessionHospital } from '../hooks/useSessionHospital'
 import type { ApiStoolReady, ApiStoolScale, ApiStoolScaleStage } from '../lib/api'
 import type { PrepSession } from '../lib/session'
-import { extraStageSlots, isCupScale, stageLook, stagePhotoSrc } from '../lib/stoolVisuals'
+import { extraStagePhotos, extraStageSlots, isCupScale, stageLook, stagePhotoSrc } from '../lib/stoolVisuals'
 import { cn } from '../lib/cn'
 import { easeOut } from '../lib/motion'
 import type { StringKey } from '../i18n/strings'
@@ -201,11 +201,13 @@ function PhotoSheet({
   tx: (text: string) => string
 }) {
   const main = stagePhotoSrc(stage)
+  const extras = extraStagePhotos(scaleKey, stage, lastN)
   const extraCount = extraStageSlots(scaleKey, stage, lastN)
   const [current, setCurrent] = useState<'main' | number>('main')
   const lastStages = stage.n >= lastN - 1
   const host = typeof document !== 'undefined' ? document.querySelector('[data-app-column]') : null
   const look = stageLook(scaleKey, stage)
+  const currentExtra = typeof current === 'number' ? extras[current] : null
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -258,6 +260,12 @@ function PhotoSheet({
               alt={`${stage.n}. ${tx(stage.name)}`}
               className="mt-3 max-h-[52dvh] w-full rounded-[18px] bg-paper object-contain"
             />
+          ) : currentExtra ? (
+            <img
+              src={currentExtra}
+              alt={`${stage.n}. ${tx(stage.name)}`}
+              className="mt-3 max-h-[52dvh] w-full rounded-[18px] bg-paper object-contain"
+            />
           ) : (
             <div className="mt-3 flex min-h-[220px] items-center justify-center rounded-[18px] bg-paper px-4 text-center">
               <p className="text-[14px] leading-relaxed text-muted">{t('stool.photoSoon')}</p>
@@ -278,9 +286,13 @@ function PhotoSheet({
               </ThumbButton>
               {Array.from({ length: extraCount }, (_, i) => (
                 <ThumbButton key={i} selected={current === i} onClick={() => setCurrent(i)}>
-                  <span className="px-1 text-center text-[10px] font-semibold leading-tight text-muted">
-                    {t('stool.photoSoon')}
-                  </span>
+                  {extras[i] ? (
+                    <img src={extras[i]} alt="" className="h-14 w-12 object-cover" />
+                  ) : (
+                    <span className="px-1 text-center text-[10px] font-semibold leading-tight text-muted">
+                      {t('stool.photoSoon')}
+                    </span>
+                  )}
                 </ThumbButton>
               ))}
             </div>
