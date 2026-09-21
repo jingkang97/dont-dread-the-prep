@@ -1,4 +1,11 @@
-import { queryVisible, setHospitalQuery, isUsable } from './dom'
+import {
+  askFoodDemo,
+  foodDemoSlug,
+  isUsable,
+  queryVisible,
+  setFoodInput,
+  setHospitalQuery,
+} from './dom'
 import type { DemoCtx } from './types'
 import { EN } from '../i18n/strings'
 import { plusDays } from '../lib/dates'
@@ -187,6 +194,87 @@ async function openTimelineHelp(ctx: DemoCtx, selector: string) {
   await ctx.tap('[data-demo="sheet-done"], [data-demo="sheet-dismiss"]')
   await ctx.waitForGone('[data-demo="sheet-done"], [data-demo="sheet-dismiss"]')
   await ctx.wait(400)
+}
+
+function lastFoodBot() {
+  const nodes = document.querySelectorAll('[data-food-scroll] [data-food-bot-turn]')
+  const el = nodes[nodes.length - 1]
+  return el instanceof HTMLElement ? el : null
+}
+
+function foodBotSlug(el: HTMLElement) {
+  const demo = el.getAttribute('data-demo') || ''
+  const prefix = demo.startsWith('food-answer-')
+    ? 'food-answer-'
+    : demo.startsWith('food-thinking-')
+      ? 'food-thinking-'
+      : ''
+  return prefix ? demo.slice(prefix.length) : foodDemoSlug(el.getAttribute('data-demo-food-q') || '')
+}
+
+function scrollFoodReply(el: HTMLElement) {
+  const list = el.closest<HTMLElement>('[data-food-scroll]')
+  if (!list) return
+  const top = el.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop - 12
+  list.scrollTo({
+    top: Math.max(0, Math.min(top, list.scrollHeight - list.clientHeight)),
+    behavior: 'auto',
+  })
+}
+
+async function waitForNewFoodAnswer(ctx: DemoCtx, expectQ: string, dwellMs: number, beforeId: string | null) {
+  const wanted = foodDemoSlug(expectQ)
+  const started = performance.now()
+  let forced = false
+  const deadline = started + 30000
+  while (performance.now() < deadline) {
+    const last = lastFoodBot()
+    const lastId = last?.getAttribute('data-demo-food-id') ?? null
+    const isNew = Boolean(last && lastId && lastId !== beforeId)
+    const isThinking = Boolean(last && (last.getAttribute('data-demo') || '').startsWith('food-thinking-'))
+    const isWanted = Boolean(last && isNew && foodBotSlug(last) === wanted)
+    const isWantedAnswer = Boolean(
+      isWanted && !isThinking && (last?.getAttribute('data-demo') || '').startsWith('food-answer-'),
+    )
+    if (!forced && performance.now() - started > 1000 && !isNew) {
+      askFoodDemo(expectQ)
+      forced = true
+    }
+    if (isWanted && last) {
+      scrollFoodReply(last)
+      ctx.highlight(last)
+    }
+    if (isWantedAnswer) {
+      const slices = Math.max(6, Math.round(dwellMs / 220))
+      for (let i = 0; i < slices; i++) {
+        const live = lastFoodBot()
+        if (live && foodBotSlug(live) === wanted) {
+          scrollFoodReply(live)
+          ctx.highlight(live)
+        }
+        await ctx.wait(i === 0 ? 200 : 220, i !== 0)
+      }
+      return
+    }
+    await ctx.wait(80, false)
+  }
+  throw new Error(`Demo: food reply missing for ${expectQ}`)
+}
+
+async function tapFoodAndShow(ctx: DemoCtx, selector: string, dwellMs: number, expectQ: string) {
+  const beforeId = lastFoodBot()?.getAttribute('data-demo-food-id') ?? null
+  await ctx.tap(selector)
+  await waitForNewFoodAnswer(ctx, expectQ, dwellMs, beforeId)
+}
+
+async function clearFoodChatDemo(ctx: DemoCtx) {
+  if (!queryVisible('[data-demo="food-clear"]')) return
+  await ctx.maybeTap('[data-demo="food-clear"]')
+  const deadline = performance.now() + 4000
+  while (performance.now() < deadline) {
+    if (!document.querySelector('[data-food-scroll] [data-food-bot-turn]')) return
+    await ctx.wait(80, false)
+  }
 }
 
 async function scrollTimeline(ctx: DemoCtx) {
@@ -403,25 +491,32 @@ export function buildDemoScript(): DemoStep[] {
         ctx.go('food')
         await ctx.maybeTap('[data-demo-seg="chat"]')
         await ctx.waitFor('[data-demo="food-suggest-Chicken rice"]')
-        await ctx.tap('[data-demo="food-suggest-Chicken rice"]')
-        await ctx.waitFor('[data-demo="food-thinking"], [data-demo="food-reply"]', 12000)
-        await ctx.waitFor('[data-demo="food-reply"]', 12000)
-        await ctx.show('[data-demo="food-reply"]', 2000)
-        if (await ctx.maybeTap('[data-demo="food-suggest-Char kway teow"]')) {
-          await ctx.waitFor('[data-demo="food-thinking"]', 4000).catch(() => null)
-          await ctx.waitFor('[data-demo="food-reply"]', 12000)
-          await ctx.show('[data-demo="food-reply"]', 1600)
-        }
+        await clearFoodChatDemo(ctx)
+        await tapFoodAndShow(ctx, '[data-demo="food-suggest-Chicken rice"]', 2000, 'Chicken rice')
+        const ckt = queryVisible('[data-demo="food-suggest-Char kway teow"]')
+        if (ckt) await tapFoodAndShow(ctx, '[data-demo="food-suggest-Char kway teow"]', 1600, 'Char kway teow')
+      },
+    },
+    {
+      id: 'food-type',
+      feature: 'Food',
+      label: 'Type a food',
+      run: async (ctx) => {
+        ctx.go('food')
+        await ctx.maybeTap('[data-demo-seg="chat"]')
         const field = await ctx.waitFor('[data-demo="food-input"]')
-        if (field instanceof HTMLInputElement) {
-          ctx.clearInput(field)
-          await ctx.type(field, 'apple juice')
-          await ctx.wait(500)
-          await ctx.tap('[data-demo="food-send"]')
-          await ctx.waitFor('[data-demo="food-thinking"], [data-demo="food-reply"]', 12000)
-          await ctx.waitFor('[data-demo="food-reply"]', 12000)
-          await ctx.show('[data-demo="food-reply"]', 2000)
-        }
+        if (!(field instanceof HTMLInputElement)) throw new Error('Demo: food input missing')
+        ctx.clearInput(field)
+        setFoodInput('apple juice')
+        await ctx.type(field, 'apple juice')
+        setFoodInput('apple juice')
+        await ctx.wait(400, false)
+        const send = await ctx.waitFor('[data-demo="food-send"]')
+        ctx.highlight(send)
+        await ctx.wait(350, false)
+        const beforeId = lastFoodBot()?.getAttribute('data-demo-food-id') ?? null
+        askFoodDemo('apple juice')
+        await waitForNewFoodAnswer(ctx, 'apple juice', 2800, beforeId)
       },
     },
     {

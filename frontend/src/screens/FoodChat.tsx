@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { ArrowDown, Send } from 'lucide-react'
 import { BotCard, ThinkingCard } from '../components/food/BotCard'
@@ -14,6 +14,8 @@ import { EN, type StringKey } from '../i18n/strings'
 import type { PrepSession } from '../lib/session'
 import { easeOut, fadeY } from '../lib/motion'
 import { cn } from '../lib/cn'
+import { isDemoMode, isDemoPlaying } from '../demo/enabled'
+import { FOOD_ASK_EVENT, FOOD_INPUT_EVENT, foodDemoSlug } from '../demo/dom'
 
 const CHAT_SUGGESTIONS: { key: StringKey; query: string }[] = [
   { key: 'food.suggest.chickenRice', query: 'Chicken rice' },
@@ -26,7 +28,11 @@ const CHAT_SUGGESTIONS: { key: StringKey; query: string }[] = [
 ]
 
 function scrollToLatestTurn(el: HTMLElement, behavior: ScrollBehavior) {
-  const turn = el.querySelector('[data-food-turn]')
+  const bots = el.querySelectorAll('[data-demo^="food-answer-"], [data-demo^="food-thinking-"]')
+  const turn =
+    el.querySelector('[data-food-bot-turn]') ??
+    bots[bots.length - 1] ??
+    el.querySelector('[data-food-turn]')
   if (!(turn instanceof HTMLElement)) {
     el.scrollTo({ top: el.scrollHeight, behavior })
     return
@@ -69,6 +75,24 @@ export function FoodChat({ session }: { session: PrepSession }) {
   const [tab, setTab] = useState<Tab>('mealPrep')
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<FoodChatMsg[]>(() => loadFoodChat(session.id))
+  const askRef = useRef<(shown: string, query?: string) => void>(() => {})
+  useEffect(() => {
+    if (!isDemoMode()) return
+    const onInput = (event: Event) => {
+      const next = (event as CustomEvent<{ value?: string }>).detail?.value
+      if (typeof next === 'string') setInput(next)
+    }
+    const onAsk = (event: Event) => {
+      const text = (event as CustomEvent<{ text?: string }>).detail?.text
+      if (typeof text === 'string' && text.trim()) askRef.current(text)
+    }
+    window.addEventListener(FOOD_INPUT_EVENT, onInput)
+    window.addEventListener(FOOD_ASK_EVENT, onAsk)
+    return () => {
+      window.removeEventListener(FOOD_INPUT_EVENT, onInput)
+      window.removeEventListener(FOOD_ASK_EVENT, onAsk)
+    }
+  }, [])
   usePrimeLiveCopy(
     messages.flatMap((msg) =>
       [msg.query, msg.text, msg.answer?.message, ...(msg.answer?.choices ?? []).map((c) => c.name)].filter(
@@ -110,6 +134,8 @@ export function FoodChat({ session }: { session: PrepSession }) {
       skipEnter.current = true
       saveFoodChatUi(session.id, { listTop: 0, landed: true })
       measure()
+    } else if (isDemoPlaying()) {
+      /* keep current scroll; align to the latest bot reply below */
     } else if (!clearingRef.current) {
       const saved = loadFoodChatUi(session.id)
       if (saved?.landed) {
@@ -122,8 +148,9 @@ export function FoodChat({ session }: { session: PrepSession }) {
       }
     }
 
-    const frames = added
-      ? [requestAnimationFrame(() => requestAnimationFrame(() => alignTurn('smooth')))]
+    const pinLatest = added || isDemoPlaying()
+    const frames = pinLatest
+      ? [requestAnimationFrame(() => requestAnimationFrame(() => alignTurn(isDemoPlaying() ? 'auto' : 'smooth')))]
       : [requestAnimationFrame(measure)]
 
     const onScroll = () => {
@@ -145,7 +172,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
     setMessages((m) => [
       ...m,
       { id: crypto.randomUUID(), role: 'user', text, query: query ? queryText : undefined },
-      { id: pendingId, role: 'bot', pending: true },
+      { id: pendingId, role: 'bot', pending: true, query: queryText },
     ])
     setInput('')
 
@@ -171,13 +198,14 @@ export function FoodChat({ session }: { session: PrepSession }) {
       m.map((msg) => (msg.id === pendingId ? { ...msg, pending: false, answer } : msg)),
     )
   }
+  askRef.current = ask
 
   async function selectChoice(choice: ApiDishChoice) {
     const pendingId = crypto.randomUUID()
     setMessages((m) => [
       ...m,
       { id: crypto.randomUUID(), role: 'user', text: choice.name, query: choice.name },
-      { id: pendingId, role: 'bot', pending: true },
+      { id: pendingId, role: 'bot', pending: true, query: choice.name },
     ])
 
     let answer: FoodChatAnswer
@@ -202,6 +230,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
   }
 
   const lastUserId = messages.filter((m) => m.role === 'user').at(-1)?.id
+  const lastBotId = messages.filter((m) => m.role === 'bot').at(-1)?.id
 
   function jumpTo(top: number) {
     listRef.current?.scrollTo({ top, behavior: 'smooth' })
@@ -244,6 +273,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
         {tab === 'chat' && messages.length > 0 && !clearing ? (
           <button
             type="button"
+            data-demo="food-clear"
             onClick={clearChat}
             className="shrink-0 text-[13px] font-semibold text-teal-deep"
           >
@@ -265,7 +295,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
           className={cn('absolute inset-0 flex min-h-0 flex-col', tab !== 'chat' && 'invisible pointer-events-none')}
         >
           <div className="relative min-h-0 flex-1">
-            <div ref={listRef} className="h-full min-h-0 space-y-3 overflow-y-auto overflow-anchor-none overscroll-y-contain px-5 py-4">
+            <div ref={listRef} data-food-scroll className="h-full min-h-0 space-y-3 overflow-y-auto overflow-anchor-none overscroll-y-contain px-5 py-4">
               <Card className="p-3.5">
                 <p className="text-[16px] font-semibold text-ink">
                   {t('food.introTitle', { hospital: tx(session.hospitalShort) })}
@@ -296,7 +326,14 @@ export function FoodChat({ session }: { session: PrepSession }) {
                     ) : (
                       <motion.div
                         key={msg.id}
-                        data-demo={msg.pending || !msg.answer ? 'food-thinking' : 'food-reply'}
+                        data-demo={
+                          msg.pending || !msg.answer
+                            ? `food-thinking-${foodDemoSlug(msg.query ?? '')}`
+                            : `food-answer-${foodDemoSlug(msg.query ?? '')}`
+                        }
+                        data-demo-food-id={msg.id}
+                        data-demo-food-q={msg.query ?? ''}
+                        data-food-bot-turn={msg.id === lastBotId ? '' : undefined}
                         {...(skipEnter.current ? {} : fadeY)}
                       >
                         {msg.pending || !msg.answer ? (

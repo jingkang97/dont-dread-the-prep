@@ -18,31 +18,31 @@ class ReminderCopy(TypedDict, total=False):
 ITEMS: dict[str, ReminderCopy] = {
     "t14": {
         "title": "14 days before · Check your medications",
-        "body": "Your colonoscopy is on your appointment date. There may be some medications that you need to stop in 1 week's time. Please check the instructions given by your hospital.",
+        "body": "Some medications may need to stop in 1 week's time, check the instructions from your hospital.",
     },
     "med7": {
         "title": "7 days before · Stop certain medications",
-        "body": "Your colonoscopy is on your appointment date. If you were instructed to stop certain medications 7 days before your colonoscopy, please stop them today. Please follow the instructions given by your hospital.",
+        "body": "If your hospital told you to stop certain medications 7 days before your colonoscopy, please do so today.",
     },
     "sglt2": {
         "title": "Stop SGLT2 inhibitors",
-        "body": "Your colonoscopy is on your appointment date. If you were instructed to stop your SGLT2 inhibitor before your colonoscopy, please stop it today. Please follow the instructions given by your hospital.",
+        "body": "If your hospital told you to stop your SGLT2 inhibitor today, please do so now.",
     },
     "diet": {
         "title": "3 days before · Start low-residue diet",
-        "body": "Your colonoscopy is on your appointment date. Please start your low-residue diet today, as prescribed by your clinic. Please follow the dietary instructions given by your hospital.",
+        "body": "Start your low-residue diet today, as prescribed by your clinic.",
     },
     "prep_start": {
         "title": "1 day before · Start bowel preparation",
-        "body": "Your colonoscopy is tomorrow. Please start your bowel preparation today and take your prescribed bowel preparation solution at the instructed time. Please follow the instructions given by your hospital.",
+        "body": "Your colonoscopy is tomorrow. Start your bowel prep today, following your hospital's timing instructions.",
     },
     "stool": {
         "title": "During bowel preparation · Check your stool",
-        "body": "As you complete your bowel preparation, check your stool. Your stool should become light yellow, watery and clear, like urine, with little or no solid material.",
+        "body": "Check your stool: it should look light yellow, watery and clear, like urine.",
     },
     "fast": {
         "title": "2 hours before · Stop all fluids",
-        "body": "Your colonoscopy is in 2 hours. Please stop drinking all fluids now, including water. Please follow the instructions given by your hospital.",
+        "body": "Stop drinking all fluids now, including water, as instructed by your hospital.",
     },
     "dose": {
         "title": "Prep dose",
@@ -171,31 +171,24 @@ def _message(copy_key: str, title: str, body: str, *bold: str, go: str = "timeli
 
 
 def t14_copy(hospital: str, procedure_date: date, reporting_time: time) -> dict[str, str]:
-    stamp = fmt_date(procedure_date)
     return _message(
         "t14",
         "14 days before · Check your medications",
-        (
-            f"Your colonoscopy is on {stamp}. There may be some medications "
-            "that you need to stop in 1 week's time. Please check the instructions given by your hospital."
-        ),
-        stamp,
+        "Some medications may need to stop in 1 week's time, check the instructions from your hospital.",
     )
 
 
 def med7_copy(
     hospital: str, procedure_date: date, reporting_time: time, *, days: int
 ) -> dict[str, str]:
-    stamp = fmt_date(procedure_date)
     when = days_phrase(days)
     return _message(
         "med7",
         f"{when} before · Stop certain medications",
         (
-            f"Your colonoscopy is on {stamp}. If you were instructed to stop certain medications "
-            f"{when} before your colonoscopy, please stop them today. Please follow the instructions given by your hospital."
+            f"If your hospital told you to stop certain medications {when} before your colonoscopy, "
+            "please do so today."
         ),
-        stamp,
         when,
     )
 
@@ -203,47 +196,30 @@ def med7_copy(
 def sglt2_copy(
     hospital: str, procedure_date: date, reporting_time: time, *, days: int
 ) -> dict[str, str]:
-    stamp = fmt_date(procedure_date)
     when = days_phrase(days)
     return _message(
         "sglt2",
         f"{when} before · Stop SGLT2 inhibitors",
-        (
-            f"Your colonoscopy is on {stamp}. If you were instructed to stop your SGLT2 inhibitor "
-            f"{when} before your colonoscopy, please stop it today. Please follow the instructions given by your hospital."
-        ),
-        stamp,
-        when,
+        "If your hospital told you to stop your SGLT2 inhibitor today, please do so now.",
     )
 
 
 def diet_copy(
     hospital: str, procedure_date: date, reporting_time: time, *, days: int
 ) -> dict[str, str]:
-    stamp = fmt_date(procedure_date)
     when = days_phrase(days)
     return _message(
         "diet",
         f"{when} before · Start low-residue diet",
-        (
-            f"Your colonoscopy is on {stamp}. Please start your low-residue diet today, as prescribed "
-            "by your clinic. Please follow the dietary instructions given by your hospital."
-        ),
-        stamp,
+        "Start your low-residue diet today, as prescribed by your clinic.",
     )
 
 
 def prep_start_copy(hospital: str, procedure_date: date, reporting_time: time) -> dict[str, str]:
-    stamp = fmt_date(procedure_date)
     return _message(
         "prep_start",
         "1 day before · Start bowel preparation",
-        (
-            f"Your colonoscopy is tomorrow, {stamp}. Please start your bowel preparation today and "
-            "take your prescribed bowel preparation solution at the instructed time. Please follow the "
-            "instructions given by your hospital."
-        ),
-        stamp,
+        "Your colonoscopy is tomorrow. Start your bowel prep today, following your hospital's timing instructions.",
     )
 
 
@@ -251,10 +227,7 @@ def stool_copy(*, hours: float = 0) -> dict[str, str]:
     return _message(
         "stool",
         "During bowel preparation · Check your stool",
-        (
-            "As you complete your bowel preparation, check your stool. Your stool should become light yellow, "
-            "watery and clear, like urine, with little or no solid material."
-        ),
+        "Check your stool: it should look light yellow, watery and clear, like urine.",
         go="stool",
     )
 
@@ -264,11 +237,7 @@ def fast_copy(*, hours: float) -> dict[str, str]:
     return _message(
         "fast",
         f"{when} before · Stop all fluids",
-        (
-            f"Your colonoscopy is in {when}. Please stop drinking all fluids now, including water. "
-            "Please follow the instructions given by your hospital."
-        ),
-        when,
+        "Stop drinking all fluids now, including water, as instructed by your hospital.",
     )
 
 
