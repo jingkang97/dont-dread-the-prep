@@ -22,9 +22,38 @@ export function queryVisible(selector: string): HTMLElement | null {
   return null
 }
 
+export const HOSPITAL_QUERY_EVENT = 'preppath-demo-hospital-query'
+export const FOOD_INPUT_EVENT = 'preppath-demo-food-input'
+export const FOOD_ASK_EVENT = 'preppath-demo-food-ask'
+
+export function setHospitalQuery(query: string) {
+  window.dispatchEvent(new CustomEvent(HOSPITAL_QUERY_EVENT, { detail: { query } }))
+}
+
+export function setFoodInput(value: string) {
+  window.dispatchEvent(new CustomEvent(FOOD_INPUT_EVENT, { detail: { value } }))
+}
+
+export function askFoodDemo(text: string) {
+  window.dispatchEvent(new CustomEvent(FOOD_ASK_EVENT, { detail: { text } }))
+}
+
+export function foodDemoSlug(query: string) {
+  return query.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'unknown'
+}
+
 export function scrollIntoView(el: HTMLElement) {
+  const food = el.closest<HTMLElement>('[data-food-scroll]')
+  if (food) {
+    const top = el.getBoundingClientRect().top - food.getBoundingClientRect().top + food.scrollTop - 16
+    food.scrollTo({
+      top: Math.max(0, Math.min(top, food.scrollHeight - food.clientHeight)),
+      behavior: 'auto',
+    })
+    return
+  }
   el.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'nearest' })
-  const scroller = el.closest<HTMLElement>('.overflow-y-auto, [data-tl-scroll], [data-home-scroll]')
+  const scroller = el.closest<HTMLElement>('[data-tl-scroll], [data-home-scroll], .overflow-y-auto')
   if (!scroller || scroller === el) return
   const top =
     el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 24
@@ -36,10 +65,4 @@ export function setNativeValue(el: HTMLInputElement, value: string) {
   proto?.set?.call(el, value)
   el.dispatchEvent(new Event('input', { bubbles: true }))
   el.dispatchEvent(new Event('change', { bubbles: true }))
-}
-
-export const HOSPITAL_QUERY_EVENT = 'preppath-demo-hospital-query'
-
-export function setHospitalQuery(query: string) {
-  window.dispatchEvent(new CustomEvent(HOSPITAL_QUERY_EVENT, { detail: { query } }))
 }

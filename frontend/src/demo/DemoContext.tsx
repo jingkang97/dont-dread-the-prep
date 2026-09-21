@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { stopHomeTour } from '../lib/homeTour'
 import type { Screen } from '../lib/session'
-import { queryVisible, scrollIntoView, setHospitalQuery, setNativeValue } from './dom'
+import { queryVisible, scrollIntoView, setHospitalQuery, setFoodInput, setNativeValue } from './dom'
 import { isDemoMode, setDemoPlaying } from './enabled'
 import { buildDemoScript, DEMO_ONBOARDING_COUNT, demoStepInfo, type DemoStepInfo } from './script'
 import { DemoAbort, type DemoCtx } from './types'
@@ -199,12 +199,14 @@ export function DemoProvider({
             value += ch
             setNativeValue(el, value)
             if (el.getAttribute('data-demo') === 'on-hospital-search') setHospitalQuery(value)
+            if (el.getAttribute('data-demo') === 'food-input') setFoodInput(value)
             await wait(70)
           }
         },
         clearInput: (el) => {
           setNativeValue(el, '')
           if (el.getAttribute('data-demo') === 'on-hospital-search') setHospitalQuery('')
+          if (el.getAttribute('data-demo') === 'food-input') setFoodInput('')
         },
       }
     },
