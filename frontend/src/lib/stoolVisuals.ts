@@ -36,8 +36,7 @@ export function extraStageSlots(scaleKey: string, stage: ApiStoolScaleStage, las
 
 export function extraStagePhotos(scaleKey: string, stage: ApiStoolScaleStage, lastN: number) {
   if (extraStageSlots(scaleKey, stage, lastN) === 0) return []
-  if (scaleKey === 'ttsh-6') return [`/stool/ttsh/s${stage.n}-2.svg`, `/stool/ttsh/s${stage.n}-3.svg`]
-  if (scaleKey === 'skh-6') return [`/stool/skh/${stage.n}-2.svg`, `/stool/skh/${stage.n}-3.svg`]
+  if (scaleKey === 'ttsh-6') return [`/stool/ttsh/s${stage.n}-2.png`, `/stool/ttsh/s${stage.n}-3.png`]
   return []
 }
 

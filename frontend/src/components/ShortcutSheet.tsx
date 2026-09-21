@@ -6,6 +6,7 @@ import { easeOut } from '../lib/motion'
 import { PrimaryButton } from './ui'
 import { SegmentedControl } from './SegmentedControl'
 import shortcutIos from '../assets/shortcut-ios.png'
+import shortcutIosNew from '../assets/shortcut-ios-new.png'
 import shortcutAndroid from '../assets/shortcut-android.png'
 
 const IOS_STEPS: StringKey[] = [
@@ -63,11 +64,36 @@ export function ShortcutSheet({
               { id: 'android', label: t('home.shortcutAndroidTab') },
             ]}
           />
-          <img
-            src={ios ? shortcutIos : shortcutAndroid}
-            alt={t(ios ? 'home.shortcutImgIos' : 'home.shortcutImgAndroid')}
-            className="mt-4 w-full rounded-2xl bg-paper"
-          />
+          {ios ? (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <figure className="min-w-0">
+                <img
+                  src={shortcutIosNew}
+                  alt={t('home.shortcutImgIosNew')}
+                  className="h-32 w-full rounded-xl bg-paper object-contain"
+                />
+                <figcaption className="mt-1 text-center text-[11px] font-medium leading-snug text-muted">
+                  {t('home.shortcutIosNewCaption')}
+                </figcaption>
+              </figure>
+              <figure className="min-w-0">
+                <img
+                  src={shortcutIos}
+                  alt={t('home.shortcutImgIos')}
+                  className="h-32 w-full rounded-xl bg-paper object-contain"
+                />
+                <figcaption className="mt-1 text-center text-[11px] font-medium leading-snug text-muted">
+                  {t('home.shortcutIosOldCaption')}
+                </figcaption>
+              </figure>
+            </div>
+          ) : (
+            <img
+              src={shortcutAndroid}
+              alt={t('home.shortcutImgAndroid')}
+              className="mt-3 h-32 w-full rounded-xl bg-paper object-contain"
+            />
+          )}
           <p className="mt-4 text-[13px] font-semibold text-teal-deep">
             {t(ios ? 'home.shortcutIosLead' : 'home.shortcutAndroidLead')}
           </p>
