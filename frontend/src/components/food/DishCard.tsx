@@ -16,7 +16,8 @@ function toIngredientVerdict(classification: ApiFoodClassification): Verdict {
 
 // 'review' only reaches here for a dish with no ingredients on file; it reads
 // as "Possible" rather than "Ask your care team", same wording as a dish the
-// backend downgraded.
+// backend downgraded. A hard_no dish arrives as 'cannot' and reads "No", with
+// hard_no_reason explaining why while its ingredients still show "Yes" pills.
 function toDishVerdict(verdict: ApiDishVerdict): Verdict {
   if (verdict === 'can') return 'yes'
   if (verdict === 'cannot') return 'no'
@@ -69,6 +70,9 @@ export function DishCard({
   const showDishPill = !(hideApproved && dishVerdict === 'yes')
   const details = (
     <>
+      {dish.hard_no && dish.hard_no_reason && (
+        <p className="mt-1 text-[13px] font-medium text-no">{tx(dish.hard_no_reason)}</p>
+      )}
       {dish.verdict === 'possible' && dish.remove_ingredients.length > 0 && (
         <p className="mt-1 text-[13px] font-medium text-possible">
           {t('food.possibleNote', { ingredients: dish.remove_ingredients.map((name) => tx(name)).join(', ') })}

@@ -2,8 +2,9 @@ import { apiFetch } from './client'
 
 export type ApiFoodClassification = 'can' | 'cannot' | 'review'
 export type ApiDishVerdict = ApiFoodClassification | 'possible'
-/** Matches DB food_source; SGH kept for legacy ingredient/dish rows. */
-export type ApiFoodSource = 'SGH' | 'TTSH' | 'CGH' | 'DIETICIAN'
+/** Matches DB food_source: the tiers a sheet is loaded for. A hospital without
+ * its own sheet is served the DIETICIAN baseline. */
+export type ApiFoodSource = 'SKH' | 'TTSH' | 'DIETICIAN'
 export type ApiMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink'
 
 export type ApiIngredient = {
@@ -21,6 +22,8 @@ export type ApiDish = {
   meal_type: ApiMealType[]
   source_hospital: ApiFoodSource
   verdict: ApiDishVerdict
+  hard_no: boolean
+  hard_no_reason: string
   remove_ingredients: string[]
   ingredients: ApiIngredient[]
 }

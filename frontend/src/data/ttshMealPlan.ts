@@ -466,6 +466,10 @@ function toDish(seed: DishSeed, index: number): ApiDish {
     meal_type: seed.meals,
     source_hospital: 'TTSH',
     verdict,
+    // The offline plan carries no hard_no dishes: every dish here is judged
+    // from its ingredients alone.
+    hard_no: false,
+    hard_no_reason: '',
     remove_ingredients: removeIngredients,
     ingredients,
   }

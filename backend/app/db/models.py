@@ -37,7 +37,7 @@ step_slot_enum = ENUM("any", "am", "pm", name="step_slot", create_type=False)
 food_classification_enum = ENUM(
     "can", "cannot", "review", name="food_classification", create_type=False
 )
-food_source_enum = ENUM("SGH", "TTSH", "CGH", "DIETICIAN", name="food_source", create_type=False)
+food_source_enum = ENUM("SKH", "TTSH", "DIETICIAN", name="food_source", create_type=False)
 dish_meal_type_enum = ENUM(
     "breakfast", "lunch", "dinner", "snack", "drink", name="dish_meal_type", create_type=False
 )
@@ -289,6 +289,9 @@ class Dish(Base):
     meal_type: Mapped[list[str]] = mapped_column(ARRAY(dish_meal_type_enum), nullable=False, default=list)
     source_hospital: Mapped[str] = mapped_column(food_source_enum, nullable=False)
     ingredient_list: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    # Refused on how the dish is cooked, not on what goes into it — see food_lookup.sql.
+    hard_no: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    hard_no_reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
