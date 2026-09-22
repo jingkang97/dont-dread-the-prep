@@ -6,18 +6,30 @@ import { useLang } from '../../i18n/LanguageContext'
 import { mealPrepLiveCopy, usePrimeLiveCopy } from '../../i18n/liveCopy'
 import type { StringKey } from '../../i18n/strings'
 import { cn } from '../../lib/cn'
-import type { ApiDish } from '../../lib/api'
+import type { ApiDish, ApiMealPrep } from '../../lib/api'
 import type { PrepSession } from '../../lib/session'
 
-type MealKey = 'breakfast' | 'lunch' | 'dinner' | 'snacks' | 'drinks'
+type MealKey = 'breakfast' | 'lunch' | 'snacks' | 'drinks'
 
+// Lunch and dinner are one tab: no dish in dishes_tab carries one without the
+// other, so the two lists came back identical and the tabs read as a choice
+// that made no difference. The id stays 'lunch' — the demo script taps
+// [data-demo="food-meal-lunch"].
 const MEALS: { id: MealKey; label: StringKey }[] = [
   { id: 'breakfast', label: 'food.mealBreakfast' },
-  { id: 'lunch', label: 'food.mealLunch' },
-  { id: 'dinner', label: 'food.mealDinner' },
+  { id: 'lunch', label: 'food.mealLunchDinner' },
   { id: 'snacks', label: 'food.mealSnacks' },
   { id: 'drinks', label: 'food.mealDrinks' },
 ]
+
+// Identical today, merged by id rather than assumed: a dish seeded for dinner
+// alone would otherwise be invisible with no dinner tab to show it.
+function dishesFor(mealPrep: ApiMealPrep, meal: MealKey): ApiDish[] {
+  if (meal !== 'lunch') return mealPrep[meal]
+  const byId = new Map<number, ApiDish>()
+  for (const dish of [...mealPrep.lunch, ...mealPrep.dinner]) byId.set(dish.id, dish)
+  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name))
+}
 
 export function MealPrep({ session }: { session: PrepSession }) {
   const { t, tx } = useLang()
@@ -25,7 +37,7 @@ export function MealPrep({ session }: { session: PrepSession }) {
   usePrimeLiveCopy(mealPrepLiveCopy(mealPrep))
   const [meal, setMeal] = useState<MealKey>('breakfast')
 
-  const dishes: ApiDish[] = mealPrep ? mealPrep[meal] : []
+  const dishes: ApiDish[] = mealPrep ? dishesFor(mealPrep, meal) : []
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">

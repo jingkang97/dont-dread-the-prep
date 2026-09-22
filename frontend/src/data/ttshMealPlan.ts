@@ -491,8 +491,3 @@ export const TTSH_MEAL_PLAN: ApiMealPrep = {
   snacks: bucket('snack'),
   drinks: bucket('drink'),
 }
-
-/** Hospital codes served from this file instead of the meal-prep endpoint. */
-export const HARD_CODED_MEAL_PREP: Record<string, ApiMealPrep> = {
-  ttsh: TTSH_MEAL_PLAN,
-}
