@@ -1,285 +1,455 @@
 import type {
   ApiDish,
   ApiDishVerdict,
+  ApiFoodClassification,
   ApiIngredient,
   ApiMealPrep,
   ApiMealType,
 } from '../lib/api'
+import type { Cuisine } from './cuisine'
 
 /**
- * Hard-coded SKH meal plan — the readable picks out of the SKH sheet and the
- * dietitian baseline.
+ * Hard-coded SKH meal plan — the same dietitian option list the TTSH plan uses,
+ * with the wording made hospital-neutral.
  *
- * Why this is not coming off the API: list_meal_prep('skh') clears 70 dishes,
- * but most of them are a single sheet ingredient standing in for a dish. A
- * patient opening meal prep was offered "Oyster sauce", "Dark soy sauce",
- * "Mayonnaise" and "Evaporated milk" as lunch, next to four spellings of the
- * same jelly and two of the same apple juice. Nothing there is wrong — they are
- * all genuinely low-residue — but they do not read as meals.
+ * Copied from ttshMealPlan.ts on 23 Sep 2026 and kept as its own file rather
+ * than an alias: the two lists are expected to diverge once SKH's own sheet is
+ * read properly, and a shared object would make that divergence a refactor
+ * instead of an edit.
  *
- * So this file keeps the ones that do: 44 dishes, chosen from that cleared set
- * only. Condiments and dairy add-ins are dropped, near-duplicate names are
- * collapsed to one wording, and breakfast keeps the breakfast-shaped items
- * rather than every noodle the sheet allows at any hour.
+ * What changed in the copy: every patient-facing reason that named TTSH now
+ * reads "the low-fibre option list", and the two drink rulings that cited a
+ * TTSH permission ("TTSH permits coffee and tea with or without milk") now say
+ * that sheets differ and to follow the instruction the care team gave. Nothing
+ * else about a ruling was touched — same dishes, same ingredients, same
+ * classifications.
  *
- * Nothing here is invented. Ingredient ids, reason wording and tier are copied
- * from ingredient_tab as it stands after the Sept 2026 seed, so DishCard renders
- * these exactly as it renders API-served dishes, and dropping the `skh` entry
- * from HARD_CODED_MEAL_PREP puts the hospital back on the endpoint.
+ * Why this is not coming off the API: the SKH tier in dishes_tab clears mostly
+ * single sheet ingredients standing in for dishes (Oyster sauce, Mee pok,
+ * Evaporated milk), which do not read as meals. See mealPlans.ts.
  *
- * Milo and Horlicks are on this list because the DIETICIAN rows clear them for
- * the low-residue phase ("stop once clear liquids start"). data/foods.ts carries
- * a stricter no-milk reading for SKH; the sheet rows win here, and that
- * disagreement is worth a dietitian's eye before this ships.
+ * Shape mirrors the API: ApiDish objects with resolved ApiIngredient rows and
+ * the verdict derived the way backend/app/services/food.py _dish_verdict
+ * derives it, so DishCard renders these identically to DB-loaded dishes and the
+ * swap back to the endpoint is one line in mealPlans.ts.
+ *
+ * Milk is the open question here, as it is in the TTSH list: data/foods.ts
+ * reads SKH as stricter on milk than this option list is. The neutral wording
+ * above does not resolve that — a dietitian still should.
  */
 
 const SOURCE_DOCUMENT =
-  'SKH low-residue sheet + dietitian baseline (ingredient_tab, Sept 2026 seed)'
+  'Low-fibre option list (dietitian-provided, hospital-neutral wording; hard-coded pending an ingredient_tab / dishes_tab seed)'
 
-type IngredientSeed = { id: number; why: string; tier: 'SKH' | 'DIETICIAN' }
+// Shared reason strings. The first four are verbatim ingredient_tab rows; the
+// rest are written for options this list clears and the DB has not.
+const WHY = {
+  refined:
+    'Refined white starches are directly listed as permitted in Singapore low-fibre/low-residue guidance.',
+  protein: 'Chicken, fish, eggs and seafood are directly permitted in multiple Singapore protocols.',
+  tofu: 'Tofu/taukwa are directly listed as allowed by SKH; tofu also appears in NUH/CGH low-residue examples.',
+  clear:
+    'Water and specified clear/light-coloured drinks are directly permitted during clear-liquid phases, subject to hospital timing and colour rules.',
+  pork: 'SKH directly lists pork as allowed during its 3-day low-residue phase.',
+  spread:
+    'On the low-fibre option list as a spread for white bread. Keep it smooth and thin — no coconut flesh, no fruit pieces, no nuts.',
+  refinedBake:
+    'On the low-fibre option list as a plain refined-flour item. Take it plain: no wholemeal, no nuts, seeds, fruit pieces or jam.',
+  plainCake:
+    'On the low-fibre option list as a plain cake. No nuts, seeds, dried fruit, fruit pieces or dark-coloured fillings.',
+  custard:
+    'Egg-and-milk custards are on the low-fibre option list as smooth, residue-free desserts. Plain only — no fruit, no caramel with fruit pieces.',
+  drinkWithMilk:
+    'Coffee and tea are on the low-fibre option list. Sheets differ on whether milk is allowed, so follow the instruction your care team gave you.',
+  drinkNoMilk:
+    'Coffee and tea are on the low-fibre option list. Avoid red, purple, blue or dark-coloured drinks if your clinic asks for it.',
+  peeledPotato:
+    'On the low-fibre option list peeled and mashed, without the skin. The skin is the fibrous part, so it comes off before cooking.',
+  broth:
+    'Clear soup and broth are permitted, strained. No vegetables, noodles, meat pieces or garnish left in the bowl.',
+  sauce:
+    'Smooth sauces are low in visible residue. Keep the amount small and skip chilli, sambal, sesame and fried shallots.',
+  noVeg:
+    'On the low-fibre option list when taken without the vegetable, herb and garnish sides it usually comes with.',
+} as const
 
-// Copied from ingredient_tab: id, wording and tier verbatim.
+type IngredientSeed = {
+  /** Defaults to 'can' — every row on this list is one the sheet clears. */
+  classification?: ApiFoodClassification
+  why: string
+}
+
+/** Ingredient catalogue. Insertion order fixes the ids, so keep rows appended. */
 const INGREDIENTS: Record<string, IngredientSeed> = {
-  'Agar-agar': {
-    id: 1,
-    why: 'Only clear agar with no fruit pieces; avoid red, purple, blue or dark colours.',
-    tier: 'DIETICIAN',
+  // --- Refined starches ---
+  'White bread': { why: WHY.refined },
+  'White rice': { why: WHY.refined },
+  'White porridge': { why: WHY.refined },
+  'Bee hoon': { why: WHY.refined },
+  'Kway teow': { why: WHY.refined },
+  'Rice noodles': { why: WHY.refined },
+  'Mee pok': { why: WHY.refined },
+  'Mee kia': { why: WHY.refined },
+  'Udon noodles': { why: WHY.refined },
+  Pasta: { why: WHY.refined },
+  'Plain crackers': { why: WHY.refined },
+  'Plain biscuits': { why: WHY.refined },
+  'Sushi rice': { why: WHY.refined },
+  'Chee cheong fun (plain rice roll)': {
+    why: 'A plain steamed rice-flour roll is a refined starch. Take it without sesame seeds, fried shallots or sweet sauce.',
   },
-  'Apple juice': { id: 3, why: 'OK only if clear, pulp-free and strained.', tier: 'DIETICIAN' },
-  'Barley water': {
-    id: 6,
-    why: 'Only if fully strained with no grain left; for clear liquids use diluted, non-cloudy.',
-    tier: 'DIETICIAN',
+  'Idli (steamed rice cake)': {
+    why: 'On the low-fibre option list plain, without chutney or sambar — those are the fibrous part of the meal.',
   },
-  'Bee hoon': { id: 172, why: 'Noodles are allowed if plain and not wholegrain.', tier: 'SKH' },
-  'Chicken': { id: 186, why: 'Lean chicken is allowed and leaves little residue.', tier: 'SKH' },
-  'Clear chicken broth': {
-    id: 28,
-    why: 'Fine if fully strained with no solids.',
-    tier: 'DIETICIAN',
+  'Dosa (plain rice crepe)': {
+    why: 'On the low-fibre option list plain, without sambar, chutney or vegetable filling.',
   },
-  'Clear fish broth': { id: 29, why: 'Fine if fully strained with no solids.', tier: 'DIETICIAN' },
-  'Coconut milk': { id: 33, why: 'Acceptable in the low-residue phase.', tier: 'DIETICIAN' },
+  'Plain naan': { why: WHY.refinedBake },
+  'White baguette': { why: WHY.refinedBake },
+  'Plain bagel': { why: WHY.refinedBake },
+  'Plain flour tortilla': { why: WHY.refinedBake },
+  'Plain pancake': { why: WHY.refinedBake },
+  'Plain waffle': { why: WHY.refinedBake },
+  'Potato (peeled)': { why: WHY.peeledPotato },
+
+  // --- Protein ---
+  Egg: { why: WHY.protein },
+  'Steamed egg': { why: WHY.protein },
+  'Steamed egg custard (chawanmushi)': { why: WHY.protein },
+  Chicken: { why: WHY.protein },
+  Fish: { why: WHY.protein },
+  'Smoked salmon': { why: WHY.protein },
+  'Canned tuna': {
+    why: 'Plain tuna in water or oil, drained. No sweetcorn, celery or onion mixed into the filling.',
+  },
+  Fishball: {
+    why: 'On the low-fibre option list as part of the soup noodle bowl. Plain fishballs only, with the vegetables left out.',
+  },
+  'Wanton (pork dumpling)': { why: WHY.pork },
+  'Minced pork': { why: WHY.pork },
+  Tofu: { why: WHY.tofu },
+  'Silken tofu': { why: WHY.tofu },
+  Taukwa: { why: WHY.tofu },
+  'Tau pok': { why: WHY.tofu },
+  'Beancurd skin (tau pok / inari)': { why: WHY.tofu },
+  'Tau huay (soft beancurd)': {
+    why: 'Smooth soy beancurd with plain sugar syrup. No ginkgo nuts, barley, red bean or grass jelly toppings.',
+  },
+
+  // --- Spreads, fats, sauces ---
+  Kaya: { why: WHY.spread },
+  Butter: { why: WHY.spread },
+  Syrup: {
+    why: 'Plain sugar or maple syrup carries no fibre. Skip fruit compote, jam and anything with seeds or pieces.',
+  },
+  'Teriyaki sauce': { why: WHY.sauce },
+
+  // --- Soups and drinks ---
+  'Clear broth': { why: WHY.broth },
+  Water: { why: WHY.clear },
+  'Kopi-O': { why: WHY.drinkNoMilk },
+  Kopi: { why: WHY.drinkWithMilk },
+  'Teh-O': { why: WHY.drinkNoMilk },
+  Teh: { why: WHY.drinkWithMilk },
+  'Chinese tea': { why: WHY.drinkNoMilk },
+  'Green tea': { why: WHY.drinkNoMilk },
+  'English breakfast tea': { why: WHY.drinkNoMilk },
+  'Soy milk (no pulp)': {
+    why: 'On the low-fibre option list strained, without pulp. Some sheets exclude soy milk, so follow the instruction your care team gave you.',
+  },
+  'Apple juice (clear, no pulp)': {
+    why: 'Clear, light-coloured juice with no pulp is permitted. Cloudy juice and anything with pulp is not.',
+  },
+  'Isotonic drink': {
+    why: 'Light-coloured sports drinks are permitted. Avoid red, purple, blue or brown if your clinic asks for it.',
+  },
   'Colourless soft drink': {
-    id: 34,
-    why: 'Clear fluid that leaves little residue; follow fasting timing.',
-    tier: 'DIETICIAN',
+    why: 'Colourless soft drinks such as Sprite, 7-Up or cream soda are permitted. Nothing red, purple, blue or dark.',
   },
-  'Dark soy sauce': {
-    id: 42,
-    why: 'Fine if smooth with no significant visible vegetable pieces.',
-    tier: 'DIETICIAN',
+
+  // --- Desserts ---
+  'Plain sponge cake': { why: WHY.plainCake },
+  'Butter cake': { why: WHY.plainCake },
+  'Chiffon cake': { why: WHY.plainCake },
+  'Swiss roll (plain)': { why: WHY.plainCake },
+  'Plain muffin': { why: WHY.plainCake },
+  Castella: { why: WHY.plainCake },
+  Madeleine: { why: WHY.plainCake },
+  Meringue: {
+    why: 'Whipped egg white and sugar, nothing fibrous. Plain only — no nuts, no fruit, no dark colouring.',
   },
-  'Egg': { id: 44, why: 'Low-fibre protein that leaves little residue.', tier: 'DIETICIAN' },
-  'Fish': { id: 203, why: 'Fish is allowed and leaves little residue.', tier: 'SKH' },
-  'Fishball': {
-    id: 48,
-    why: 'OK only if there are no seeds or vegetable pieces mixed in.',
-    tier: 'DIETICIAN',
-  },
-  'Fishcake': {
-    id: 49,
-    why: 'OK only if there are no seeds or vegetable pieces mixed in.',
-    tier: 'DIETICIAN',
-  },
-  'Glucose drink': {
-    id: 58,
-    why: 'Clear fluid that leaves little residue; follow fasting timing.',
-    tier: 'DIETICIAN',
-  },
-  'Honey water': {
-    id: 63,
-    why: 'Clear fluid that leaves little residue if fully dissolved.',
-    tier: 'DIETICIAN',
-  },
-  'Horlicks': {
-    id: 65,
-    why: 'OK in the low-residue phase; stop once clear liquids start.',
-    tier: 'DIETICIAN',
-  },
-  'Isotonic drink (light-coloured)': {
-    id: 66,
-    why: 'Light clear fluid is fine; prefer versions without strong added colour.',
-    tier: 'DIETICIAN',
-  },
-  'Jelly': {
-    id: 68,
-    why: 'Only clear jelly with no fruit pieces; avoid red, purple, blue or dark colours.',
-    tier: 'DIETICIAN',
-  },
-  'Kway teow': { id: 224, why: 'Noodles are allowed if plain and not wholegrain.', tier: 'SKH' },
-  'Luncheon meat': {
-    id: 82,
-    why: 'OK only if there are no seeds or vegetable pieces mixed in.',
-    tier: 'DIETICIAN',
-  },
-  'Mee kia': { id: 231, why: 'Noodles are allowed if plain and not wholegrain.', tier: 'SKH' },
-  'Mee pok': { id: 232, why: 'Noodles are allowed if plain and not wholegrain.', tier: 'SKH' },
-  'Mee sua': { id: 233, why: 'Noodles are allowed if plain and not wholegrain.', tier: 'SKH' },
-  'Milo': {
-    id: 88,
-    why: 'OK in the low-residue phase; stop once clear liquids start.',
-    tier: 'DIETICIAN',
-  },
-  'Orange juice': {
-    id: 98,
-    why: 'Only if fully clear and strained; pulpy versions leave residue — usually avoid.',
-    tier: 'DIETICIAN',
-  },
-  'Pasta': {
-    id: 244,
-    why: 'Counts as noodles/pasta-style refined starch if not wholegrain.',
-    tier: 'SKH',
-  },
-  'Pear juice': { id: 104, why: 'OK only if clear, pulp-free and strained.', tier: 'DIETICIAN' },
-  'Plain biscuits': { id: 250, why: 'Plain biscuits are low in fibre and allowed.', tier: 'SKH' },
-  'Potato': { id: 109, why: 'Low-fibre starch if peeled; do not eat the skin.', tier: 'DIETICIAN' },
-  'Prawns': { id: 254, why: 'Shellfish such as prawns are allowed.', tier: 'SKH' },
-  'Rice cereal': {
-    id: 262,
-    why: 'Rice cereal is listed as an allowed refined option.',
-    tier: 'SKH',
-  },
-  'Sausage': {
-    id: 121,
-    why: 'OK only if there are no seeds or vegetable pieces mixed in.',
-    tier: 'DIETICIAN',
-  },
-  'Soy sauce': {
-    id: 132,
-    why: 'Fine if smooth with no significant visible vegetable pieces.',
-    tier: 'DIETICIAN',
-  },
-  'Squid': { id: 273, why: 'Shellfish/seafood is allowed if plain.', tier: 'SKH' },
-  'Sweet potato': {
-    id: 140,
-    why: 'Only if peeled and well-cooked; some clinics are stricter.',
-    tier: 'DIETICIAN',
-  },
-  'Tau pok': {
-    id: 141,
-    why: 'Soft soy protein is low-residue if plain and not stuffed with vegetables.',
-    tier: 'DIETICIAN',
-  },
-  'Taukwa': {
-    id: 142,
-    why: 'Soft soy protein is low-residue if plain and not stuffed with vegetables.',
-    tier: 'DIETICIAN',
-  },
-  'Tofu': {
-    id: 147,
-    why: 'Soft soy protein is low-residue if plain and not stuffed with vegetables.',
-    tier: 'DIETICIAN',
-  },
-  'Water': {
-    id: 153,
-    why: 'Clear fluid that leaves no residue; follow fasting stop time.',
-    tier: 'DIETICIAN',
-  },
-  'White bread': { id: 155, why: 'Low in fibre if plain refined white bread.', tier: 'DIETICIAN' },
-  'White porridge': {
-    id: 290,
-    why: 'Low in fibre, so it leaves little residue in the bowel.',
-    tier: 'SKH',
-  },
-  'White rice': {
-    id: 291,
-    why: 'Low in fibre, so it leaves little residue in the bowel.',
-    tier: 'SKH',
-  },
-  'Yam / taro': {
-    id: 164,
-    why: 'Only if peeled and well-cooked; some clinics are stricter.',
-    tier: 'DIETICIAN',
-  },
-  'Yellow noodles': {
-    id: 298,
-    why: 'Noodles are allowed if plain and not wholegrain.',
-    tier: 'SKH',
+  'Caramel pudding': { why: WHY.custard },
+  Flan: { why: WHY.custard },
+  'Panna cotta': { why: WHY.custard },
+  'Clear jelly (no fruit)': {
+    why: 'Clear jelly with no fruit pieces. Avoid red, purple, blue and dark-coloured jelly — the dye can be mistaken for blood at scope.',
   },
 }
 
-type DishSeed = { name: string; meals: ApiMealType[]; ingredients: string[] }
+type DishSeed = {
+  name: string
+  meals: ApiMealType[]
+  cuisine: Cuisine
+  /** Shown under the name on the card; the title stays the name alone. */
+  note?: string
+  ingredients: (keyof typeof INGREDIENTS)[]
+}
 
+const BREAKFAST: ApiMealType[] = ['breakfast']
+const MAINS: ApiMealType[] = ['lunch', 'dinner']
+const ANY_MEAL: ApiMealType[] = ['breakfast', 'lunch', 'dinner']
+const SNACK: ApiMealType[] = ['snack']
+const DRINK: ApiMealType[] = ['drink']
+
+/**
+ * The option list itself. A dish the sheet lists under two headings is one row
+ * with both meal types, the way dishes_tab stores it — the porridges are
+ * breakfast and mains, kaya/butter toast is breakfast and tea break.
+ */
 const DISHES: DishSeed[] = [
   // --- Breakfast ---
-  { name: 'White porridge', meals: ['breakfast'], ingredients: ['White porridge'] },
-  { name: 'Plain toast', meals: ['breakfast'], ingredients: ['White bread'] },
-  { name: 'Soft-boiled eggs', meals: ['breakfast'], ingredients: ['Egg', 'Soy sauce'] },
-  { name: 'Rice cereal', meals: ['breakfast', 'snack'], ingredients: ['Rice cereal'] },
-  { name: 'Plain biscuits', meals: ['breakfast', 'snack'], ingredients: ['Plain biscuits'] },
-  { name: 'Bee hoon', meals: ['breakfast', 'lunch', 'dinner'], ingredients: ['Bee hoon'] },
-  { name: 'Mee sua', meals: ['breakfast', 'lunch', 'dinner'], ingredients: ['Mee sua'] },
-  { name: 'White rice', meals: ['breakfast', 'lunch', 'dinner'], ingredients: ['White rice'] },
-  { name: 'Potato', meals: ['breakfast', 'lunch', 'dinner'], ingredients: ['Potato'] },
-  { name: 'Sweet potato', meals: ['breakfast', 'lunch', 'dinner'], ingredients: ['Sweet potato'] },
-
-  // --- Lunch and dinner ---
-  { name: 'Chicken', meals: ['lunch', 'dinner'], ingredients: ['Chicken'] },
-  { name: 'Fish', meals: ['lunch', 'dinner'], ingredients: ['Fish'] },
-  { name: 'Prawns', meals: ['lunch', 'dinner'], ingredients: ['Prawns'] },
-  { name: 'Squid', meals: ['lunch', 'dinner'], ingredients: ['Squid'] },
-  { name: 'Plain steamed egg', meals: ['lunch', 'dinner'], ingredients: ['Egg', 'Soy sauce'] },
-  { name: 'Tofu', meals: ['lunch', 'dinner'], ingredients: ['Tofu'] },
-  { name: 'Taukwa', meals: ['lunch', 'dinner'], ingredients: ['Taukwa'] },
-  { name: 'Tau pok', meals: ['lunch', 'dinner'], ingredients: ['Tau pok'] },
-  { name: 'Fishball', meals: ['lunch', 'dinner'], ingredients: ['Fishball'] },
-  { name: 'Fishcake', meals: ['lunch', 'dinner'], ingredients: ['Fishcake'] },
-  { name: 'Luncheon meat', meals: ['lunch', 'dinner'], ingredients: ['Luncheon meat'] },
-  { name: 'Sausage', meals: ['lunch', 'dinner'], ingredients: ['Sausage'] },
+  { name: 'Kaya toast + soft-boiled eggs', cuisine: 'chinese', meals: BREAKFAST, ingredients: ['White bread', 'Kaya', 'Egg'] },
+  { name: 'Soft-boiled eggs + white toast', cuisine: 'chinese', meals: BREAKFAST, ingredients: ['Egg', 'White bread'] },
   {
-    name: 'Chap chye',
-    meals: ['lunch', 'dinner'],
-    ingredients: ['White rice', 'Tofu', 'Dark soy sauce'],
+    name: 'White bread + butter', cuisine: 'western', note: 'Butter or margarine',
+    meals: ['breakfast', 'snack'],
+    ingredients: ['White bread', 'Butter'],
   },
-  { name: 'Kway teow', meals: ['lunch', 'dinner'], ingredients: ['Kway teow'] },
-  { name: 'Mee kia', meals: ['lunch', 'dinner'], ingredients: ['Mee kia'] },
-  { name: 'Mee pok', meals: ['lunch', 'dinner'], ingredients: ['Mee pok'] },
-  { name: 'Yellow noodles', meals: ['lunch', 'dinner'], ingredients: ['Yellow noodles'] },
-  { name: 'Pasta', meals: ['lunch', 'dinner'], ingredients: ['Pasta'] },
-  { name: 'Yam / taro', meals: ['lunch', 'dinner'], ingredients: ['Yam / taro'] },
   {
-    name: 'Clear broth',
-    meals: ['lunch', 'dinner', 'drink'],
-    ingredients: ['Clear chicken broth', 'Clear fish broth'],
+    name: 'White bread + kaya', cuisine: 'chinese', note: 'Smooth kaya only',
+    meals: ['breakfast', 'snack'],
+    ingredients: ['White bread', 'Kaya'],
   },
-
-  // --- Snacks ---
-  { name: 'Agar-agar', meals: ['snack'], ingredients: ['Agar-agar'] },
-  { name: 'Jelly', meals: ['snack'], ingredients: ['Jelly'] },
   {
-    name: 'Bubur cha cha',
-    meals: ['snack'],
-    ingredients: ['Sweet potato', 'Yam / taro', 'Coconut milk'],
+    name: 'Plain egg sandwich', cuisine: 'western', note: 'On white bread, no vegetables',
+    meals: ANY_MEAL,
+    ingredients: ['White bread', 'Egg'],
+  },
+  { name: 'Scrambled eggs + white toast', cuisine: 'western', meals: BREAKFAST, ingredients: ['Egg', 'White bread'] },
+  { name: 'Plain omelette', cuisine: 'western', note: 'No vegetables', meals: BREAKFAST, ingredients: ['Egg'] },
+  {
+    name: 'Plain chee cheong fun', cuisine: 'chinese', note: 'No sesame or garnishes',
+    meals: BREAKFAST,
+    ingredients: ['Chee cheong fun (plain rice roll)'],
+  },
+  { name: 'Plain rice porridge', cuisine: 'chinese', note: 'Also called congee', meals: ANY_MEAL, ingredients: ['White porridge'] },
+  {
+    name: 'Chicken porridge', cuisine: 'chinese', note: 'No vegetables or garnishes',
+    meals: ANY_MEAL,
+    ingredients: ['White porridge', 'Chicken'],
+  },
+  {
+    name: 'Fish porridge', cuisine: 'chinese', note: 'No vegetables or garnishes',
+    meals: ANY_MEAL,
+    ingredients: ['White porridge', 'Fish'],
+  },
+  {
+    name: 'Plain idli + egg', cuisine: 'indian', note: 'No chutney',
+    meals: BREAKFAST,
+    ingredients: ['Idli (steamed rice cake)', 'Egg'],
+  },
+  {
+    name: 'Plain dosa + egg', cuisine: 'indian', note: 'No sambar or chutney',
+    meals: BREAKFAST,
+    ingredients: ['Dosa (plain rice crepe)', 'Egg'],
+  },
+  {
+    name: 'Chawanmushi + white rice', cuisine: 'japanese',
+    meals: BREAKFAST,
+    ingredients: ['Steamed egg custard (chawanmushi)', 'White rice'],
+  },
+  { name: 'Plain jasmine rice + omelette', cuisine: 'general', meals: BREAKFAST, ingredients: ['White rice', 'Egg'] },
+  { name: 'White rice + steamed egg', cuisine: 'general', meals: ANY_MEAL, ingredients: ['White rice', 'Steamed egg'] },
+  {
+    name: 'Plain tortilla + potato + egg', cuisine: 'western', note: 'Potato peeled',
+    meals: BREAKFAST,
+    ingredients: ['Plain flour tortilla', 'Potato (peeled)', 'Egg'],
+  },
+  { name: 'Plain omelette + white baguette', cuisine: 'western', meals: BREAKFAST, ingredients: ['Egg', 'White baguette'] },
+  { name: 'Plain white pasta + scrambled egg', cuisine: 'western', meals: BREAKFAST, ingredients: ['Pasta', 'Egg'] },
+  { name: 'Plain bee hoon + egg', cuisine: 'chinese', meals: BREAKFAST, ingredients: ['Bee hoon', 'Egg'] },
+  {
+    name: 'Plain pancakes', cuisine: 'western', note: 'With syrup or butter',
+    meals: ['breakfast', 'snack'],
+    ingredients: ['Plain pancake', 'Syrup', 'Butter'],
+  },
+  {
+    name: 'Plain waffles', cuisine: 'western', note: 'With syrup or butter',
+    meals: ['breakfast', 'snack'],
+    ingredients: ['Plain waffle', 'Syrup', 'Butter'],
+  },
+  { name: 'Plain bagel + smoked salmon', cuisine: 'western', meals: BREAKFAST, ingredients: ['Plain bagel', 'Smoked salmon'] },
+
+  // --- Lunch / dinner ---
+  { name: 'Steamed fish + white rice', cuisine: 'chinese', meals: MAINS, ingredients: ['Fish', 'White rice'] },
+  { name: 'Steamed chicken + white rice', cuisine: 'chinese', meals: MAINS, ingredients: ['Chicken', 'White rice'] },
+  {
+    name: 'Chicken rice', cuisine: 'chinese', note: 'White rice + skinless chicken, no cucumber or vegetables',
+    meals: MAINS,
+    ingredients: ['White rice', 'Chicken'],
+  },
+  {
+    name: 'Silken tofu + white rice', cuisine: 'chinese', note: 'No vegetables',
+    meals: MAINS,
+    ingredients: ['Silken tofu', 'White rice'],
+  },
+  {
+    name: 'Fishball noodle soup', cuisine: 'chinese', note: 'No vegetables',
+    meals: MAINS,
+    ingredients: ['Mee pok', 'Fishball', 'Clear broth'],
+  },
+  {
+    name: 'Wanton noodle soup', cuisine: 'chinese', note: 'No vegetables',
+    meals: MAINS,
+    ingredients: ['Mee kia', 'Wanton (pork dumpling)', 'Clear broth'],
+  },
+  {
+    name: 'Soup minced meat noodles', cuisine: 'chinese', note: 'No vegetables or garnishes',
+    meals: MAINS,
+    ingredients: ['Mee pok', 'Minced pork', 'Clear broth'],
+  },
+  {
+    name: 'Plain kway teow', cuisine: 'chinese', note: 'With fish or chicken, no vegetables',
+    meals: MAINS,
+    ingredients: ['Kway teow', 'Fish', 'Chicken'],
+  },
+  {
+    name: 'Sliced fish bee hoon soup', cuisine: 'chinese', note: 'No vegetables or garnishes',
+    meals: MAINS,
+    ingredients: ['Bee hoon', 'Fish', 'Clear broth'],
+  },
+  {
+    name: 'Cai png + egg and fish', cuisine: 'chinese', note: 'White rice + steamed egg + fish or chicken, skip the vegetables',
+    meals: MAINS,
+    ingredients: ['White rice', 'Steamed egg', 'Fish', 'Chicken'],
+  },
+  {
+    name: 'Cai png + beancurd', cuisine: 'chinese', note: 'White rice + taukwa + tau pok + tofu',
+    meals: MAINS,
+    ingredients: ['White rice', 'Taukwa', 'Tau pok', 'Tofu'],
+  },
+  {
+    name: 'Chicken tikka + plain naan', cuisine: 'indian', note: 'No vegetable sides',
+    meals: MAINS,
+    ingredients: ['Chicken', 'Plain naan'],
+  },
+  {
+    name: 'Plain dosa + grilled chicken', cuisine: 'indian',
+    meals: MAINS,
+    ingredients: ['Dosa (plain rice crepe)', 'Chicken'],
+  },
+  { name: 'Grilled chicken + mashed potato', cuisine: 'western', meals: MAINS, ingredients: ['Chicken', 'Potato (peeled)'] },
+  { name: 'Baked white fish + mashed potato', cuisine: 'western', meals: MAINS, ingredients: ['Fish', 'Potato (peeled)'] },
+  { name: 'Grilled saba + white rice', cuisine: 'japanese', meals: MAINS, ingredients: ['Fish', 'White rice'] },
+  {
+    name: 'Sushi', cuisine: 'japanese', note: 'White rice with egg, fish or beancurd skin',
+    meals: MAINS,
+    ingredients: ['Sushi rice', 'Egg', 'Fish', 'Beancurd skin (tau pok / inari)'],
+  },
+  {
+    name: 'Udon with chicken', cuisine: 'japanese', note: 'No vegetables or seaweed',
+    meals: MAINS,
+    ingredients: ['Udon noodles', 'Chicken', 'Clear broth'],
+  },
+  {
+    name: 'Chicken pho', cuisine: 'vietnamese', note: 'No bean sprouts or herbs',
+    meals: MAINS,
+    ingredients: ['Rice noodles', 'Chicken', 'Clear broth'],
+  },
+  {
+    name: 'Chicken teriyaki + white rice', cuisine: 'japanese', note: 'No vegetables',
+    meals: MAINS,
+    ingredients: ['Chicken', 'Teriyaki sauce', 'White rice'],
+  },
+  {
+    name: 'Plain rice noodles', cuisine: 'general', note: 'With fish or chicken, no vegetables',
+    meals: MAINS,
+    ingredients: ['Rice noodles', 'Fish', 'Chicken'],
+  },
+  {
+    name: 'Plain pasta', cuisine: 'western', note: 'With chicken or fish, no vegetables',
+    meals: MAINS,
+    ingredients: ['Pasta', 'Chicken', 'Fish'],
+  },
+  {
+    name: 'Tortilla española + white bread', cuisine: 'western', note: 'No onion',
+    meals: MAINS,
+    ingredients: ['Potato (peeled)', 'Egg', 'White bread'],
+  },
+  {
+    name: 'White bread sandwich', cuisine: 'western', note: 'With egg or chicken, no vegetables',
+    meals: MAINS,
+    ingredients: ['White bread', 'Egg', 'Chicken'],
+  },
+  { name: 'Tuna sandwich', cuisine: 'western', note: 'No vegetables', meals: MAINS, ingredients: ['White bread', 'Canned tuna'] },
+
+  // --- Tea break / dessert ---
+  { name: 'Tau huay', cuisine: 'chinese', note: 'Plain beancurd dessert', meals: SNACK, ingredients: ['Tau huay (soft beancurd)'] },
+  { name: 'Plain crackers', cuisine: 'general', meals: SNACK, ingredients: ['Plain crackers'] },
+  { name: 'Plain biscuits', cuisine: 'general', meals: SNACK, ingredients: ['Plain biscuits'] },
+  { name: 'Plain sponge cake', cuisine: 'western', meals: SNACK, ingredients: ['Plain sponge cake'] },
+  { name: 'Butter cake', cuisine: 'western', note: 'No nuts or fruit', meals: SNACK, ingredients: ['Butter cake'] },
+  { name: 'Plain chiffon cake', cuisine: 'western', meals: SNACK, ingredients: ['Chiffon cake'] },
+  { name: 'Plain Swiss roll', cuisine: 'western', note: 'No fruit pieces', meals: SNACK, ingredients: ['Swiss roll (plain)'] },
+  {
+    name: 'Plain muffin', cuisine: 'western', note: 'No nuts, seeds or fruit',
+    meals: SNACK,
+    ingredients: ['Plain muffin'],
+  },
+  {
+    name: 'Egg custard', cuisine: 'chinese', note: 'Steamed, plain',
+    meals: SNACK,
+    ingredients: ['Steamed egg custard (chawanmushi)'],
+  },
+  { name: 'Plain castella', cuisine: 'japanese', meals: SNACK, ingredients: ['Castella'] },
+  { name: 'Plain meringue', cuisine: 'western', meals: SNACK, ingredients: ['Meringue'] },
+  { name: 'Plain madeleine', cuisine: 'western', meals: SNACK, ingredients: ['Madeleine'] },
+  { name: 'Plain caramel pudding', cuisine: 'western', meals: SNACK, ingredients: ['Caramel pudding'] },
+  { name: 'Plain flan', cuisine: 'western', meals: SNACK, ingredients: ['Flan'] },
+  { name: 'Plain panna cotta', cuisine: 'western', meals: SNACK, ingredients: ['Panna cotta'] },
+  {
+    name: 'Clear jelly', cuisine: 'general', note: 'No fruit; avoid red, purple, blue and dark colours',
+    meals: SNACK,
+    ingredients: ['Clear jelly (no fruit)'],
   },
 
   // --- Drinks ---
-  { name: 'Water', meals: ['drink'], ingredients: ['Water'] },
-  { name: 'Barley water', meals: ['drink'], ingredients: ['Barley water'] },
-  { name: 'Apple juice (clear, no pulp)', meals: ['drink'], ingredients: ['Apple juice'] },
-  { name: 'Pear juice (clear, no pulp)', meals: ['drink'], ingredients: ['Pear juice'] },
-  { name: 'Orange juice', meals: ['drink'], ingredients: ['Orange juice'] },
-  { name: 'Honey water', meals: ['drink'], ingredients: ['Honey water'] },
-  { name: 'Glucose drink', meals: ['drink'], ingredients: ['Glucose drink'] },
+  { name: 'Plain water', cuisine: 'general', meals: DRINK, ingredients: ['Water'] },
+  { name: 'Kopi-O', cuisine: 'general', meals: DRINK, ingredients: ['Kopi-O'] },
+  { name: 'Kopi', cuisine: 'general', meals: DRINK, ingredients: ['Kopi'] },
+  { name: 'Teh-O', cuisine: 'general', meals: DRINK, ingredients: ['Teh-O'] },
+  { name: 'Teh', cuisine: 'general', meals: DRINK, ingredients: ['Teh'] },
+  { name: 'Chinese tea', cuisine: 'chinese', meals: DRINK, ingredients: ['Chinese tea'] },
+  { name: 'Green tea', cuisine: 'chinese', meals: DRINK, ingredients: ['Green tea'] },
+  { name: 'English breakfast tea', cuisine: 'western', meals: DRINK, ingredients: ['English breakfast tea'] },
+  { name: 'Soy milk', cuisine: 'chinese', note: 'Without pulp', meals: DRINK, ingredients: ['Soy milk (no pulp)'] },
   {
-    name: 'Isotonic drink (light-coloured)',
-    meals: ['drink'],
-    ingredients: ['Isotonic drink (light-coloured)'],
+    name: 'Clear apple juice', cuisine: 'general', note: 'Without pulp',
+    meals: DRINK,
+    ingredients: ['Apple juice (clear, no pulp)'],
   },
-  { name: 'Colourless soft drink', meals: ['drink'], ingredients: ['Colourless soft drink'] },
-  { name: 'Milo', meals: ['drink'], ingredients: ['Milo'] },
-  { name: 'Horlicks', meals: ['drink'], ingredients: ['Horlicks'] },
+  { name: 'Clear soup or broth', cuisine: 'general', meals: DRINK, ingredients: ['Clear broth'] },
+  {
+    name: 'Isotonic / sports drink', cuisine: 'general', note: 'Avoid red, purple, blue or brown if your clinic asks',
+    meals: DRINK,
+    ingredients: ['Isotonic drink'],
+  },
+  {
+    name: 'Colourless soft drinks', cuisine: 'general', note: 'e.g. Sprite, 7-Up, cream soda',
+    meals: DRINK,
+    ingredients: ['Colourless soft drink'],
+  },
 ]
 
 const INGREDIENT_ROWS: Record<string, ApiIngredient> = Object.fromEntries(
-  Object.entries(INGREDIENTS).map(([name, seed]) => [
+  Object.entries(INGREDIENTS).map(([name, seed], index) => [
     name,
     {
-      id: seed.id,
+      id: index + 1,
       name,
-      classification: 'can',
+      classification: seed.classification ?? 'can',
       classification_reason: seed.why,
-      source_hospital: seed.tier,
+      source_hospital: 'SKH',
       source_document: SOURCE_DOCUMENT,
     } satisfies ApiIngredient,
   ]),
@@ -302,12 +472,15 @@ function toDish(seed: DishSeed, index: number): ApiDish {
   return {
     id: index + 1,
     name: seed.name,
+    note: seed.note,
+    cuisine: seed.cuisine,
     meal_type: seed.meals,
     source_hospital: 'SKH',
-    // Every dish here was picked from the cleared set, so none is a hard_no.
+    verdict,
+    // The offline plan carries no hard_no dishes: every dish here is judged
+    // from its ingredients alone.
     hard_no: false,
     hard_no_reason: '',
-    verdict,
     remove_ingredients: removeIngredients,
     ingredients,
   }

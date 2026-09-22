@@ -35,6 +35,7 @@ export { getApiDish, getApiMealPrep, postApiFoodChat } from './food'
 export type {
   ApiDish,
   ApiDishChoice,
+  ApiCuisine,
   ApiDishVerdict,
   ApiFoodChatResponse,
   ApiFoodChatStatus,

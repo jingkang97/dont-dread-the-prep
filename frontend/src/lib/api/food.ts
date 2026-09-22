@@ -7,6 +7,16 @@ export type ApiDishVerdict = ApiFoodClassification | 'possible'
 export type ApiFoodSource = 'SKH' | 'TTSH' | 'DIETICIAN'
 export type ApiMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink'
 
+/** Hard-coded plans only — dishes_tab has no cuisine column. */
+export type ApiCuisine =
+  | 'general'
+  | 'chinese'
+  | 'malay'
+  | 'indian'
+  | 'japanese'
+  | 'vietnamese'
+  | 'western'
+
 export type ApiIngredient = {
   id: number
   name: string
@@ -26,6 +36,13 @@ export type ApiDish = {
   hard_no_reason: string
   remove_ingredients: string[]
   ingredients: ApiIngredient[]
+  /**
+   * Hard-coded plans only. `note` is the qualifier under the dish name ("No
+   * vegetables or garnishes"), kept out of the title so the list stays
+   * scannable; `cuisine` is the meal-prep filter chip. The API sends neither.
+   */
+  note?: string
+  cuisine?: ApiCuisine
 }
 
 export type ApiMealPrep = {

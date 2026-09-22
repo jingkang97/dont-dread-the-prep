@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { GeneratingPane, VerdictMark } from '../ui'
 import { DishCard } from './DishCard'
 import { useMealPrep } from '../../hooks/useMealPrep'
+import { CUISINES, type Cuisine } from '../../data/cuisine'
 import { useLang } from '../../i18n/LanguageContext'
 import { mealPrepLiveCopy, usePrimeLiveCopy } from '../../i18n/liveCopy'
 import type { StringKey } from '../../i18n/strings'
@@ -55,8 +56,14 @@ export function MealPrep({ session }: { session: PrepSession }) {
   const { mealPrep, loading, error } = useMealPrep(session.hospitalId)
   usePrimeLiveCopy(mealPrepLiveCopy(mealPrep))
   const [meal, setMeal] = useState<MealKey>('breakfast')
+  const [cuisine, setCuisine] = useState<Cuisine | null>(null)
 
-  const dishes: ApiDish[] = mealPrep ? dishesFor(mealPrep, meal) : []
+  const mealDishes: ApiDish[] = mealPrep ? dishesFor(mealPrep, meal) : []
+  // Only the cuisines present in this meal get a chip — filtering breakfast by
+  // "Malay" when the one Malay dish is a dessert would just empty the list. An
+  // API-served hospital tags nothing, so the row disappears entirely.
+  const cuisines = CUISINES.filter((c) => mealDishes.some((dish) => dish.cuisine === c.id))
+  const dishes = cuisine ? mealDishes.filter((dish) => dish.cuisine === cuisine) : mealDishes
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -75,7 +82,10 @@ export function MealPrep({ session }: { session: PrepSession }) {
                 role="radio"
                 aria-checked={on}
                 data-demo={`food-meal-${item.id}`}
-                onClick={() => setMeal(item.id)}
+                onClick={() => {
+                  setMeal(item.id)
+                  setCuisine(null)
+                }}
                 className={cn(
                   'min-h-9 min-w-0 flex-1 whitespace-nowrap rounded-full px-1.5 text-[12px] font-medium',
                   on ? 'bg-teal-deep text-white' : 'bg-black/[0.06] text-navy',
@@ -86,6 +96,32 @@ export function MealPrep({ session }: { session: PrepSession }) {
             )
           })}
         </div>
+        {cuisines.length > 1 && (
+          <div
+            role="radiogroup"
+            aria-label={t('food.cuisineAll')}
+            className="mt-2 flex flex-wrap gap-1.5"
+          >
+            {[{ id: null, label: 'food.cuisineAll' as StringKey }, ...cuisines].map((item) => {
+              const on = cuisine === item.id
+              return (
+                <button
+                  key={item.id ?? 'all'}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => setCuisine(item.id)}
+                  className={cn(
+                    'min-h-8 rounded-full px-3 text-[12px] font-medium',
+                    on ? 'bg-navy text-white' : 'bg-black/[0.06] text-navy',
+                  )}
+                >
+                  {t(item.label)}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
         <MealSummary />

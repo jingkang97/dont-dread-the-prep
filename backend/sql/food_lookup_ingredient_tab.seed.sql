@@ -8,8 +8,8 @@
 -- dishes_tab against the ids this seed creates.
 --
 -- Row counts after this file runs
---   ingredient_tab: 383 rows (167 DIETICIAN, 133 SKH, 83 TTSH)
---   by classification: 127 can, 256 cannot
+--   ingredient_tab: 442 rows (189 DIETICIAN, 148 SKH, 105 TTSH)
+--   by classification: 136 can, 277 cannot, 29 review
 --   dishes_tab:     0 rows (refilled to 341 by food_lookup_dishes_tab.seed.sql)
 --
 -- Ids are written explicitly, 1..383, so that
@@ -17,6 +17,11 @@
 --   DIETICIAN    1..167
 --   SKH        168..300
 --   TTSH       301..383
+-- and the restored block at the end, 22 names written to each tier that does
+-- not already carry them (59 rows; SKH already had 7 of the 22):
+--   DIETICIAN  384..405
+--   SKH        406..420
+--   TTSH       421..442
 -- The column is GENERATED ALWAYS AS IDENTITY, so the INSERT needs OVERRIDING
 -- SYSTEM VALUE, and the identity sequence is advanced past 383 at the end of
 -- this file — without that, the next natural insert would collide on id 1.
@@ -32,6 +37,14 @@
 --      a food_classification value; whitespace is trimmed on every column.
 --   4. source_document has no column in the sheet, so every row records the
 --      export it came from.
+--   5. 22 names that dishes reference are not on the sheet at all (Pork, Butter,
+--      Cooking oil, Plain prata …). They are restored at the end of this file
+--      from the pre-Sept-18 UAT rows — classification and wording unchanged —
+--      and written to all three tiers. Before that, dishes_tab stored them as
+--      {"id": null} and _resolve_ingredients() had no row to return, so a dish
+--      was judged on the ingredients that happened to resolve. Their
+--      source_document says where they came from; they are not sheet rows and
+--      want a dietitian's eye.
 --
 -- Requires: SKH on the food_source enum (food_lookup.sql defines it; an
 -- already-migrated database needs ALTER TYPE food_source ADD VALUE 'SKH'
@@ -429,5 +442,75 @@ VALUES
   (382, 'Wholemeal bread', 'cannot', 'High in fibre, which leaves residue and can hide the bowel lining.', 'TTSH', 'Ingredient Tab Rows Sept 18 2026.csv'),
   (383, 'Yam / taro', 'cannot', 'Only if peeled and well-cooked.', 'TTSH', 'Ingredient Tab Rows Sept 18 2026.csv');
 
+-- Names a dish references that the Sept 18 sheet does not carry, restored from
+-- the pre-Sept-18 UAT rows with classification and wording unchanged. Written
+-- to every tier that does not already carry the name, so a dish resolves it on
+-- its own tier instead of falling through to DIETICIAN or staying unresolved.
+INSERT INTO ingredient_tab (id, name, classification, classification_reason, source_hospital, source_document)
+OVERRIDING SYSTEM VALUE
+VALUES
+  -- DIETICIAN
+  (384, 'Bandung', 'review', 'NUH and SKH avoid milk/milk products, while TTSH permits coffee/tea with or without milk during its 3-day low-fibre phase.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (385, 'Beef', 'cannot', 'Adult NUH/SKH guidance excludes red meat; NUH explicitly gives duck, beef and mutton as examples.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (386, 'Butter', 'review', 'Butter/oil are allowed in NUH paediatric guidance, while TTSH advises avoiding oily foods; adult Singapore guidance is not uniform on amount/preparation.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (387, 'Calamansi drink', 'cannot', 'Fresh fruit/vegetable juices and juices with pulp are excluded by adult NUH guidance; clear-liquid guidance requires clear fluids.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (388, 'Chin chow drink', 'cannot', 'NUH adult guidance explicitly lists jelly and agar-agar among foods to avoid; paediatric NUH also avoids gelatine desserts during clear fluids.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (389, 'Coconut flesh', 'review', 'Coconut milk/flesh and kaya are not directly resolved by the reviewed adult Singapore colonoscopy sources; coconut flesh is fibrous and milk may be treated differently by protocol.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (390, 'Coconut water', 'cannot', 'Fresh fruit/vegetable juices and juices with pulp are excluded by adult NUH guidance; clear-liquid guidance requires clear fluids.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (391, 'Cooking oil', 'review', 'Butter/oil are allowed in NUH paediatric guidance, while TTSH advises avoiding oily foods; adult Singapore guidance is not uniform on amount/preparation.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (392, 'Duck', 'cannot', 'Adult NUH/SKH guidance excludes red meat; NUH explicitly gives duck, beef and mutton as examples.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (393, 'Mutton / lamb', 'cannot', 'Adult NUH/SKH guidance excludes red meat; NUH explicitly gives duck, beef and mutton as examples.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (394, 'Plain biscuits', 'can', 'Refined white starches are directly listed as permitted in Singapore low-fibre/low-residue guidance.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (395, 'Plain crackers', 'can', 'Refined white starches are directly listed as permitted in Singapore low-fibre/low-residue guidance.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (396, 'Plain naan', 'review', 'Refined-flour items may be low fibre, but the specific local item is not directly addressed and preparation/fat can matter.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (397, 'Plain pancake', 'review', 'Refined-flour items may be low fibre, but the specific local item is not directly addressed and preparation/fat can matter.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (398, 'Plain prata', 'review', 'Refined-flour items may be low fibre, but the specific local item is not directly addressed and preparation/fat can matter.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (399, 'Plain waffle', 'review', 'Refined-flour items may be low fibre, but the specific local item is not directly addressed and preparation/fat can matter.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (400, 'Pork', 'can', 'SKH directly lists pork as allowed during its 3-day low-residue phase.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (401, 'Rice cereal', 'can', 'Refined white starches are directly listed as permitted in Singapore low-fibre/low-residue guidance.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (402, 'Sugarcane juice', 'cannot', 'Fresh fruit/vegetable juices and juices with pulp are excluded by adult NUH guidance; clear-liquid guidance requires clear fluids.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (403, 'Tempeh', 'cannot', 'SKH directly lists tempeh among foods to avoid.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (404, 'Unlisted extras (recipe varies)', 'review', 'The sheet rules on this dish as a whole but does not list what goes into it, so the extras cannot be checked one by one. Ask for the plain version.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (405, 'Vegetarian mock meat', 'review', 'Processed meats/fish products vary in fillers, seasoning and texture and are not directly listed in the reviewed adult protocols.', 'DIETICIAN', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  -- SKH
+  (406, 'Bandung', 'review', 'NUH and SKH avoid milk/milk products, while TTSH permits coffee/tea with or without milk during its 3-day low-fibre phase.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (407, 'Butter', 'review', 'Butter/oil are allowed in NUH paediatric guidance, while TTSH advises avoiding oily foods; adult Singapore guidance is not uniform on amount/preparation.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (408, 'Calamansi drink', 'cannot', 'Fresh fruit/vegetable juices and juices with pulp are excluded by adult NUH guidance; clear-liquid guidance requires clear fluids.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (409, 'Chin chow drink', 'cannot', 'NUH adult guidance explicitly lists jelly and agar-agar among foods to avoid; paediatric NUH also avoids gelatine desserts during clear fluids.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (410, 'Coconut flesh', 'review', 'Coconut milk/flesh and kaya are not directly resolved by the reviewed adult Singapore colonoscopy sources; coconut flesh is fibrous and milk may be treated differently by protocol.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (411, 'Coconut water', 'cannot', 'Fresh fruit/vegetable juices and juices with pulp are excluded by adult NUH guidance; clear-liquid guidance requires clear fluids.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (412, 'Cooking oil', 'review', 'Butter/oil are allowed in NUH paediatric guidance, while TTSH advises avoiding oily foods; adult Singapore guidance is not uniform on amount/preparation.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (413, 'Duck', 'cannot', 'Adult NUH/SKH guidance excludes red meat; NUH explicitly gives duck, beef and mutton as examples.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (414, 'Plain crackers', 'can', 'Refined white starches are directly listed as permitted in Singapore low-fibre/low-residue guidance.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (415, 'Plain naan', 'review', 'Refined-flour items may be low fibre, but the specific local item is not directly addressed and preparation/fat can matter.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (416, 'Plain pancake', 'review', 'Refined-flour items may be low fibre, but the specific local item is not directly addressed and preparation/fat can matter.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (417, 'Plain prata', 'review', 'Refined-flour items may be low fibre, but the specific local item is not directly addressed and preparation/fat can matter.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (418, 'Plain waffle', 'review', 'Refined-flour items may be low fibre, but the specific local item is not directly addressed and preparation/fat can matter.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (419, 'Sugarcane juice', 'cannot', 'Fresh fruit/vegetable juices and juices with pulp are excluded by adult NUH guidance; clear-liquid guidance requires clear fluids.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (420, 'Unlisted extras (recipe varies)', 'review', 'The sheet rules on this dish as a whole but does not list what goes into it, so the extras cannot be checked one by one. Ask for the plain version.', 'SKH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  -- TTSH
+  (421, 'Bandung', 'review', 'NUH and SKH avoid milk/milk products, while TTSH permits coffee/tea with or without milk during its 3-day low-fibre phase.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (422, 'Beef', 'cannot', 'Adult NUH/SKH guidance excludes red meat; NUH explicitly gives duck, beef and mutton as examples.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (423, 'Butter', 'review', 'Butter/oil are allowed in NUH paediatric guidance, while TTSH advises avoiding oily foods; adult Singapore guidance is not uniform on amount/preparation.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (424, 'Calamansi drink', 'cannot', 'Fresh fruit/vegetable juices and juices with pulp are excluded by adult NUH guidance; clear-liquid guidance requires clear fluids.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (425, 'Chin chow drink', 'cannot', 'NUH adult guidance explicitly lists jelly and agar-agar among foods to avoid; paediatric NUH also avoids gelatine desserts during clear fluids.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (426, 'Coconut flesh', 'review', 'Coconut milk/flesh and kaya are not directly resolved by the reviewed adult Singapore colonoscopy sources; coconut flesh is fibrous and milk may be treated differently by protocol.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (427, 'Coconut water', 'cannot', 'Fresh fruit/vegetable juices and juices with pulp are excluded by adult NUH guidance; clear-liquid guidance requires clear fluids.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (428, 'Cooking oil', 'review', 'Butter/oil are allowed in NUH paediatric guidance, while TTSH advises avoiding oily foods; adult Singapore guidance is not uniform on amount/preparation.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (429, 'Duck', 'cannot', 'Adult NUH/SKH guidance excludes red meat; NUH explicitly gives duck, beef and mutton as examples.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (430, 'Mutton / lamb', 'cannot', 'Adult NUH/SKH guidance excludes red meat; NUH explicitly gives duck, beef and mutton as examples.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (431, 'Plain biscuits', 'can', 'Refined white starches are directly listed as permitted in Singapore low-fibre/low-residue guidance.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (432, 'Plain crackers', 'can', 'Refined white starches are directly listed as permitted in Singapore low-fibre/low-residue guidance.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (433, 'Plain naan', 'review', 'Refined-flour items may be low fibre, but the specific local item is not directly addressed and preparation/fat can matter.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (434, 'Plain pancake', 'review', 'Refined-flour items may be low fibre, but the specific local item is not directly addressed and preparation/fat can matter.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (435, 'Plain prata', 'review', 'Refined-flour items may be low fibre, but the specific local item is not directly addressed and preparation/fat can matter.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (436, 'Plain waffle', 'review', 'Refined-flour items may be low fibre, but the specific local item is not directly addressed and preparation/fat can matter.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (437, 'Pork', 'can', 'SKH directly lists pork as allowed during its 3-day low-residue phase.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (438, 'Rice cereal', 'can', 'Refined white starches are directly listed as permitted in Singapore low-fibre/low-residue guidance.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (439, 'Sugarcane juice', 'cannot', 'Fresh fruit/vegetable juices and juices with pulp are excluded by adult NUH guidance; clear-liquid guidance requires clear fluids.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (440, 'Tempeh', 'cannot', 'SKH directly lists tempeh among foods to avoid.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (441, 'Unlisted extras (recipe varies)', 'review', 'The sheet rules on this dish as a whole but does not list what goes into it, so the extras cannot be checked one by one. Ask for the plain version.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet'),
+  (442, 'Vegetarian mock meat', 'review', 'Processed meats/fish products vary in fillers, seasoning and texture and are not directly listed in the reviewed adult protocols.', 'TTSH', 'UAT dataset (hackathon, requires clinical validation) — name carried by a dish but absent from the Sept 18 2026 sheet');
+
 -- Move the identity sequence past the ids written above.
-SELECT setval(pg_get_serial_sequence('ingredient_tab', 'id'), 383, true);
+SELECT setval(pg_get_serial_sequence('ingredient_tab', 'id'), 442, true);

@@ -38,6 +38,19 @@ function Chevron({ open }: { open: boolean }) {
   )
 }
 
+// The qualifier ("no vegetables or garnishes") rides under the name rather than
+// inside it: the name is what you scan for, the qualifier is what you check once
+// you have found it. Only the hard-coded plans set dish.note.
+function DishTitle({ dish }: { dish: ApiDish }) {
+  const { tx } = useLang()
+  return (
+    <span className="min-w-0 text-left">
+      <p className="text-[16px] font-semibold text-ink">{tx(dish.name)}</p>
+      {dish.note ? <p className="mt-0.5 text-[12px] leading-snug text-muted">{tx(dish.note)}</p> : null}
+    </span>
+  )
+}
+
 export function DishCard({
   dish,
   hideApproved = false,
@@ -101,7 +114,7 @@ export function DishCard({
           className="flex w-full items-start justify-between gap-2 text-left"
           data-demo="food-dish"
         >
-          <p className="text-[16px] font-semibold text-ink">{tx(dish.name)}</p>
+          <DishTitle dish={dish} />
           <span className="flex shrink-0 items-start gap-1.5">
             {showDishPill ? <VerdictPill verdict="no" /> : null}
             <Chevron open={expanded} />
@@ -109,7 +122,7 @@ export function DishCard({
         </button>
       ) : (
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[16px] font-semibold text-ink">{tx(dish.name)}</p>
+          <DishTitle dish={dish} />
           {showDishPill ? <VerdictPill verdict="no" /> : null}
         </div>
       )}

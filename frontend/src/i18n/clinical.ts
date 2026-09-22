@@ -21,6 +21,14 @@ export const CLINICAL_EN = {
   'food.tabMealPrep': 'Meal prep',
   'food.tabChat': 'Check a food',
   'food.mealLead': 'Dishes {hospital} clears for every ingredient.',
+  'food.cuisineAll': 'All',
+  'food.cuisineGeneral': 'General',
+  'food.cuisineChinese': 'Chinese',
+  'food.cuisineMalay': 'Malay',
+  'food.cuisineIndian': 'Indian',
+  'food.cuisineJapanese': 'Japanese',
+  'food.cuisineVietnamese': 'Vietnamese',
+  'food.cuisineWestern': 'Western',
   'food.mealSummaryEat':
     'Low-fibre and smooth: white rice, bread and noodles, lean chicken, fish, eggs and tofu, and clear drinks.',
   'food.mealSummaryAvoid':
