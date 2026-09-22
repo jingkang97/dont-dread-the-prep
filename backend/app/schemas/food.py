@@ -20,11 +20,14 @@ class DishVerdict(str, Enum):
 
 
 class FoodSource(str, Enum):
-    """Matches DB food_source enum. SGH kept for legacy ingredient/dish rows."""
+    """Matches DB food_source enum: the tiers a sheet is loaded for.
 
-    sgh = "SGH"
+    A hospital without its own sheet (sgh, nccs, cgh) is served the DIETICIAN
+    baseline instead of carrying a tier of its own.
+    """
+
+    skh = "SKH"
     ttsh = "TTSH"
-    cgh = "CGH"
     dietician = "DIETICIAN"
 
 
@@ -55,6 +58,10 @@ class DishOut(BaseModel):
     verdict: DishVerdict
     # Ingredients to leave out when verdict == 'possible'.
     remove_ingredients: list[str] = Field(default_factory=list)
+    # Refused on how the dish is cooked rather than on its ingredients; forces
+    # verdict == 'cannot'. hard_no_reason carries the line to show for it.
+    hard_no: bool = False
+    hard_no_reason: str = ""
     ingredients: list[IngredientOut] = Field(default_factory=list)
 
 
@@ -68,7 +75,7 @@ class MealPrepOut(BaseModel):
 
 class FoodChatRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=200)
-    hospital_code: str = Field(..., examples=["ttsh", "skh", "cgh"])
+    hospital_code: str = Field(..., examples=["ttsh", "skh"])
 
 
 class FoodChatStatus(str, Enum):

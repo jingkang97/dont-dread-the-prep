@@ -2,9 +2,20 @@ import { apiFetch } from './client'
 
 export type ApiFoodClassification = 'can' | 'cannot' | 'review'
 export type ApiDishVerdict = ApiFoodClassification | 'possible'
-/** Matches DB food_source; SGH kept for legacy ingredient/dish rows. */
-export type ApiFoodSource = 'SGH' | 'TTSH' | 'CGH' | 'DIETICIAN'
+/** Matches DB food_source: the tiers a sheet is loaded for. A hospital without
+ * its own sheet is served the DIETICIAN baseline. */
+export type ApiFoodSource = 'SKH' | 'TTSH' | 'DIETICIAN'
 export type ApiMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink'
+
+/** Hard-coded plans only — dishes_tab has no cuisine column. */
+export type ApiCuisine =
+  | 'general'
+  | 'chinese'
+  | 'malay'
+  | 'indian'
+  | 'japanese'
+  | 'vietnamese'
+  | 'western'
 
 export type ApiIngredient = {
   id: number
@@ -21,8 +32,17 @@ export type ApiDish = {
   meal_type: ApiMealType[]
   source_hospital: ApiFoodSource
   verdict: ApiDishVerdict
+  hard_no: boolean
+  hard_no_reason: string
   remove_ingredients: string[]
   ingredients: ApiIngredient[]
+  /**
+   * Hard-coded plans only. `note` is the qualifier under the dish name ("No
+   * vegetables or garnishes"), kept out of the title so the list stays
+   * scannable; `cuisine` is the meal-prep filter chip. The API sends neither.
+   */
+  note?: string
+  cuisine?: ApiCuisine
 }
 
 export type ApiMealPrep = {

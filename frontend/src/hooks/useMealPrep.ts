@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
 import { ApiError, getApiMealPrep, type ApiMealPrep } from '../lib/api'
-import { HARD_CODED_MEAL_PREP } from '../data/ttshMealPlan'
+import { HARD_CODED_MEAL_PREP } from '../data/mealPlans'
 import { EN } from '../i18n/strings'
 
 const cache = new Map<string, ApiMealPrep>()
 const errorCache = new Map<string, string>()
 
 export function useMealPrep(hospitalId: string) {
-  // TTSH is served from the hard-coded dietitian option list until those dishes
-  // are seeded into dishes_tab — see data/ttshMealPlan.ts. Dropping the entry
-  // from HARD_CODED_MEAL_PREP puts the hospital back on the endpoint.
+  // TTSH and SKH are served from hard-coded plans rather than the endpoint —
+  // see data/mealPlans.ts. Dropping a hospital's entry from HARD_CODED_MEAL_PREP
+  // puts it back on the API.
   const hardCoded = HARD_CODED_MEAL_PREP[hospitalId.trim().toLowerCase()] ?? null
   const [mealPrep, setMealPrep] = useState<ApiMealPrep | null>(cache.get(hospitalId) ?? null)
   const [loading, setLoading] = useState(!hardCoded && !cache.has(hospitalId))

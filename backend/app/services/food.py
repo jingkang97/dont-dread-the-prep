@@ -22,15 +22,13 @@ from app.services import food_llm
 
 log = logging.getLogger(__name__)
 
-# Session hospital_code -> food source tier. Hospitals sharing a printed sheet
-# map to the same tier (nccs procedures follow the SGH/NCCS yellow form).
-# Anything not listed here has no hospital-specific tier — chat/meal-prep
-# lookups fall straight through to the DIETICIAN baseline.
+# Session hospital_code -> food source tier. Only the hospitals whose own sheet
+# is loaded into ingredient_tab/dishes_tab appear here. Anything not listed —
+# sgh, nccs, cgh — has no hospital-specific tier, so chat/meal-prep lookups fall
+# straight through to the DIETICIAN baseline.
 HOSPITAL_SOURCE_MAP: dict[str, str] = {
-    "sgh": "SGH",
-    "nccs": "SGH",
+    "skh": "SKH",
     "ttsh": "TTSH",
-    "cgh": "CGH",
 }
 
 
@@ -38,8 +36,19 @@ def hospital_source(hospital_code: str) -> str | None:
     return HOSPITAL_SOURCE_MAP.get(hospital_code.strip().lower())
 
 
-def _dish_verdict(ingredients: list[Ingredient]) -> tuple[str, list[str]]:
+def _dish_verdict(
+    ingredients: list[Ingredient],
+    hard_no: bool = False,
+    unresolved: list[str] | None = None,
+) -> tuple[str, list[str]]:
     """Verdict + the ingredients to leave out when the verdict is 'possible'.
+
+    A dish flagged hard_no is 'cannot' whatever its ingredients say. The refusal
+    is about how the dish is cooked — deep-fried, oil-heavy — which no ingredient
+    row can express: every ingredient in fried chicken classifies as 'can' on its
+    own, so the computed verdict came out 'can' and meal-prep recommended it.
+    Nothing is offered to leave out, because leaving something out does not make
+    the dish acceptable.
 
     Ingredients are read as two-state: 'can' is a yes, and both 'cannot' and
     'review' are a no — an item the sheet has not cleared is one to leave out,
@@ -48,33 +57,64 @@ def _dish_verdict(ingredients: list[Ingredient]) -> tuple[str, list[str]]:
     "Teochew steamed fish with rice" minus the achar garnish); otherwise the
     dish is 'cannot'.
 
+    `unresolved` carries the ingredients the sheet no longer classifies at all
+    (see _resolve_ingredients). They count as a no on the same reasoning: an
+    unclassified ingredient is not a cleared one. Without this, a dish was
+    judged on the subset that happened to resolve — "Kaya toast" came out 'can'
+    on white bread alone, its butter dropped on the floor.
+
     More yes than no requires at least two yes against one no, so 'possible'
     already implies 3+ ingredients — the old explicit floor is now redundant.
     """
-    if not ingredients:
+    if hard_no:
+        return "cannot", []
+
+    unresolved = unresolved or []
+    if not ingredients and not unresolved:
         return "review", []
 
-    leave_out = [i for i in ingredients if i.classification != "can"]
+    leave_out = [i.name for i in ingredients if i.classification != "can"] + unresolved
     if not leave_out:
         return "can", []
 
-    if len(ingredients) - len(leave_out) > len(leave_out):
-        return "possible", [i.name for i in leave_out]
+    total = len(ingredients) + len(unresolved)
+    if total - len(leave_out) > len(leave_out):
+        return "possible", leave_out
 
     return "cannot", []
 
 
-def _resolve_ingredients(db: DbSession, dish: Dish) -> list[Ingredient]:
-    ids = [item["id"] for item in dish.ingredient_list if isinstance(item, dict) and "id" in item]
-    if not ids:
-        return []
-    rows = {row.id: row for row in db.scalars(select(Ingredient).where(Ingredient.id.in_(ids)))}
-    return [rows[i] for i in ids if i in rows]
+def _resolve_ingredients(db: DbSession, dish: Dish) -> tuple[list[Ingredient], list[str]]:
+    """Ingredient rows for a dish, plus the names that no longer resolve.
+
+    ingredient_list holds the ids the sheet carried when the seed was written.
+    An ingredient the sheet has since dropped is stored as {"id": null, "name":
+    "..."}, and an id can also go missing when the sheet is reloaded. Those
+    names come back in the second list rather than being skipped, so the verdict
+    can count them — the dish card has no row to show for them.
+    """
+    entries = [item for item in dish.ingredient_list if isinstance(item, dict)]
+    ids = [item["id"] for item in entries if item.get("id") is not None]
+    rows = (
+        {row.id: row for row in db.scalars(select(Ingredient).where(Ingredient.id.in_(ids)))}
+        if ids
+        else {}
+    )
+
+    resolved: list[Ingredient] = []
+    unresolved: list[str] = []
+    for item in entries:
+        row = rows.get(item["id"]) if item.get("id") is not None else None
+        if row is not None:
+            resolved.append(row)
+        elif str(item.get("name") or "").strip():
+            unresolved.append(str(item["name"]).strip())
+    return resolved, unresolved
 
 
 def _dish_out(db: DbSession, dish: Dish) -> DishOut:
-    ingredients = _resolve_ingredients(db, dish)
-    verdict, remove_ingredients = _dish_verdict(ingredients)
+    ingredients, unresolved = _resolve_ingredients(db, dish)
+    verdict, remove_ingredients = _dish_verdict(ingredients, dish.hard_no, unresolved)
     return DishOut(
         id=dish.id,
         name=dish.name,
@@ -82,6 +122,8 @@ def _dish_out(db: DbSession, dish: Dish) -> DishOut:
         source_hospital=FoodSource(dish.source_hospital),
         verdict=verdict,
         remove_ingredients=remove_ingredients,
+        hard_no=dish.hard_no,
+        hard_no_reason=dish.hard_no_reason,
         ingredients=[IngredientOut.model_validate(i) for i in ingredients],
     )
 

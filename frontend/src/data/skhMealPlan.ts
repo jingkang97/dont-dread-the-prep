@@ -9,32 +9,37 @@ import type {
 import type { Cuisine } from './cuisine'
 
 /**
- * Hard-coded TTSH meal plan — the dietitian's Singapore-relevant option list.
+ * Hard-coded SKH meal plan — the same dietitian option list the TTSH plan uses,
+ * with the wording made hospital-neutral.
  *
- * Why this is not coming off the API: dishes_tab has no row for any of these
- * combinations. The TTSH tier holds 58 single-ingredient rows only (White rice,
- * Bee hoon, Chicken, Kopi-O …); every composite dish in the DB sits on the
- * DIETICIAN fallback tier and is a hawker dish ruled on as a whole (Chicken
- * rice, Wanton noodles, Kaya toast), not a prep-safe combination. Until these
- * are seeded, the meal-prep tab reads this file for TTSH and the backend for
- * every other hospital.
+ * Copied from ttshMealPlan.ts on 23 Sep 2026 and kept as its own file rather
+ * than an alias: the two lists are expected to diverge once SKH's own sheet is
+ * read properly, and a shared object would make that divergence a refactor
+ * instead of an edit.
  *
- * Shape and wording deliberately mirror the API: ApiDish objects with resolved
- * ApiIngredient rows, verdict derived from the ingredients the same way
- * backend/app/services/food.py _dish_verdict derives it, so DishCard renders
- * these identically to DB-loaded dishes and the swap back to the API is a
- * one-line change in useMealPrep.
+ * What changed in the copy: every patient-facing reason that named TTSH now
+ * reads "the low-fibre option list", and the two drink rulings that cited a
+ * TTSH permission ("TTSH permits coffee and tea with or without milk") now say
+ * that sheets differ and to follow the instruction the care team gave. Nothing
+ * else about a ruling was touched — same dishes, same ingredients, same
+ * classifications.
  *
- * Ingredient reason wording is copied verbatim from ingredient_tab where a row
- * exists and classifies 'can' on the TTSH tier. Where the sheet-derived DB row
- * disagrees with this list (kaya, butter, kopi/teh with milk, pancakes,
- * waffles, naan, peeled potato, clear jelly, cream desserts are all 'review' or
- * 'cannot' in ingredient_tab), the option list is treated as the ruling and the
- * reason says so — those rows are the ones to re-check before this is seeded.
+ * Why this is not coming off the API: the SKH tier in dishes_tab clears mostly
+ * single sheet ingredients standing in for dishes (Oyster sauce, Mee pok,
+ * Evaporated milk), which do not read as meals. See mealPlans.ts.
+ *
+ * Shape mirrors the API: ApiDish objects with resolved ApiIngredient rows and
+ * the verdict derived the way backend/app/services/food.py _dish_verdict
+ * derives it, so DishCard renders these identically to DB-loaded dishes and the
+ * swap back to the endpoint is one line in mealPlans.ts.
+ *
+ * Milk is the open question here, as it is in the TTSH list: data/foods.ts
+ * reads SKH as stricter on milk than this option list is. The neutral wording
+ * above does not resolve that — a dietitian still should.
  */
 
 const SOURCE_DOCUMENT =
-  'TTSH low-fibre option list (dietitian-provided; hard-coded pending an ingredient_tab / dishes_tab seed)'
+  'Low-fibre option list (dietitian-provided, hospital-neutral wording; hard-coded pending an ingredient_tab / dishes_tab seed)'
 
 // Shared reason strings. The first four are verbatim ingredient_tab rows; the
 // rest are written for options this list clears and the DB has not.
@@ -47,25 +52,25 @@ const WHY = {
     'Water and specified clear/light-coloured drinks are directly permitted during clear-liquid phases, subject to hospital timing and colour rules.',
   pork: 'SKH directly lists pork as allowed during its 3-day low-residue phase.',
   spread:
-    'On the TTSH option list as a spread for white bread. Keep it smooth and thin — no coconut flesh, no fruit pieces, no nuts.',
+    'On the low-fibre option list as a spread for white bread. Keep it smooth and thin — no coconut flesh, no fruit pieces, no nuts.',
   refinedBake:
-    'On the TTSH option list as a plain refined-flour item. Take it plain: no wholemeal, no nuts, seeds, fruit pieces or jam.',
+    'On the low-fibre option list as a plain refined-flour item. Take it plain: no wholemeal, no nuts, seeds, fruit pieces or jam.',
   plainCake:
-    'On the TTSH option list as a plain cake. No nuts, seeds, dried fruit, fruit pieces or dark-coloured fillings.',
+    'On the low-fibre option list as a plain cake. No nuts, seeds, dried fruit, fruit pieces or dark-coloured fillings.',
   custard:
-    'Egg-and-milk custards are on the TTSH option list as smooth, residue-free desserts. Plain only — no fruit, no caramel with fruit pieces.',
+    'Egg-and-milk custards are on the low-fibre option list as smooth, residue-free desserts. Plain only — no fruit, no caramel with fruit pieces.',
   drinkWithMilk:
-    'TTSH permits coffee and tea with or without milk during its low-fibre phase. Other Singapore sheets are stricter on milk, so follow the TTSH instruction you were given.',
+    'Coffee and tea are on the low-fibre option list. Sheets differ on whether milk is allowed, so follow the instruction your care team gave you.',
   drinkNoMilk:
-    'TTSH permits coffee and tea during its low-fibre phase. Avoid red, purple, blue or dark-coloured drinks if your clinic asks for it.',
+    'Coffee and tea are on the low-fibre option list. Avoid red, purple, blue or dark-coloured drinks if your clinic asks for it.',
   peeledPotato:
-    'On the TTSH option list peeled and mashed, without the skin. The skin is the fibrous part, so it comes off before cooking.',
+    'On the low-fibre option list peeled and mashed, without the skin. The skin is the fibrous part, so it comes off before cooking.',
   broth:
     'Clear soup and broth are permitted, strained. No vegetables, noodles, meat pieces or garnish left in the bowl.',
   sauce:
     'Smooth sauces are low in visible residue. Keep the amount small and skip chilli, sambal, sesame and fried shallots.',
   noVeg:
-    'On the TTSH option list when taken without the vegetable, herb and garnish sides it usually comes with.',
+    'On the low-fibre option list when taken without the vegetable, herb and garnish sides it usually comes with.',
 } as const
 
 type IngredientSeed = {
@@ -94,10 +99,10 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
     why: 'A plain steamed rice-flour roll is a refined starch. Take it without sesame seeds, fried shallots or sweet sauce.',
   },
   'Idli (steamed rice cake)': {
-    why: 'On the TTSH option list plain, without chutney or sambar — those are the fibrous part of the meal.',
+    why: 'On the low-fibre option list plain, without chutney or sambar — those are the fibrous part of the meal.',
   },
   'Dosa (plain rice crepe)': {
-    why: 'On the TTSH option list plain, without sambar, chutney or vegetable filling.',
+    why: 'On the low-fibre option list plain, without sambar, chutney or vegetable filling.',
   },
   'Plain naan': { why: WHY.refinedBake },
   'White baguette': { why: WHY.refinedBake },
@@ -118,7 +123,7 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
     why: 'Plain tuna in water or oil, drained. No sweetcorn, celery or onion mixed into the filling.',
   },
   Fishball: {
-    why: 'On the TTSH option list as part of the soup noodle bowl. Plain fishballs only, with the vegetables left out.',
+    why: 'On the low-fibre option list as part of the soup noodle bowl. Plain fishballs only, with the vegetables left out.',
   },
   'Wanton (pork dumpling)': { why: WHY.pork },
   'Minced pork': { why: WHY.pork },
@@ -150,7 +155,7 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
   'Green tea': { why: WHY.drinkNoMilk },
   'English breakfast tea': { why: WHY.drinkNoMilk },
   'Soy milk (no pulp)': {
-    why: 'On the TTSH option list strained, without pulp. Other Singapore sheets exclude soy milk, so follow the TTSH instruction you were given.',
+    why: 'On the low-fibre option list strained, without pulp. Some sheets exclude soy milk, so follow the instruction your care team gave you.',
   },
   'Apple juice (clear, no pulp)': {
     why: 'Clear, light-coloured juice with no pulp is permitted. Cloudy juice and anything with pulp is not.',
@@ -444,7 +449,7 @@ const INGREDIENT_ROWS: Record<string, ApiIngredient> = Object.fromEntries(
       name,
       classification: seed.classification ?? 'can',
       classification_reason: seed.why,
-      source_hospital: 'TTSH',
+      source_hospital: 'SKH',
       source_document: SOURCE_DOCUMENT,
     } satisfies ApiIngredient,
   ]),
@@ -470,7 +475,7 @@ function toDish(seed: DishSeed, index: number): ApiDish {
     note: seed.note,
     cuisine: seed.cuisine,
     meal_type: seed.meals,
-    source_hospital: 'TTSH',
+    source_hospital: 'SKH',
     verdict,
     // The offline plan carries no hard_no dishes: every dish here is judged
     // from its ingredients alone.
@@ -490,7 +495,7 @@ function bucket(meal: ApiMealType) {
   )
 }
 
-export const TTSH_MEAL_PLAN: ApiMealPrep = {
+export const SKH_MEAL_PLAN: ApiMealPrep = {
   breakfast: bucket('breakfast'),
   lunch: bucket('lunch'),
   dinner: bucket('dinner'),

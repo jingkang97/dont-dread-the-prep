@@ -25,6 +25,35 @@ export function VerdictPill({ verdict, compact }: { verdict: Verdict; compact?: 
   )
 }
 
+// A tick or a cross rather than the worded pill: used where the row around it
+// already says what is being judged, so the word would only repeat it. The
+// label is still there for a screen reader.
+export function VerdictMark({ verdict }: { verdict: Verdict }) {
+  const { t } = useLang()
+  const yes = verdict === 'yes'
+  return (
+    <span
+      role="img"
+      aria-label={t(yes ? 'verdict.yes' : 'verdict.no')}
+      className={cn(
+        'inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full',
+        yes ? 'bg-yes-bg text-yes' : 'bg-no-bg text-no',
+      )}
+    >
+      <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden>
+        <path
+          d={yes ? 'M2.75 6.25 4.9 8.4 9.25 3.9' : 'M3.5 3.5 8.5 8.5M8.5 3.5 3.5 8.5'}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  )
+}
+
 export function Card({
   children,
   className,

@@ -1,26 +1,16 @@
 import { useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import type { ApiDish, ApiDishVerdict, ApiFoodClassification } from '../../lib/api'
+import type { ApiDish, ApiFoodClassification } from '../../lib/api'
 import type { Verdict } from '../../data/foods'
 import { useLang } from '../../i18n/LanguageContext'
 import { cn } from '../../lib/cn'
 import { easeOut } from '../../lib/motion'
-import { Card, VerdictPill } from '../ui'
+import { Card, VerdictMark, VerdictPill } from '../ui'
 
 // Ingredients are Yes or No, never "Possible": anything the sheet has not
 // cleared ('review' included) is shown as a No, i.e. something to leave out.
-// "Possible" is a dish-level answer — see toDishVerdict.
 function toIngredientVerdict(classification: ApiFoodClassification): Verdict {
   return classification === 'can' ? 'yes' : 'no'
-}
-
-// 'review' only reaches here for a dish with no ingredients on file; it reads
-// as "Possible" rather than "Ask your care team", same wording as a dish the
-// backend downgraded.
-function toDishVerdict(verdict: ApiDishVerdict): Verdict {
-  if (verdict === 'can') return 'yes'
-  if (verdict === 'cannot') return 'no'
-  return 'possible'
 }
 
 function Reason({ text }: { text: string }) {
@@ -48,6 +38,19 @@ function Chevron({ open }: { open: boolean }) {
   )
 }
 
+// The qualifier ("no vegetables or garnishes") rides under the name rather than
+// inside it: the name is what you scan for, the qualifier is what you check once
+// you have found it. Only the hard-coded plans set dish.note.
+function DishTitle({ dish }: { dish: ApiDish }) {
+  const { tx } = useLang()
+  return (
+    <span className="min-w-0 text-left">
+      <p className="text-[16px] font-semibold text-ink">{tx(dish.name)}</p>
+      {dish.note ? <p className="mt-0.5 text-[12px] leading-snug text-muted">{tx(dish.note)}</p> : null}
+    </span>
+  )
+}
+
 export function DishCard({
   dish,
   hideApproved = false,
@@ -65,10 +68,15 @@ export function DishCard({
 }) {
   const { t, tx } = useLang()
   const [expanded, setExpanded] = useState(false)
-  const dishVerdict = toDishVerdict(dish.verdict)
-  const showDishPill = !(hideApproved && dishVerdict === 'yes')
+  // Only a hard_no keeps a worded pill. Every other dish is answered by its
+  // ingredient marks and, where there is one, the note under the name — the
+  // pill was repeating what the rows below it already said.
+  const showDishPill = dish.hard_no
   const details = (
     <>
+      {dish.hard_no && dish.hard_no_reason && (
+        <p className="mt-1 text-[13px] font-medium text-no">{tx(dish.hard_no_reason)}</p>
+      )}
       {dish.verdict === 'possible' && dish.remove_ingredients.length > 0 && (
         <p className="mt-1 text-[13px] font-medium text-possible">
           {t('food.possibleNote', { ingredients: dish.remove_ingredients.map((name) => tx(name)).join(', ') })}
@@ -77,7 +85,7 @@ export function DishCard({
       <div className="mt-2.5 grid gap-1.5">
         {dish.ingredients.map((ingredient) => {
           const verdict = toIngredientVerdict(ingredient.classification)
-          const showPill = !(hideApproved && verdict === 'yes')
+          const showMark = !(hideApproved && verdict === 'yes')
           return (
             <div
               key={ingredient.id}
@@ -87,7 +95,7 @@ export function DishCard({
                 <p className="text-[13px] font-semibold text-ink">{tx(ingredient.name)}</p>
                 <Reason text={tx(ingredient.classification_reason)} />
               </div>
-              {showPill ? <VerdictPill verdict={verdict} compact /> : null}
+              {showMark ? <VerdictMark verdict={verdict} /> : null}
             </div>
           )
         })}
@@ -106,16 +114,16 @@ export function DishCard({
           className="flex w-full items-start justify-between gap-2 text-left"
           data-demo="food-dish"
         >
-          <p className="text-[16px] font-semibold text-ink">{tx(dish.name)}</p>
+          <DishTitle dish={dish} />
           <span className="flex shrink-0 items-start gap-1.5">
-            {showDishPill ? <VerdictPill verdict={dishVerdict} /> : null}
+            {showDishPill ? <VerdictPill verdict="no" /> : null}
             <Chevron open={expanded} />
           </span>
         </button>
       ) : (
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[16px] font-semibold text-ink">{tx(dish.name)}</p>
-          {showDishPill ? <VerdictPill verdict={dishVerdict} /> : null}
+          <DishTitle dish={dish} />
+          {showDishPill ? <VerdictPill verdict="no" /> : null}
         </div>
       )}
       {collapsible ? (
