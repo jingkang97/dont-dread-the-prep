@@ -21,6 +21,10 @@ export const CLINICAL_EN = {
   'food.tabMealPrep': 'Meal prep',
   'food.tabChat': 'Check a food',
   'food.mealLead': 'Dishes {hospital} clears for every ingredient.',
+  'food.mealSummaryEat':
+    'Low-fibre and smooth: white rice, bread and noodles, lean chicken, fish, eggs and tofu, and clear drinks.',
+  'food.mealSummaryAvoid':
+    'High-fibre and heavy: wholegrains, fruit and vegetable fibre, nuts and seeds, anything deep-fried or oily, and red, purple or dark-coloured food and drinks.',
   'food.mealBreakfast': 'Breakfast',
   'food.mealLunchDinner': 'Lunch / Dinner',
   'food.mealSnacks': 'Snacks',

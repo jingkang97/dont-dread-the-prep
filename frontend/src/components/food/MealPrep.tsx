@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GeneratingPane } from '../ui'
+import { GeneratingPane, VerdictMark } from '../ui'
 import { DishCard } from './DishCard'
 import { useMealPrep } from '../../hooks/useMealPrep'
 import { useLang } from '../../i18n/LanguageContext'
@@ -29,6 +29,25 @@ function dishesFor(mealPrep: ApiMealPrep, meal: MealKey): ApiDish[] {
   const byId = new Map<number, ApiDish>()
   for (const dish of [...mealPrep.lunch, ...mealPrep.dinner]) byId.set(dish.id, dish)
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name))
+}
+
+// The rule behind every list below, in two lines. Dish cards answer "is this
+// one OK?"; this answers "what am I looking for?" — so it sits in the scroll
+// area and moves out of the way once you start reading dishes.
+function MealSummary() {
+  const { t } = useLang()
+  return (
+    <div className="mb-3 grid gap-2 rounded-2xl bg-paper-2 px-3.5 py-3">
+      {(['yes', 'no'] as const).map((verdict) => (
+        <div key={verdict} className="flex items-start gap-2">
+          <VerdictMark verdict={verdict} />
+          <p className="text-[12px] leading-snug text-ink-soft">
+            {t(verdict === 'yes' ? 'food.mealSummaryEat' : 'food.mealSummaryAvoid')}
+          </p>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export function MealPrep({ session }: { session: PrepSession }) {
@@ -69,6 +88,7 @@ export function MealPrep({ session }: { session: PrepSession }) {
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
+        <MealSummary />
         {loading && (
           <GeneratingPane
             title={t('food.mealLoadingTitle')}

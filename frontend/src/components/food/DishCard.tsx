@@ -5,41 +5,12 @@ import type { Verdict } from '../../data/foods'
 import { useLang } from '../../i18n/LanguageContext'
 import { cn } from '../../lib/cn'
 import { easeOut } from '../../lib/motion'
-import { Card, VerdictPill } from '../ui'
+import { Card, VerdictMark, VerdictPill } from '../ui'
 
 // Ingredients are Yes or No, never "Possible": anything the sheet has not
 // cleared ('review' included) is shown as a No, i.e. something to leave out.
 function toIngredientVerdict(classification: ApiFoodClassification): Verdict {
   return classification === 'can' ? 'yes' : 'no'
-}
-
-// A tick or a cross rather than the worded pill: an ingredient row already
-// reads as a sentence, and a column of Yes/No pills beside it competed with the
-// dish name for the eye. The label is still there for a screen reader.
-function VerdictMark({ verdict }: { verdict: Verdict }) {
-  const { t } = useLang()
-  const yes = verdict === 'yes'
-  return (
-    <span
-      role="img"
-      aria-label={t(yes ? 'verdict.yes' : 'verdict.no')}
-      className={cn(
-        'inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full',
-        yes ? 'bg-yes-bg text-yes' : 'bg-no-bg text-no',
-      )}
-    >
-      <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden>
-        <path
-          d={yes ? 'M2.75 6.25 4.9 8.4 9.25 3.9' : 'M3.5 3.5 8.5 8.5M8.5 3.5 3.5 8.5'}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
-  )
 }
 
 function Reason({ text }: { text: string }) {
