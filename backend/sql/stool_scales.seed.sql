@@ -30,7 +30,7 @@ JOIN (
     ('ttsh-6', 2, 'Soft blobs', 'Brown soft blobs. Lots of residue still in the cup.', 'not', '#7a4a28', 'ttsh/s2.png'),
     ('ttsh-6', 3, 'Cloudy brown', 'Cloudy brown liquid with particles throughout.', 'not', '#8a5a2a', 'ttsh/s3.png'),
     ('ttsh-6', 4, 'Dark liquid', 'Dark orange liquid. Some residue left, not yet clear.', 'not', '#c47a2b', 'ttsh/s4.png'),
-    ('ttsh-6', 5, 'Light orange', 'Light orange. Little residue — almost ready.', 'almost', '#e2a04a', 'ttsh/s5.png'),
+    ('ttsh-6', 5, 'Light orange', 'Light orange. Little residue.', 'ready', '#e6c35c', 'ttsh/s5.png'),
     ('ttsh-6', 6, 'Clear yellow', 'Clear yellow, watery, no residue.', 'ready', '#e6c35c', 'ttsh/s6.png'),
     ('skh-6', 1, 'Dark with materials', 'Very dark liquid with solid materials at the bottom.', 'not', '#3b2418', 'skh/1.png'),
     ('skh-6', 2, 'Brown with materials', 'Brown liquid with materials still sitting at the bottom.', 'not', '#6b3f24', 'skh/2.png'),
