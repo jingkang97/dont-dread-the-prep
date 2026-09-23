@@ -18,11 +18,8 @@ import type { Cuisine } from './cuisine'
  * instead of an edit.
  *
  * What changed in the copy: every patient-facing reason that named TTSH now
- * reads "the low-fibre option list", and the two drink rulings that cited a
- * TTSH permission ("TTSH permits coffee and tea with or without milk") now say
- * that sheets differ and to follow the instruction the care team gave. Nothing
- * else about a ruling was touched — same dishes, same ingredients, same
- * classifications.
+ * reads "the low-fibre option list". Nothing else about a ruling was touched
+ * on the copy — same dishes, same ingredients, same classifications.
  *
  * Why this is not coming off the API: the SKH tier in dishes_tab clears mostly
  * single sheet ingredients standing in for dishes (Oyster sauce, Mee pok,
@@ -33,9 +30,14 @@ import type { Cuisine } from './cuisine'
  * derives it, so DishCard renders these identically to DB-loaded dishes and the
  * swap back to the endpoint is one line in mealPlans.ts.
  *
- * Milk is the open question here, as it is in the TTSH list: data/foods.ts
- * reads SKH as stricter on milk than this option list is. The neutral wording
- * above does not resolve that — a dietitian still should.
+ * Reconciled against ingredient_tab on 23 Sep 2026: Butter, Plain naan, Plain
+ * pancake and Plain waffle are 'review' here (not 'can') because SKH's own
+ * sheet does not clear them either — the ghee/oil used is the open question,
+ * same as ingredient_tab. Kopi, Kopi-O, Teh, Teh-O, Soy milk (no pulp) and
+ * Potato (peeled) are 'cannot' here because SKH's sheet excludes milk drinks,
+ * dark coffee/tea, soy milk and potato skin outright — TTSH's own sheet
+ * differs on the drinks and soy milk, which is why ttshMealPlan.ts keeps them
+ * 'can'. This is a real SKH/TTSH difference, not a copy-paste gap.
  */
 
 const SOURCE_DOCUMENT =
@@ -59,12 +61,8 @@ const WHY = {
     'On the low-fibre option list as a plain cake. No nuts, seeds, dried fruit, fruit pieces or dark-coloured fillings.',
   custard:
     'Egg-and-milk custards are on the low-fibre option list as smooth, residue-free desserts. Plain only — no fruit, no caramel with fruit pieces.',
-  drinkWithMilk:
-    'Coffee and tea are on the low-fibre option list. Sheets differ on whether milk is allowed, so follow the instruction your care team gave you.',
   drinkNoMilk:
     'Coffee and tea are on the low-fibre option list. Avoid red, purple, blue or dark-coloured drinks if your clinic asks for it.',
-  peeledPotato:
-    'On the low-fibre option list peeled and mashed, without the skin. The skin is the fibrous part, so it comes off before cooking.',
   broth:
     'Clear soup and broth are permitted, strained. No vegetables, noodles, meat pieces or garnish left in the bowl.',
   sauce:
@@ -104,13 +102,25 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
   'Dosa (plain rice crepe)': {
     why: 'On the low-fibre option list plain, without sambar, chutney or vegetable filling.',
   },
-  'Plain naan': { why: WHY.refinedBake },
+  'Plain naan': {
+    classification: 'review',
+    why: 'Refined flour is low in fibre, but the ghee or oil used can matter.',
+  },
   'White baguette': { why: WHY.refinedBake },
   'Plain bagel': { why: WHY.refinedBake },
   'Plain flour tortilla': { why: WHY.refinedBake },
-  'Plain pancake': { why: WHY.refinedBake },
-  'Plain waffle': { why: WHY.refinedBake },
-  'Potato (peeled)': { why: WHY.peeledPotato },
+  'Plain pancake': {
+    classification: 'review',
+    why: 'Refined flour is low in fibre, but the ghee or oil used can matter.',
+  },
+  'Plain waffle': {
+    classification: 'review',
+    why: 'Refined flour is low in fibre, but the ghee or oil used can matter.',
+  },
+  'Potato (peeled)': {
+    classification: 'cannot',
+    why: 'Low-fibre starch if peeled; do not eat the skin.',
+  },
 
   // --- Protein ---
   Egg: { why: WHY.protein },
@@ -138,7 +148,10 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
 
   // --- Spreads, fats, sauces ---
   Kaya: { why: WHY.spread },
-  Butter: { why: WHY.spread },
+  Butter: {
+    classification: 'review',
+    why: 'Fat itself is low in fibre, but how much is used in cooking is hard to judge.',
+  },
   Syrup: {
     why: 'Plain sugar or maple syrup carries no fibre. Skip fruit compote, jam and anything with seeds or pieces.',
   },
@@ -147,15 +160,28 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
   // --- Soups and drinks ---
   'Clear broth': { why: WHY.broth },
   Water: { why: WHY.clear },
-  'Kopi-O': { why: WHY.drinkNoMilk },
-  Kopi: { why: WHY.drinkWithMilk },
-  'Teh-O': { why: WHY.drinkNoMilk },
-  Teh: { why: WHY.drinkWithMilk },
+  'Kopi-O': {
+    classification: 'cannot',
+    why: 'Dark coffee/tea is avoided because it can affect the bowel view.',
+  },
+  Kopi: {
+    classification: 'cannot',
+    why: 'Coffee/tea is avoided; milk drinks are also not allowed.',
+  },
+  'Teh-O': {
+    classification: 'cannot',
+    why: 'Dark coffee/tea is avoided because it can affect the bowel view.',
+  },
+  Teh: {
+    classification: 'cannot',
+    why: 'Coffee/tea is avoided; milk drinks are also not allowed.',
+  },
   'Chinese tea': { why: WHY.drinkNoMilk },
   'Green tea': { why: WHY.drinkNoMilk },
   'English breakfast tea': { why: WHY.drinkNoMilk },
   'Soy milk (no pulp)': {
-    why: 'On the low-fibre option list strained, without pulp. Some sheets exclude soy milk, so follow the instruction your care team gave you.',
+    classification: 'cannot',
+    why: "Soy milk is avoided on this hospital's fluid list.",
   },
   'Apple juice (clear, no pulp)': {
     why: 'Clear, light-coloured juice with no pulp is permitted. Cloudy juice and anything with pulp is not.',
@@ -488,10 +514,16 @@ function toDish(seed: DishSeed, index: number): ApiDish {
 
 const ALL_DISHES = DISHES.map(toDish)
 
-/** Sorted by name, the same ordering list_meal_prep applies to DB-loaded dishes. */
+/**
+ * Same rule backend/app/services/food.py list_meal_prep applies: only a dish
+ * where every ingredient clears as 'can' is a recommendation. A 'possible' or
+ * 'cannot' dish here would show a recommended dish with a red-X ingredient in
+ * it — meal prep is "what can I eat", not "here's the breakdown of everything
+ * on the list". Sorted by name, the same ordering list_meal_prep applies.
+ */
 function bucket(meal: ApiMealType) {
-  return ALL_DISHES.filter((dish) => dish.meal_type.includes(meal)).sort((a, b) =>
-    a.name.localeCompare(b.name),
+  return ALL_DISHES.filter((dish) => dish.meal_type.includes(meal) && dish.verdict === 'can').sort(
+    (a, b) => a.name.localeCompare(b.name),
   )
 }
 

@@ -5,7 +5,7 @@ import type { Verdict } from '../../data/foods'
 import { useLang } from '../../i18n/LanguageContext'
 import { cn } from '../../lib/cn'
 import { easeOut } from '../../lib/motion'
-import { Card, VerdictMark, VerdictPill } from '../ui'
+import { Card, VerdictMark } from '../ui'
 
 // Ingredients are Yes or No, never "Possible": anything the sheet has not
 // cleared ('review' included) is shown as a No, i.e. something to leave out.
@@ -68,10 +68,10 @@ export function DishCard({
 }) {
   const { t, tx } = useLang()
   const [expanded, setExpanded] = useState(false)
-  // Only a hard_no keeps a worded pill. Every other dish is answered by its
-  // ingredient marks and, where there is one, the note under the name — the
-  // pill was repeating what the rows below it already said.
-  const showDishPill = dish.hard_no
+  // Only a hard_no keeps a dish-level mark. Every other dish is answered by
+  // its ingredient marks and, where there is one, the note under the name —
+  // the mark was repeating what the rows below it already said.
+  const showDishMark = dish.hard_no
   const details = (
     <>
       {dish.hard_no && dish.hard_no_reason && (
@@ -82,24 +82,31 @@ export function DishCard({
           {t('food.possibleNote', { ingredients: dish.remove_ingredients.map((name) => tx(name)).join(', ') })}
         </p>
       )}
-      <div className="mt-2.5 grid gap-1.5">
-        {dish.ingredients.map((ingredient) => {
-          const verdict = toIngredientVerdict(ingredient.classification)
-          const showMark = !(hideApproved && verdict === 'yes')
-          return (
-            <div
-              key={ingredient.id}
-              className="flex items-start justify-between gap-2 rounded-xl bg-paper px-3 py-2"
-            >
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-ink">{tx(ingredient.name)}</p>
-                <Reason text={tx(ingredient.classification_reason)} />
+      {/* hard_no is a ruling on how the dish is cooked, not on what's in it —
+          every ingredient below would still read 'can' on its own (see
+          food.py _dish_verdict), which only contradicts the reason above.
+          The ingredient rows exist to explain a verdict computed from them;
+          a hard_no isn't one, so there is nothing for them to explain. */}
+      {!dish.hard_no && (
+        <div className="mt-2.5 grid gap-1.5">
+          {dish.ingredients.map((ingredient) => {
+            const verdict = toIngredientVerdict(ingredient.classification)
+            const showMark = !(hideApproved && verdict === 'yes')
+            return (
+              <div
+                key={ingredient.id}
+                className="flex items-start justify-between gap-2 rounded-xl bg-paper px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold text-ink">{tx(ingredient.name)}</p>
+                  <Reason text={tx(ingredient.classification_reason)} />
+                </div>
+                {showMark ? <VerdictMark verdict={verdict} /> : null}
               </div>
-              {showMark ? <VerdictMark verdict={verdict} /> : null}
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
     </>
   )
 
@@ -116,14 +123,14 @@ export function DishCard({
         >
           <DishTitle dish={dish} />
           <span className="flex shrink-0 items-start gap-1.5">
-            {showDishPill ? <VerdictPill verdict="no" /> : null}
+            {showDishMark ? <VerdictMark verdict="no" /> : null}
             <Chevron open={expanded} />
           </span>
         </button>
       ) : (
         <div className="flex items-start justify-between gap-2">
           <DishTitle dish={dish} />
-          {showDishPill ? <VerdictPill verdict="no" /> : null}
+          {showDishMark ? <VerdictMark verdict="no" /> : null}
         </div>
       )}
       {collapsible ? (

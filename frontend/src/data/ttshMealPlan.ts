@@ -26,11 +26,16 @@ import type { Cuisine } from './cuisine'
  * one-line change in useMealPrep.
  *
  * Ingredient reason wording is copied verbatim from ingredient_tab where a row
- * exists and classifies 'can' on the TTSH tier. Where the sheet-derived DB row
- * disagrees with this list (kaya, butter, kopi/teh with milk, pancakes,
- * waffles, naan, peeled potato, clear jelly, cream desserts are all 'review' or
- * 'cannot' in ingredient_tab), the option list is treated as the ruling and the
- * reason says so — those rows are the ones to re-check before this is seeded.
+ * exists and classifies 'can' on the TTSH tier.
+ *
+ * Reconciled against ingredient_tab on 23 Sep 2026: Butter, Plain naan, Plain
+ * pancake and Plain waffle are 'review' here too (not 'can') — the TTSH sheet
+ * does not clear the ghee/oil used any more than ingredient_tab does. Potato
+ * (peeled) is 'cannot' here — TTSH's sheet excludes potato skin outright, the
+ * same call ingredient_tab's TTSH tier makes. Kopi, Kopi-O, Teh, Teh-O and Soy
+ * milk stay 'can' here: TTSH's own sheet permits milk drinks and soy milk
+ * where SKH's does not, so skhMealPlan.ts has those as 'cannot' instead — a
+ * real hospital difference, not a copy-paste gap.
  */
 
 const SOURCE_DOCUMENT =
@@ -58,8 +63,6 @@ const WHY = {
     'TTSH permits coffee and tea with or without milk during its low-fibre phase. Other Singapore sheets are stricter on milk, so follow the TTSH instruction you were given.',
   drinkNoMilk:
     'TTSH permits coffee and tea during its low-fibre phase. Avoid red, purple, blue or dark-coloured drinks if your clinic asks for it.',
-  peeledPotato:
-    'On the TTSH option list peeled and mashed, without the skin. The skin is the fibrous part, so it comes off before cooking.',
   broth:
     'Clear soup and broth are permitted, strained. No vegetables, noodles, meat pieces or garnish left in the bowl.',
   sauce:
@@ -99,13 +102,25 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
   'Dosa (plain rice crepe)': {
     why: 'On the TTSH option list plain, without sambar, chutney or vegetable filling.',
   },
-  'Plain naan': { why: WHY.refinedBake },
+  'Plain naan': {
+    classification: 'review',
+    why: 'Refined flour is low in fibre, but the ghee or oil used can matter.',
+  },
   'White baguette': { why: WHY.refinedBake },
   'Plain bagel': { why: WHY.refinedBake },
   'Plain flour tortilla': { why: WHY.refinedBake },
-  'Plain pancake': { why: WHY.refinedBake },
-  'Plain waffle': { why: WHY.refinedBake },
-  'Potato (peeled)': { why: WHY.peeledPotato },
+  'Plain pancake': {
+    classification: 'review',
+    why: 'Refined flour is low in fibre, but the ghee or oil used can matter.',
+  },
+  'Plain waffle': {
+    classification: 'review',
+    why: 'Refined flour is low in fibre, but the ghee or oil used can matter.',
+  },
+  'Potato (peeled)': {
+    classification: 'cannot',
+    why: 'Low-fibre starch if peeled; do not eat the skin.',
+  },
 
   // --- Protein ---
   Egg: { why: WHY.protein },
@@ -133,7 +148,10 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
 
   // --- Spreads, fats, sauces ---
   Kaya: { why: WHY.spread },
-  Butter: { why: WHY.spread },
+  Butter: {
+    classification: 'review',
+    why: 'Fat itself is low in fibre, but how much is used in cooking is hard to judge.',
+  },
   Syrup: {
     why: 'Plain sugar or maple syrup carries no fibre. Skip fruit compote, jam and anything with seeds or pieces.',
   },
@@ -483,10 +501,16 @@ function toDish(seed: DishSeed, index: number): ApiDish {
 
 const ALL_DISHES = DISHES.map(toDish)
 
-/** Sorted by name, the same ordering list_meal_prep applies to DB-loaded dishes. */
+/**
+ * Same rule backend/app/services/food.py list_meal_prep applies: only a dish
+ * where every ingredient clears as 'can' is a recommendation. A 'possible' or
+ * 'cannot' dish here would show a recommended dish with a red-X ingredient in
+ * it — meal prep is "what can I eat", not "here's the breakdown of everything
+ * on the list". Sorted by name, the same ordering list_meal_prep applies.
+ */
 function bucket(meal: ApiMealType) {
-  return ALL_DISHES.filter((dish) => dish.meal_type.includes(meal)).sort((a, b) =>
-    a.name.localeCompare(b.name),
+  return ALL_DISHES.filter((dish) => dish.meal_type.includes(meal) && dish.verdict === 'can').sort(
+    (a, b) => a.name.localeCompare(b.name),
   )
 }
 

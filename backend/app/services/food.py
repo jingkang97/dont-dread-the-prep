@@ -188,6 +188,32 @@ def find_dish(db: DbSession, name: str, hospital_code: str) -> tuple[Dish, str] 
     return None
 
 
+def find_dish_family(db: DbSession, dish: Dish, source: str) -> list[Dish]:
+    """Sibling dishes that hang a qualifier off this one's name with a hyphen.
+
+    'Kopi' has 'Kopi-C' and 'Kopi-O' this way, and 'Teh' has 'Teh-C'/'Teh-O' —
+    the kopitiam convention for "same drink, different milk/sugar". A plain
+    'kopi' query landing on the base dish is exactly as ambiguous as landing on
+    none of them, so it should prompt a choice the same way an unresolved fuzzy
+    match does, not silently assume the plain version.
+
+    Deliberately hyphen-only, not a general name-prefix match: DIETICIAN dishes
+    like 'Beef' ('Beef noodles', 'Beef hor fun') or 'Onion' ('Onion prata')
+    share a leading word with unrelated composite dishes, and forcing a choice
+    there would be noise, not help — the hyphen is what marks "variant of the
+    same drink" rather than "different dish that happens to start the same".
+    """
+    return db.scalars(
+        select(Dish)
+        .where(
+            Dish.source_hospital == source,
+            Dish.id != dish.id,
+            Dish.name.ilike(f"{dish.name}-%"),
+        )
+        .order_by(Dish.name)
+    ).all()
+
+
 def find_dish_candidates(
     db: DbSession, names: list[str], hospital_code: str, limit: int = MAX_CHOICES
 ) -> list[tuple[Dish, str, float]]:
@@ -258,12 +284,25 @@ def answer_chat(db: DbSession, body: FoodChatRequest) -> FoodChatResponse:
             message=result.message or "I can only look up one food at a time — ask about one item.",
         )
 
-    candidate_terms = result.synonyms or [body.query]
+    # The user's own wording goes first: it's what they actually typed (e.g.
+    # "kopi", itself an exact dish name), and should win an exact match over
+    # an LLM synonym ("black coffee") that also happens to resolve — the
+    # model is asked for English alternate spellings, not ranked by fit, so
+    # its ordering can't be trusted to put the best match first.
+    candidate_terms = list(dict.fromkeys([body.query, *result.synonyms]))
 
     for synonym in candidate_terms:
         found = find_dish(db, synonym, body.hospital_code)
         if found is not None:
             dish, source = found
+            siblings = find_dish_family(db, dish, source)
+            if siblings:
+                choices = sorted([dish, *siblings], key=lambda d: d.name)[:MAX_CHOICES]
+                return FoodChatResponse(
+                    status=FoodChatStatus.choices,
+                    message="I found a few dishes that might match — which one did you mean?",
+                    choices=[DishChoice(id=d.id, name=d.name) for d in choices],
+                )
             return FoodChatResponse(
                 status=FoodChatStatus.ok,
                 matched_query=synonym,
