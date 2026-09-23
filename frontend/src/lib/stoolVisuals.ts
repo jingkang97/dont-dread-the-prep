@@ -14,8 +14,7 @@ export const STAGE_LOOK: Record<string, Record<number, string>> = {
     2: "Brown liquid with materials still sitting at the bottom.",
     3: "Dark orange. Some particles left.",
     4: "Light orange. Little residue.",
-    5: "Pale orange, mostly clear. Tiny specks at most.",
-    6: "Clear yellow, watery, no residue.",
+    5: "Clear yellow, watery, no residue.",
   },
 };
 
@@ -25,7 +24,6 @@ export function stageLook(scaleKey: string, stage: ApiStoolScaleStage) {
 
 export function stagePhotoSrc(stage: ApiStoolScaleStage) {
   if (!stage.photo) return null;
-  if (stage.photo === "skh/6.png") return "/stool/skh/6.svg";
   return `/stool/${stage.photo}`;
 }
 
@@ -46,6 +44,8 @@ export function extraStagePhotos(
   if (extraStageSlots(scaleKey, stage, lastN) === 0) return [];
   if (scaleKey === "ttsh-6")
     return [`/stool/ttsh/s${stage.n}-2.png`, `/stool/ttsh/s${stage.n}-3.png`];
+  if (scaleKey === "skh-6")
+    return [`/stool/skh/${stage.n}-2.png`, `/stool/skh/${stage.n}-3.png`];
   return [];
 }
 

@@ -36,8 +36,7 @@ JOIN (
     ('skh-6', 2, 'Brown with materials', 'Brown liquid with materials still sitting at the bottom.', 'not', '#6b3f24', 'skh/2.png'),
     ('skh-6', 3, 'Dark orange', 'Dark orange. Some particles left.', 'not', '#c45f18', 'skh/3.png'),
     ('skh-6', 4, 'Light orange', 'Light orange. Little residue.', 'almost', '#e8993a', 'skh/4.png'),
-    ('skh-6', 5, 'Pale orange', 'Pale orange, mostly clear. Tiny specks at most.', 'almost', '#f0b45a', 'skh/5.png'),
-    ('skh-6', 6, 'Clear yellow', 'Clear yellow, watery, no residue.', 'ready', '#e6c35c', 'skh/6.svg'),
+    ('skh-6', 5, 'Clear yellow', 'Clear yellow, watery, no residue.', 'ready', '#e6c35c', 'skh/5.png'),
     ('bristol', 1, 'Type 1', 'Separate hard lumps, like nuts', NULL::text, NULL::text, NULL),
     ('bristol', 2, 'Type 2', 'Sausage-shaped but lumpy', NULL, NULL, NULL),
     ('bristol', 3, 'Type 3', 'Like a sausage with cracks on the surface', NULL, NULL, NULL),
@@ -53,6 +52,13 @@ ON CONFLICT (scale_id, n) DO UPDATE SET
   ready = EXCLUDED.ready,
   color = EXCLUDED.color,
   photo = EXCLUDED.photo;
+
+-- SKH is a 5-stage chart. Drop the old placeholder stage 6 if it is still stored.
+DELETE FROM stool_scale_stages st
+USING stool_scales s
+WHERE st.scale_id = s.id
+  AND s.key = 'skh-6'
+  AND st.n > 5;
 
 UPDATE hospitals
 SET stool_scale_id = (SELECT id FROM stool_scales WHERE key = 'ttsh-6')
