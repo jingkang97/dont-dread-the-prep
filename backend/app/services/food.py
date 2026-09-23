@@ -312,9 +312,13 @@ def answer_chat(db: DbSession, body: FoodChatRequest) -> FoodChatResponse:
 
     candidates = find_dish_candidates(db, candidate_terms, body.hospital_code)
     if not candidates:
+        # result.message is only ever meaningful for 'irrelevant'/'multiple' —
+        # the prompt gives the model nothing to say for 'ok', which is the only
+        # status left once we're here, so it fills the field with something
+        # like "Synonyms for coke zero". Always use the fixed line instead.
         return FoodChatResponse(
             status=FoodChatStatus.not_found,
-            message=result.message or f"I don't have '{body.query.strip()}' in the ruleset yet.",
+            message=f"I don't have '{body.query.strip()}' in the ruleset yet.",
         )
 
     top_dish, top_source, top_score = candidates[0]
