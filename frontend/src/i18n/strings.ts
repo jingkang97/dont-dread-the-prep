@@ -280,7 +280,7 @@ export const EN = {
   "app.startOverHint": "Choose hospital again",
   "app.startOverTitle": "Start over?",
   "app.startOverBody":
-    "Back to the start. Timeline on this phone resets. Paper form is unchanged.",
+    "Back to the start. Timeline on this phone resets. Telegram and in-app reminders turn off until you set them again. Paper form is unchanged.",
   "app.startOverConfirm": "Confirm",
   "app.keep": "Keep this date",
   "app.saveDate": "Save date",

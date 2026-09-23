@@ -35,6 +35,7 @@ export type ApiSessionCreate = {
   protocol_name?: string
   first_name?: string
   preferred_lang?: 'en' | 'zh' | 'ms' | 'ta'
+  replaces_public_code?: string
 }
 
 export type ApiSessionUpdate = {

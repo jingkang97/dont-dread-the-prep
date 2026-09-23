@@ -18,7 +18,7 @@ from app.schemas.session import (
     Slot,
     StoolScaleOut,
 )
-from app.services.reminder_schedule import reminder_plan, reset_reminder_clock
+from app.services.reminder_schedule import drop_reminders, reminder_plan
 from app.services.timeline import live_reminder_events_for
 
 PUBLIC_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -238,6 +238,12 @@ def create_session(db: DbSession, body: SessionCreate) -> SessionOut:
 
     row: Session | None = None
     for _ in range(8):
+        if body.replaces_public_code:
+            previous = db.scalar(
+                select(Session).where(Session.public_code == body.replaces_public_code)
+            )
+            if previous is not None:
+                drop_reminders(previous)
         candidate = Session(
             public_code=new_public_code(),
             hospital_id=hospital.id,
@@ -299,11 +305,15 @@ def update_session(db: DbSession, public_code: str, body: SessionUpdate) -> Sess
         if "reporting_time" not in data:
             data["reporting_time"] = default_reporting_time(Slot(data["slot"]))
 
-    reset_reminders = bool({"procedure_date", "slot", "reporting_time"} & data.keys())
+    timing_changed = (
+        ("procedure_date" in data and data["procedure_date"] != row.procedure_date)
+        or ("slot" in data and data["slot"] != row.slot)
+        or ("reporting_time" in data and data["reporting_time"] != row.reporting_time)
+    )
     for key, value in data.items():
         setattr(row, key, value)
-    if reset_reminders:
-        reset_reminder_clock(row)
+    if timing_changed:
+        drop_reminders(row)
 
     hospital = db.scalar(
         select(Hospital)

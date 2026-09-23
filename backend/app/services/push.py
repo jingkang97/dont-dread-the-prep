@@ -50,7 +50,15 @@ def save_subscription(code: str, endpoint: str, p256dh: str, auth: str) -> dict[
         row = db.scalar(select(Session).where(Session.public_code == code.upper()))
         if row is None:
             return False
-        row.push_endpoint = endpoint.strip()
+        endpoint = endpoint.strip()
+        for other in db.scalars(
+            select(Session).where(
+                Session.push_endpoint == endpoint,
+                Session.public_code != code.upper(),
+            )
+        ):
+            clear_channel(other, "push")
+        row.push_endpoint = endpoint
         row.push_p256dh = p256dh.strip()
         row.push_auth = auth.strip()
         now = datetime.now(timezone.utc)
