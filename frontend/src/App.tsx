@@ -196,8 +196,7 @@ export default function App() {
               <StartOverSheet
                 onBack={() => edit.setEdit('choose')}
                 onConfirm={() => {
-                  clear()
-                  edit.setEdit('off')
+                  void clear().then(() => edit.setEdit('off'))
                 }}
               />
             )}

@@ -80,6 +80,11 @@ class SessionCreate(BaseModel):
     )
     first_name: Optional[str] = Field(default=None, max_length=24)
     preferred_lang: PreferredLang = "en"
+    replaces_public_code: Optional[str] = Field(
+        default=None,
+        max_length=8,
+        description="Previous session to unlink Telegram and push for when starting over.",
+    )
 
     @field_validator("hospital_code")
     @classmethod
@@ -93,6 +98,14 @@ class SessionCreate(BaseModel):
             return None
         cleaned = " ".join(value.strip().split())
         return cleaned[:24] or None
+
+    @field_validator("replaces_public_code")
+    @classmethod
+    def normalize_replaces_public_code(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        code = value.strip().upper()
+        return code or None
 
 
 class SessionUpdate(BaseModel):

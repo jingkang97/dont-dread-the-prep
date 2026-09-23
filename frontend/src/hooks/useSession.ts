@@ -5,6 +5,7 @@ import {
   clearSession,
   createSession,
   hydrateSession,
+  releaseSessionReminders,
   screenFromGo,
   screenFromUrl,
   updateAppointment,
@@ -64,7 +65,9 @@ export function useSession() {
     return next
   }
 
-  function clear() {
+  async function clear() {
+    const current = session
+    if (current?.id) await releaseSessionReminders(current.id)
     dropHomeTourPending()
     clearSession()
     setSession(null)

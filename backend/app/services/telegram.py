@@ -165,6 +165,13 @@ def _link_session(chat_id: int, code: str) -> dict[str, Any] | None:
         row = db.scalar(select(Session).where(Session.public_code == code))
         if row is None:
             return None
+        for other in db.scalars(
+            select(Session).where(
+                Session.telegram_chat_id == chat_id,
+                Session.public_code != code,
+            )
+        ):
+            clear_channel(other, "telegram")
         row.telegram_chat_id = chat_id
         skipped: list[dict[str, Any]] = []
         nxt = None

@@ -52,6 +52,13 @@ def reset_reminder_clock(row: Session) -> None:
     flag_modified(row, "reminder_push_sent")
 
 
+def drop_reminders(row: Session) -> None:
+    """Hospital or timing changed: this session must opt in again."""
+    clear_channel(row, "telegram")
+    clear_channel(row, "push")
+    reset_reminder_clock(row)
+
+
 def _as_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)

@@ -11,6 +11,8 @@ import {
   createApiSession,
   getApiSession,
   patchApiSession,
+  unsubscribeApiPush,
+  unsubscribeApiTelegram,
   type ApiSession,
 } from './api'
 
@@ -49,6 +51,7 @@ const COOKIE = 'preppath_session'
 const PARAM = 'p'
 const CODE_PARAM = 's'
 const GO_PARAM = 'go'
+const REPLACE_KEY = 'preppath.replace_session'
 
 function normalizeTime(value: string) {
   return value.length >= 5 ? value.slice(0, 5) : value
@@ -231,7 +234,51 @@ export function saveSession(session: PrepSession) {
   persistEverywhere(session)
 }
 
+function rememberReplaceSession(code: string) {
+  try {
+    sessionStorage.setItem(REPLACE_KEY, code)
+  } catch {
+    /* private mode */
+  }
+}
+
+function takeReplaceSession() {
+  try {
+    const code = sessionStorage.getItem(REPLACE_KEY)?.trim().toUpperCase()
+    sessionStorage.removeItem(REPLACE_KEY)
+    return code || undefined
+  } catch {
+    return undefined
+  }
+}
+
+async function unsubscribeBrowserPush() {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
+  try {
+    const registration = await navigator.serviceWorker.ready
+    const existing = await registration.pushManager.getSubscription()
+    await existing?.unsubscribe()
+  } catch {
+    /* still clear the server row */
+  }
+}
+
+async function dropReminderChannels(publicCode: string) {
+  await unsubscribeBrowserPush()
+  await Promise.allSettled([
+    unsubscribeApiTelegram(publicCode),
+    unsubscribeApiPush(publicCode),
+  ])
+}
+
+export async function releaseSessionReminders(publicCode: string) {
+  rememberReplaceSession(publicCode)
+  await dropReminderChannels(publicCode)
+}
+
 export function clearSession() {
+  const cached = loadSession()
+  if (cached?.id) rememberReplaceSession(cached.id)
   persistEverywhere(null)
   clearFoodChat()
   clearFoodChatUi()
@@ -300,6 +347,7 @@ export async function createSession(partial: {
     first_name: firstName,
     protocol_name: partial.protocolName,
     preferred_lang: storedPreferredLang(),
+    replaces_public_code: takeReplaceSession(),
   })
   const session = fromApiSession(row)
   saveSession(session)
