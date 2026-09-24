@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { ArrowDown, Send } from 'lucide-react'
+import { ArrowDown } from 'lucide-react'
 import { BotCard, ThinkingCard } from '../components/food/BotCard'
 import { MealPrep } from '../components/food/MealPrep'
 import { SegmentedControl } from '../components/SegmentedControl'
@@ -259,27 +259,17 @@ export function FoodChat({ session }: { session: PrepSession }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="flex items-center gap-3 px-5 pt-3">
+      <div className="px-5 pt-3">
         <SegmentedControl
           value={tab}
           onChange={setTab}
-          className="h-11 min-w-0 flex-1 rounded-xl"
+          className="h-11 w-full rounded-xl"
           buttonClassName="px-3 text-[15px]"
           options={[
             { id: 'mealPrep', label: t('food.tabMealPrep') },
             { id: 'chat', label: t('food.tabChat') },
           ]}
         />
-        {tab === 'chat' && messages.length > 0 && !clearing ? (
-          <button
-            type="button"
-            data-demo="food-clear"
-            onClick={clearChat}
-            className="shrink-0 text-[13px] font-semibold text-teal-deep"
-          >
-            {t('food.clear')}
-          </button>
-        ) : null}
       </div>
 
       <div className="relative min-h-0 flex-1">
@@ -294,8 +284,27 @@ export function FoodChat({ session }: { session: PrepSession }) {
           aria-hidden={tab !== 'chat'}
           className={cn('absolute inset-0 flex min-h-0 flex-col', tab !== 'chat' && 'invisible pointer-events-none')}
         >
+          {messages.length > 0 && !clearing ? (
+            <div className="flex shrink-0 justify-end px-5 pt-2">
+              <button
+                type="button"
+                data-demo="food-clear"
+                onClick={clearChat}
+                className="rounded-full border border-line bg-paper-2 px-2.5 py-1 text-[12px] font-semibold text-teal-deep"
+              >
+                {t('food.clear')}
+              </button>
+            </div>
+          ) : null}
           <div className="relative min-h-0 flex-1">
-            <div ref={listRef} data-food-scroll className="h-full min-h-0 space-y-3 overflow-y-auto overflow-anchor-none overscroll-y-contain px-5 py-4">
+            <div
+              ref={listRef}
+              data-food-scroll
+              className={cn(
+                'h-full min-h-0 space-y-3 overflow-y-auto overflow-anchor-none overscroll-y-contain px-5 pb-4',
+                messages.length > 0 && !clearing ? 'pt-2' : 'pt-4',
+              )}
+            >
               <Card className="p-3.5">
                 <p className="text-[16px] font-semibold text-ink">
                   {t('food.introTitle', { hospital: tx(session.hospitalShort) })}
@@ -359,8 +368,8 @@ export function FoodChat({ session }: { session: PrepSession }) {
             )}
           </div>
 
-          <div className="shrink-0 border-t border-line bg-paper-2 px-4 pb-3 pt-3">
-            <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
+          <div className="shrink-0 border-t border-line bg-paper-2 px-4 pb-2.5 pt-2.5">
+            <div className="mb-2 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {CHAT_SUGGESTIONS.map((item) => (
                 <button
                   key={item.query}
@@ -374,7 +383,7 @@ export function FoodChat({ session }: { session: PrepSession }) {
               ))}
             </div>
             <form
-              className="flex gap-2"
+              className="flex items-center gap-2"
               onSubmit={(e) => {
                 e.preventDefault()
                 ask(input)
@@ -385,21 +394,41 @@ export function FoodChat({ session }: { session: PrepSession }) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={t('food.placeholder')}
-                className="flex-1 rounded-2xl border border-line bg-paper px-3.5 py-3 text-[16px] outline-none focus:border-navy"
+                className="h-10 min-w-0 flex-1 rounded-full border border-line bg-paper px-3.5 text-[16px] outline-none focus:border-navy"
               />
               <button
                 type="submit"
                 data-demo="food-send"
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-teal text-white"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-teal text-white"
                 aria-label={t('food.send')}
               >
-                <Send size={18} />
+                <SendGlyph />
               </button>
             </form>
           </div>
         </div>
       </div>
     </div>
+  )
+}
+
+function SendGlyph() {
+  return (
+    <svg
+      viewBox="0.9 -1.2 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.1"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="block"
+    >
+      <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+      <path d="m21.854 2.147-10.94 10.939" />
+    </svg>
   )
 }
 

@@ -28,6 +28,7 @@ type DemoApi = {
   setSpeed: (n: number) => void
   target: HTMLElement | null
   play: () => void
+  playFrom: (index: number) => void
   pause: () => void
   stop: () => void
   restart: () => void
@@ -307,6 +308,13 @@ export function DemoProvider({
     void start(0)
   }, [start])
 
+  const playFrom = useCallback(
+    (index: number) => {
+      void start(index)
+    },
+    [start],
+  )
+
   const pause = useCallback(() => {
     if (statusRef.current !== 'playing') return
     setStatus('paused')
@@ -339,6 +347,7 @@ export function DemoProvider({
       setSpeed,
       target,
       play,
+      playFrom,
       pause,
       stop,
       restart,
@@ -346,7 +355,7 @@ export function DemoProvider({
       setLoop,
       runNonce,
     }),
-    [enabled, loop, pause, play, restart, runNonce, speed, status, stepCount, stepFeature, stepIndex, stepLabel, stepsMeta, stop, target],
+    [enabled, loop, pause, play, playFrom, restart, runNonce, speed, status, stepCount, stepFeature, stepIndex, stepLabel, stepsMeta, stop, target],
   )
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>

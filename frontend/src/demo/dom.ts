@@ -43,6 +43,13 @@ export function foodDemoSlug(query: string) {
 }
 
 export function scrollIntoView(el: HTMLElement) {
+  const xScroll = el.closest<HTMLElement>('.overflow-x-auto')
+  if (xScroll) {
+    const row = xScroll.getBoundingClientRect()
+    const box = el.getBoundingClientRect()
+    const delta = box.left - row.left - (row.width - box.width) / 2
+    xScroll.scrollTo({ left: Math.max(0, xScroll.scrollLeft + delta), behavior: 'auto' })
+  }
   const food = el.closest<HTMLElement>('[data-food-scroll]')
   if (food) {
     const top = el.getBoundingClientRect().top - food.getBoundingClientRect().top + food.scrollTop - 16

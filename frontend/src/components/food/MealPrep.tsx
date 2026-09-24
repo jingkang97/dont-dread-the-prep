@@ -67,11 +67,11 @@ export function MealPrep({ session }: { session: PrepSession }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 px-5 pb-3 pt-4">
+      <div className="shrink-0 px-5 pb-2 pt-3">
         <div
           role="radiogroup"
           aria-label={t('food.tabMealPrep')}
-          className="flex gap-1.5"
+          className="grid grid-cols-[1fr_1.45fr_1fr_1fr] gap-1.5"
         >
           {MEALS.map((item) => {
             const on = meal === item.id
@@ -87,7 +87,7 @@ export function MealPrep({ session }: { session: PrepSession }) {
                   setCuisine(null)
                 }}
                 className={cn(
-                  'min-h-9 min-w-0 flex-1 whitespace-nowrap rounded-full px-1.5 text-[12px] font-medium',
+                  'min-h-8 whitespace-nowrap rounded-full px-2 text-center text-[12px] font-medium',
                   on ? 'bg-teal-deep text-white' : 'bg-black/[0.06] text-navy',
                 )}
               >
@@ -100,7 +100,7 @@ export function MealPrep({ session }: { session: PrepSession }) {
           <div
             role="radiogroup"
             aria-label={t('food.cuisineAll')}
-            className="mt-2 flex flex-wrap gap-1.5"
+            className="mt-1.5 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {[{ id: null, label: 'food.cuisineAll' as StringKey }, ...cuisines].map((item) => {
               const on = cuisine === item.id
@@ -113,7 +113,7 @@ export function MealPrep({ session }: { session: PrepSession }) {
                   data-demo={`food-cuisine-${item.id ?? 'all'}`}
                   onClick={() => setCuisine(item.id)}
                   className={cn(
-                    'min-h-8 rounded-full px-3 text-[12px] font-medium',
+                    'h-8 shrink-0 rounded-full px-3 text-[12px] font-medium',
                     on ? 'bg-navy text-white' : 'bg-black/[0.06] text-navy',
                   )}
                 >

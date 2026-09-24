@@ -13,7 +13,7 @@ export function DemoPlayer() {
   const demo = useDemo()
   const [open, setOpen] = useState(true)
   const [stepsOpen, setStepsOpen] = useState(true)
-  const currentRef = useRef<HTMLDivElement | null>(null)
+  const currentRef = useRef<HTMLButtonElement | null>(null)
   if (!demo.enabled) return null
 
   const live = demo.status === 'playing' || demo.status === 'paused'
@@ -54,7 +54,7 @@ export function DemoPlayer() {
                       ? `${demo.stepFeature ? `${demo.stepFeature} · ` : ''}${Math.min(demo.stepIndex + (live ? 1 : 0), demo.stepCount)} / ${demo.stepCount}`
                       : demo.loop
                         ? 'Loop is on. Hide to run in the background.'
-                        : 'Play starts at Choose hospital.'}
+                        : 'Play starts at Choose hospital. Tap a step to jump there.'}
                   </p>
                   <div className="mt-3 flex items-center gap-1.5">
                     {demo.status === 'playing' ? (
@@ -124,6 +124,7 @@ export function DemoPlayer() {
                         steps={demo.steps}
                         current={current}
                         currentRef={currentRef}
+                        onPick={demo.playFrom}
                       />
                     </motion.div>
                   ) : null}
@@ -155,10 +156,12 @@ function StepList({
   steps,
   current,
   currentRef,
+  onPick,
 }: {
   steps: DemoStepInfo[]
   current: number
-  currentRef: RefObject<HTMLDivElement | null>
+  currentRef: RefObject<HTMLButtonElement | null>
+  onPick: (index: number) => void
 }) {
   const listRef = useRef<HTMLOListElement | null>(null)
 
@@ -197,12 +200,14 @@ function StepList({
               const active = index === current
               return (
                 <li key={step.id}>
-                  <div
+                  <button
+                    type="button"
                     ref={active ? currentRef : undefined}
                     aria-current={active ? 'step' : undefined}
+                    onClick={() => onPick(index)}
                     className={cn(
-                      'flex w-full items-baseline gap-2 rounded-xl px-2 py-1.5 scroll-my-5',
-                      active ? 'bg-teal/20 ring-1 ring-teal/50' : '',
+                      'flex w-full items-baseline gap-2 rounded-xl px-2 py-1.5 text-left scroll-my-5',
+                      active ? 'bg-teal/20 ring-1 ring-teal/50' : 'hover:bg-white/8',
                     )}
                   >
                     <span
@@ -221,7 +226,7 @@ function StepList({
                     >
                       {step.label}
                     </span>
-                  </div>
+                  </button>
                 </li>
               )
             })}
