@@ -3,6 +3,7 @@ import {
   foodDemoSlug,
   isUsable,
   queryVisible,
+  scrollIntoView,
   setFoodInput,
   setHospitalQuery,
 } from './dom'
@@ -480,20 +481,30 @@ export function buildDemoScript(): DemoStep[] {
         await ctx.wait(500)
         const cuisineChips = ['chinese', 'indian', 'western', 'japanese'] as const
         for (const id of cuisineChips) {
-          const chip = queryVisible(`[data-demo="food-cuisine-${id}"]`)
-          if (!chip) continue
-          await ctx.show(`[data-demo="food-cuisine-${id}"]`, 500)
-          await ctx.tap(`[data-demo="food-cuisine-${id}"]`)
+          const chip = document.querySelector(`[data-demo="food-cuisine-${id}"]`)
+          if (!(chip instanceof HTMLElement)) continue
+          scrollIntoView(chip)
+          await ctx.wait(180, false)
+          await ctx.tap(chip)
           await ctx.wait(700)
         }
-        if (queryVisible('[data-demo="food-cuisine-all"]')) {
-          await ctx.tap('[data-demo="food-cuisine-all"]')
+        const all = document.querySelector('[data-demo="food-cuisine-all"]')
+        if (all instanceof HTMLElement) {
+          scrollIntoView(all)
+          await ctx.wait(120, false)
+          await ctx.tap(all)
           await ctx.wait(500)
         }
         await ctx.waitFor('[data-demo="food-dish"]')
-        await ctx.show('[data-demo="food-dish"]', 800)
-        await ctx.tap('[data-demo="food-dish"]')
-        await ctx.wait(1800)
+        const dishes = [...document.querySelectorAll('[data-demo="food-dish"]')]
+          .filter(isUsable)
+          .slice(0, 2)
+        for (const dish of dishes) {
+          ctx.highlight(dish)
+          await ctx.wait(800, true)
+          await ctx.tap(dish)
+          await ctx.wait(1600)
+        }
       },
     },
     {
