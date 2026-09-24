@@ -477,6 +477,19 @@ export function buildDemoScript(): DemoStep[] {
         await ctx.waitFor('[data-demo="food-meal-lunch"]')
         await ctx.wait(700)
         await ctx.tap('[data-demo="food-meal-lunch"]')
+        await ctx.wait(500)
+        const cuisineChips = ['chinese', 'indian', 'western', 'japanese'] as const
+        for (const id of cuisineChips) {
+          const chip = queryVisible(`[data-demo="food-cuisine-${id}"]`)
+          if (!chip) continue
+          await ctx.show(`[data-demo="food-cuisine-${id}"]`, 500)
+          await ctx.tap(`[data-demo="food-cuisine-${id}"]`)
+          await ctx.wait(700)
+        }
+        if (queryVisible('[data-demo="food-cuisine-all"]')) {
+          await ctx.tap('[data-demo="food-cuisine-all"]')
+          await ctx.wait(500)
+        }
         await ctx.waitFor('[data-demo="food-dish"]')
         await ctx.show('[data-demo="food-dish"]', 800)
         await ctx.tap('[data-demo="food-dish"]')
