@@ -71,7 +71,7 @@ export function MealPrep({ session }: { session: PrepSession }) {
         <div
           role="radiogroup"
           aria-label={t('food.tabMealPrep')}
-          className="flex gap-1.5"
+          className="flex flex-wrap gap-1.5"
         >
           {MEALS.map((item) => {
             const on = meal === item.id
@@ -87,7 +87,7 @@ export function MealPrep({ session }: { session: PrepSession }) {
                   setCuisine(null)
                 }}
                 className={cn(
-                  'min-h-9 min-w-0 flex-1 whitespace-nowrap rounded-full px-1.5 text-[12px] font-medium',
+                  'min-h-9 rounded-full px-3.5 text-[12px] font-medium',
                   on ? 'bg-teal-deep text-white' : 'bg-black/[0.06] text-navy',
                 )}
               >
