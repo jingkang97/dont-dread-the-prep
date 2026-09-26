@@ -61,8 +61,6 @@ const WHY = {
     'On the low-fibre option list as a plain cake. No nuts, seeds, dried fruit, fruit pieces or dark-coloured fillings.',
   custard:
     'Egg-and-milk custards are on the low-fibre option list as smooth, residue-free desserts. Plain only — no fruit, no caramel with fruit pieces.',
-  drinkNoMilk:
-    'Coffee and tea are on the low-fibre option list. Avoid red, purple, blue or dark-coloured drinks if your clinic asks for it.',
   broth:
     'Clear soup and broth are permitted, strained. No vegetables, noodles, meat pieces or garnish left in the bowl.',
   sauce:
@@ -176,9 +174,6 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
     classification: 'cannot',
     why: 'Coffee/tea is avoided; milk drinks are also not allowed.',
   },
-  'Chinese tea': { why: WHY.drinkNoMilk },
-  'Green tea': { why: WHY.drinkNoMilk },
-  'English breakfast tea': { why: WHY.drinkNoMilk },
   'Soy milk (no pulp)': {
     classification: 'cannot',
     why: "Soy milk is avoided on this hospital's fluid list.",
@@ -445,9 +440,6 @@ const DISHES: DishSeed[] = [
   { name: 'Kopi', cuisine: 'general', meals: DRINK, ingredients: ['Kopi'] },
   { name: 'Teh-O', cuisine: 'general', meals: DRINK, ingredients: ['Teh-O'] },
   { name: 'Teh', cuisine: 'general', meals: DRINK, ingredients: ['Teh'] },
-  { name: 'Chinese tea', cuisine: 'chinese', meals: DRINK, ingredients: ['Chinese tea'] },
-  { name: 'Green tea', cuisine: 'chinese', meals: DRINK, ingredients: ['Green tea'] },
-  { name: 'English breakfast tea', cuisine: 'western', meals: DRINK, ingredients: ['English breakfast tea'] },
   { name: 'Soy milk', cuisine: 'chinese', note: 'Without pulp', meals: DRINK, ingredients: ['Soy milk (no pulp)'] },
   {
     name: 'Clear apple juice', cuisine: 'general', note: 'Without pulp',

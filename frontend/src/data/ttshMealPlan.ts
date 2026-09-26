@@ -39,36 +39,36 @@ import type { Cuisine } from './cuisine'
  */
 
 const SOURCE_DOCUMENT =
-  'TTSH low-fibre option list (dietitian-provided; hard-coded pending an ingredient_tab / dishes_tab seed)'
+  'Low-fibre option list (dietitian-provided; hard-coded pending an ingredient_tab / dishes_tab seed)'
 
 // Shared reason strings. The first four are verbatim ingredient_tab rows; the
 // rest are written for options this list clears and the DB has not.
 const WHY = {
   refined:
-    'Refined white starches are directly listed as permitted in Singapore low-fibre/low-residue guidance.',
-  protein: 'Chicken, fish, eggs and seafood are directly permitted in multiple Singapore protocols.',
-  tofu: 'Tofu/taukwa are directly listed as allowed by SKH; tofu also appears in NUH/CGH low-residue examples.',
+    'Refined white starches are low in fibre and allowed.',
+  protein: 'Chicken, fish, eggs and seafood are allowed.',
+  tofu: 'Tofu and taukwa are allowed.',
   clear:
-    'Water and specified clear/light-coloured drinks are directly permitted during clear-liquid phases, subject to hospital timing and colour rules.',
-  pork: 'SKH directly lists pork as allowed during its 3-day low-residue phase.',
+    'Water and clear, light-coloured drinks are allowed. Follow your timing instructions.',
+  pork: 'Lean pork is allowed.',
   spread:
-    'On the TTSH option list as a spread for white bread. Keep it smooth and thin — no coconut flesh, no fruit pieces, no nuts.',
+    'Allowed as a thin spread on white bread. No coconut flesh, fruit pieces or nuts.',
   refinedBake:
-    'On the TTSH option list as a plain refined-flour item. Take it plain: no wholemeal, no nuts, seeds, fruit pieces or jam.',
+    'Allowed plain. No wholemeal, nuts, seeds, fruit pieces or jam.',
   plainCake:
-    'On the TTSH option list as a plain cake. No nuts, seeds, dried fruit, fruit pieces or dark-coloured fillings.',
+    'Allowed plain. No nuts, seeds, dried fruit or dark fillings.',
   custard:
-    'Egg-and-milk custards are on the TTSH option list as smooth, residue-free desserts. Plain only — no fruit, no caramel with fruit pieces.',
+    'Smooth custards are allowed. Plain only, no fruit.',
   drinkWithMilk:
-    'TTSH permits coffee and tea with or without milk during its low-fibre phase. Other Singapore sheets are stricter on milk, so follow the TTSH instruction you were given.',
+    'Coffee and tea are allowed, with or without milk.',
   drinkNoMilk:
-    'TTSH permits coffee and tea during its low-fibre phase. Avoid red, purple, blue or dark-coloured drinks if your clinic asks for it.',
+    'Coffee and tea are allowed.',
   broth:
-    'Clear soup and broth are permitted, strained. No vegetables, noodles, meat pieces or garnish left in the bowl.',
+    'Clear, strained soup is allowed. No vegetables, noodles or meat pieces.',
   sauce:
-    'Smooth sauces are low in visible residue. Keep the amount small and skip chilli, sambal, sesame and fried shallots.',
+    'Small amounts are fine. Skip chilli, sambal, sesame and fried shallots.',
   noVeg:
-    'On the TTSH option list when taken without the vegetable, herb and garnish sides it usually comes with.',
+    'Allowed without the vegetables, herbs and garnish.',
 } as const
 
 type IngredientSeed = {
@@ -94,32 +94,32 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
   'Plain biscuits': { why: WHY.refined },
   'Sushi rice': { why: WHY.refined },
   'Chee cheong fun (plain rice roll)': {
-    why: 'A plain steamed rice-flour roll is a refined starch. Take it without sesame seeds, fried shallots or sweet sauce.',
+    why: 'Allowed plain, without sesame, fried shallots or sweet sauce.',
   },
   'Idli (steamed rice cake)': {
-    why: 'On the TTSH option list plain, without chutney or sambar — those are the fibrous part of the meal.',
+    why: 'Allowed plain, without chutney or sambar.',
   },
   'Dosa (plain rice crepe)': {
-    why: 'On the TTSH option list plain, without sambar, chutney or vegetable filling.',
+    why: 'Allowed plain, without sambar, chutney or vegetable filling.',
   },
   'Plain naan': {
     classification: 'review',
-    why: 'Refined flour is low in fibre, but the ghee or oil used can matter.',
+    why: 'Low in fibre, but check how much oil or ghee is used.',
   },
   'White baguette': { why: WHY.refinedBake },
   'Plain bagel': { why: WHY.refinedBake },
   'Plain flour tortilla': { why: WHY.refinedBake },
   'Plain pancake': {
     classification: 'review',
-    why: 'Refined flour is low in fibre, but the ghee or oil used can matter.',
+    why: 'Low in fibre, but check how much oil or ghee is used.',
   },
   'Plain waffle': {
     classification: 'review',
-    why: 'Refined flour is low in fibre, but the ghee or oil used can matter.',
+    why: 'Low in fibre, but check how much oil or ghee is used.',
   },
   'Potato (peeled)': {
     classification: 'cannot',
-    why: 'Low-fibre starch if peeled; do not eat the skin.',
+    why: 'Not allowed. Avoid potato, including the skin.',
   },
 
   // --- Protein ---
@@ -130,10 +130,10 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
   Fish: { why: WHY.protein },
   'Smoked salmon': { why: WHY.protein },
   'Canned tuna': {
-    why: 'Plain tuna in water or oil, drained. No sweetcorn, celery or onion mixed into the filling.',
+    why: 'Plain, drained tuna is allowed. No sweetcorn, celery or onion.',
   },
   Fishball: {
-    why: 'On the TTSH option list as part of the soup noodle bowl. Plain fishballs only, with the vegetables left out.',
+    why: 'Plain fishballs are allowed. Leave out the vegetables.',
   },
   'Wanton (pork dumpling)': { why: WHY.pork },
   'Minced pork': { why: WHY.pork },
@@ -143,17 +143,17 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
   'Tau pok': { why: WHY.tofu },
   'Beancurd skin (tau pok / inari)': { why: WHY.tofu },
   'Tau huay (soft beancurd)': {
-    why: 'Smooth soy beancurd with plain sugar syrup. No ginkgo nuts, barley, red bean or grass jelly toppings.',
+    why: 'Allowed with plain syrup. No ginkgo, barley, red bean or grass jelly.',
   },
 
   // --- Spreads, fats, sauces ---
   Kaya: { why: WHY.spread },
   Butter: {
     classification: 'review',
-    why: 'Fat itself is low in fibre, but how much is used in cooking is hard to judge.',
+    why: 'Low in fibre, but use only a little.',
   },
   Syrup: {
-    why: 'Plain sugar or maple syrup carries no fibre. Skip fruit compote, jam and anything with seeds or pieces.',
+    why: 'Plain syrup is allowed. No jam or fruit pieces.',
   },
   'Teriyaki sauce': { why: WHY.sauce },
 
@@ -168,16 +168,16 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
   'Green tea': { why: WHY.drinkNoMilk },
   'English breakfast tea': { why: WHY.drinkNoMilk },
   'Soy milk (no pulp)': {
-    why: 'On the TTSH option list strained, without pulp. Other Singapore sheets exclude soy milk, so follow the TTSH instruction you were given.',
+    why: 'Allowed if strained, with no pulp.',
   },
   'Apple juice (clear, no pulp)': {
-    why: 'Clear, light-coloured juice with no pulp is permitted. Cloudy juice and anything with pulp is not.',
+    why: 'Clear juice with no pulp is allowed.',
   },
   'Isotonic drink': {
-    why: 'Light-coloured sports drinks are permitted. Avoid red, purple, blue or brown if your clinic asks for it.',
+    why: 'Light-coloured sports drinks are allowed. Avoid red, purple or blue.',
   },
   'Colourless soft drink': {
-    why: 'Colourless soft drinks such as Sprite, 7-Up or cream soda are permitted. Nothing red, purple, blue or dark.',
+    why: 'Colourless soft drinks like Sprite or 7-Up are allowed.',
   },
 
   // --- Desserts ---
@@ -189,13 +189,13 @@ const INGREDIENTS: Record<string, IngredientSeed> = {
   Castella: { why: WHY.plainCake },
   Madeleine: { why: WHY.plainCake },
   Meringue: {
-    why: 'Whipped egg white and sugar, nothing fibrous. Plain only — no nuts, no fruit, no dark colouring.',
+    why: 'Allowed plain. No nuts, fruit or dark colouring.',
   },
   'Caramel pudding': { why: WHY.custard },
   Flan: { why: WHY.custard },
   'Panna cotta': { why: WHY.custard },
   'Clear jelly (no fruit)': {
-    why: 'Clear jelly with no fruit pieces. Avoid red, purple, blue and dark-coloured jelly — the dye can be mistaken for blood at scope.',
+    why: 'Clear jelly with no fruit is allowed. Avoid red, purple or blue jelly.',
   },
 }
 
