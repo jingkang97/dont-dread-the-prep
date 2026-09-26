@@ -20,4 +20,5 @@ export const CUISINES: { id: Cuisine; label: StringKey }[] = [
   { id: 'japanese', label: 'food.cuisineJapanese' },
   { id: 'vietnamese', label: 'food.cuisineVietnamese' },
   { id: 'western', label: 'food.cuisineWestern' },
+  { id: 'vegan', label: 'food.cuisineVegan' },
 ]

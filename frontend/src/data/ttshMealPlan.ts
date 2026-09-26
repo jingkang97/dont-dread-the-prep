@@ -257,6 +257,11 @@ const DISHES: DishSeed[] = [
     ingredients: ['White porridge', 'Fish'],
   },
   {
+    name: 'Tofu porridge', cuisine: 'vegan', note: 'Plain tofu, no egg, vegetables or garnishes',
+    meals: ANY_MEAL,
+    ingredients: ['White porridge', 'Tofu'],
+  },
+  {
     name: 'Plain idli + egg', cuisine: 'indian', note: 'No chutney',
     meals: BREAKFAST,
     ingredients: ['Idli (steamed rice cake)', 'Egg'],
@@ -305,6 +310,11 @@ const DISHES: DishSeed[] = [
     name: 'Silken tofu + white rice', cuisine: 'chinese', note: 'No vegetables',
     meals: MAINS,
     ingredients: ['Silken tofu', 'White rice'],
+  },
+  {
+    name: 'Plain bee hoon + taukwa', cuisine: 'vegan', note: 'No egg, vegetables or chilli',
+    meals: MAINS,
+    ingredients: ['Bee hoon', 'Taukwa'],
   },
   {
     name: 'Fishball noodle soup', cuisine: 'chinese', note: 'No vegetables',

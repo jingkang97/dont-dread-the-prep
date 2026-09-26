@@ -16,6 +16,7 @@ export type ApiCuisine =
   | 'japanese'
   | 'vietnamese'
   | 'western'
+  | 'vegan'
 
 export type ApiIngredient = {
   id: number

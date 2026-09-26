@@ -29,6 +29,7 @@ export const CLINICAL_EN = {
   'food.cuisineJapanese': 'Japanese',
   'food.cuisineVietnamese': 'Vietnamese',
   'food.cuisineWestern': 'Western',
+  'food.cuisineVegan': 'Vegan',
   'food.mealSummaryEat':
     'Low-fibre and smooth: white rice, bread and noodles, lean chicken, fish, eggs and tofu, and clear drinks.',
   'food.mealSummaryAvoid':
