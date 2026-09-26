@@ -255,7 +255,12 @@ function takeReplaceSession() {
 async function unsubscribeBrowserPush() {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
   try {
-    const registration = await navigator.serviceWorker.ready
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error('sw-ready-timeout')), 600)
+      }),
+    ])
     const existing = await registration.pushManager.getSubscription()
     await existing?.unsubscribe()
   } catch {

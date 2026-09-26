@@ -36,11 +36,13 @@ export function PitchRail({ session }: { session: PrepSession | null }) {
       </ol>
       <div className="mt-auto pt-10">
         <div className="flex w-fit max-w-sm items-center gap-4 rounded-3xl bg-white/10 p-3 pr-5 ring-1 ring-white/10">
-          <img
-            src={pitchQr}
-            alt={t('pitch.scan')}
-            className="h-29 w-29 shrink-0 rounded-2xl bg-white p-1.5"
-          />
+          <div className="h-32 w-32 shrink-0 overflow-hidden rounded-2xl bg-white p-1.5">
+            <img
+              src={pitchQr}
+              alt={t('pitch.scan')}
+              className="block h-full w-full rounded-xl object-cover"
+            />
+          </div>
           <div className="min-w-0">
             {session ? (
               <>
