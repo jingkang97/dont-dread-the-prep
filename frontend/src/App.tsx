@@ -173,9 +173,10 @@ export default function App() {
               ))}
             </div>
             <BottomNav screen={screen} onChange={openTab} />
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
             {edit.edit === 'choose' && session && (
               <AppointmentChooser
+                key="choose"
                 session={session}
                 when={formatSessionWhen(session, lang)}
                 onChangeDate={edit.openDate}
@@ -185,6 +186,7 @@ export default function App() {
             )}
             {edit.edit === 'date' && (
               <ChangeDatePanel
+                key="date"
                 session={session}
                 error={edit.editError}
                 busy={edit.savingEdit}
@@ -194,6 +196,7 @@ export default function App() {
             )}
             {edit.edit === 'restart' && (
               <StartOverSheet
+                key="restart"
                 onBack={() => edit.setEdit('choose')}
                 onConfirm={() => {
                   void clear().then(() => edit.setEdit('off'))

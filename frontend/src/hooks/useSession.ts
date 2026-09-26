@@ -67,12 +67,12 @@ export function useSession() {
 
   async function clear() {
     const current = session
-    if (current?.id) await releaseSessionReminders(current.id)
     dropHomeTourPending()
     clearSession()
     setSession(null)
     setScreen('onboarding')
     setOnboardKey((k) => k + 1)
+    if (current?.id) void releaseSessionReminders(current.id)
   }
 
   async function update(patch: { date: string; slot: Slot; reportingTime: string }) {
